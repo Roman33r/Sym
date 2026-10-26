@@ -1,0 +1,738 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Город вместе</title>
+<style>
+  body { margin: 0; font: 14px system-ui, sans-serif; background: #1d2330; color: #eee; display: flex; gap: 12px; padding: 12px; height: 100vh; box-sizing: border-box; }
+  #map { flex: 1; overflow: auto; border: 1px solid #445; border-radius: 6px; background: #142; }
+  #side { width: 270px; flex: none; overflow-y: auto; }
+  button { display: block; width: 100%; margin: 2px 0; padding: 5px 8px; text-align: left; background: #2c3446; color: #eee; border: 1px solid #445; border-radius: 4px; cursor: pointer; }
+  button.sel { background: #3d7a4f; border-color: #6c6; }
+  button small { color: #aab; }
+  #zoom button { display: inline-block; width: 36px; text-align: center; }
+  #tabs { margin: 8px 0 2px; border-bottom: 1px solid #445; }
+  #tabs button { display: inline-block; width: auto; margin: 0 1px -1px 0; padding: 4px 5px; text-align: center; border-radius: 4px 4px 0 0; font-size: 12px; }
+  #tabs button.on { background: #3a4660; border-color: #8ab; border-bottom-color: #3a4660; }
+  .up { color: #7d7; } .down { color: #f88; }
+  canvas { display: block; cursor: crosshair; }
+  #res { font-size: 15px; line-height: 1.6; margin: 8px 0; }
+  #info, #log { font-size: 12px; color: #bbc; min-height: 32px; }
+  #err { color: #f77; min-height: 18px; }
+  #phase:empty, #level:empty, #invite:empty { display: none; }
+  #level { background: #23303a; border: 1px solid #4a6a7a; border-radius: 6px; padding: 8px; margin: 6px 0; font-size: 13px; line-height: 1.5; }
+  #level button { margin-top: 6px; text-align: center; background: #3d6a7a; }
+  #level button:disabled { opacity: .5; cursor: default; }
+  .locked { opacity: .45; }
+  #res [data-res] { white-space: nowrap; cursor: help; }
+  .pop { position: fixed; display: none; z-index: 10; width: 260px; background: #11161f; border: 1px solid #556; border-radius: 6px; padding: 8px; font-size: 12px; line-height: 1.5; box-shadow: 0 4px 16px #0008; pointer-events: none; }
+  .pop hr { border: 0; border-top: 1px solid #445; margin: 4px 0; }
+  .pop b { font-size: 13px; }
+  #speed button { display: inline-block; width: auto; padding: 3px 8px; text-align: center; }
+  #speed button.on { background: #3d7a4f; border-color: #6c6; }
+  #invite, #netbox .box { background: #262e3e; border: 1px solid #556; border-radius: 6px; padding: 8px; margin: 6px 0; font-size: 13px; }
+  textarea { width: 100%; box-sizing: border-box; height: 70px; background: #11161f; color: #ddd; border: 1px solid #556; border-radius: 4px; font: 11px monospace; }
+  #netbox { position: fixed; inset: 0; background: #0b0f17e6; display: none; align-items: center; justify-content: center; z-index: 20; }
+  #netbox .box { width: min(440px, calc(100vw - 32px)); padding: 16px; line-height: 1.5; }
+  #netbox button { text-align: center; margin: 6px 0; }
+  .mrow { margin: 4px 0; }
+  .mrow button { display: inline-block; width: auto; margin-left: 4px; padding: 3px 7px; }
+  #phase { background: #3a3320; border: 1px solid #a83; border-radius: 6px; padding: 8px; margin: 6px 0; font-size: 13px; line-height: 1.5; }
+  #phase button { margin-top: 6px; text-align: center; background: #3d7a4f; }
+  h4 { margin: 10px 0 4px; }
+</style>
+</head>
+<body>
+<div id="map"><canvas id="c"></canvas></div>
+<div id="side">
+  <label>Имя: <input id="name" maxlength="20" style="width:150px"></label>
+  <div id="zoom">Масштаб: <button id="zout" aria-label="Уменьшить">−</button><button id="zin" aria-label="Увеличить">+</button></div>
+  <div id="speed">Время: <button data-v="0" aria-label="Пауза">⏸</button><button data-v="1">×1</button><button data-v="2">×2</button><button data-v="4">×4</button> <small id="tickN"></small></div>
+  <div id="phase"></div>
+  <div id="res"></div>
+  <div id="level"></div>
+  <div id="tools"></div>
+  <div id="err"></div>
+  <div id="tip" class="pop" role="tooltip"></div>
+  <div id="hc" class="pop" role="tooltip"></div>
+  <div id="info">ЛКМ — строить (дороги и линии можно тянуть, зоны — выделять прямоугольником), ПКМ — снести. Колесо / Shift+колесо — прокрутка, Ctrl+колесо — масштаб.</div>
+  <div id="invite"></div>
+  <h4>Игроки</h4><div id="players"></div>
+  <h4>События</h4><div id="log"></div>
+  <button id="restart" style="margin-top:12px;text-align:center">🔄 Новый город</button>
+</div>
+<div id="netbox"><div class="box" id="netStep"></div></div>
+<script src="game.js"></script>
+<script>
+// W, H, B, NEED_TEXT, POWER, WATER are globals from game.js
+const U = 28; // tiles are drawn in a 28-unit space and scaled to the current zoom S
+let S = 28;
+const c = document.getElementById('c'), ctx = c.getContext('2d');
+// the map is painted to an offscreen canvas on each state update; mouse moves only redraw the overlay
+const base = document.createElement('canvas'), bx = base.getContext('2d'), grassTex = document.createElement('canvas');
+const $ = id => document.getElementById(id);
+let st = null, tool = 'info', hover = -1, drag = false, last = -1, sel = -1, mx = 0, my = 0;
+
+let name = '', net = null; // net.send(command) → Promise of an error text or null
+try { name = localStorage.getItem('city-name') || ''; } catch {}
+// players are identified by name, so a generated one must survive a page reload
+if (!name) { name = 'Гость' + (Math.random() * 1000 | 0); try { localStorage.setItem('city-name', name); } catch {} }
+$('name').value = name;
+$('name').onchange = () => {
+  name = $('name').value.trim().slice(0, 20) || name;
+  try { localStorage.setItem('city-name', name); } catch {}
+  if (net) net.rename();
+};
+
+const RES = { money: '💰', wood: '🌲', stone: '🧱', food: '🍞' };
+const costText = c => Object.entries(c).map(([k, v]) => v + RES[k]).join(' ');
+const TOOLS = { info: { label: 'Информация', icon: '🔍', cost: {} }, buy: { label: 'Купить участок', icon: '🗺️', cost: {} }, clear: { label: 'Расчистить', icon: '🪓', cost: {}, note: 'лес 5💰, камень 10💰' }, ...B, bulldoze: { label: 'Снести', icon: '🧨', cost: { money: 2 } } };
+const TABS = [['Сети', ['road', 'power', 'pipe', 'stop']], ['Зоны', ['zres', 'zoff', 'zind']], ['Жильё', ['house', 'shop', 'park']],
+  ['Добыча', ['farm', 'sawmill', 'quarry']], ['Энергия', ['plant', 'pump']], ['Рынок', 'market']];
+const toolBtn = k => {
+  const b = TOOLS[k], el = document.createElement('button');
+  el.dataset.tool = k;
+  el.innerHTML = `${b.icon || { road: '🛣️', power: '🔌', pipe: '🚰' }[k]} ${b.label} <small>${b.note || costText(b.cost)}</small>`;
+  el.onclick = () => { tool = k; document.querySelectorAll('[data-tool]').forEach(x => x.classList.toggle('sel', x === el)); };
+  if (k === tool) el.classList.add('sel');
+  return el;
+};
+$('tools').append(toolBtn('info'), toolBtn('buy'), toolBtn('clear'), toolBtn('bulldoze'));
+function marketPanel() {
+  const d = document.createElement('div');
+  d.innerHTML = Object.entries(PRICES).map(([k, v]) =>
+    `<div class="mrow">${RES[k]} ${v}💰 за шт.` + [10, 50].map(n => `<button data-buy="${k}:${n}">+${n} <small>${n * v}💰</small></button>`).join('') + '</div>').join('');
+  d.onclick = e => {
+    const b = e.target.closest('[data-buy]'); if (!b) return;
+    const [res, n] = b.dataset.buy.split(':');
+    msg({ type: 'trade', res, n: +n });
+  };
+  return d;
+}
+const tabBar = document.createElement('div'), panel = document.createElement('div');
+tabBar.id = 'tabs';
+TABS.forEach(([title, keys], n) => {
+  const tb = document.createElement('button');
+  tb.textContent = title;
+  tb.onclick = () => {
+    tabBar.querySelectorAll('button').forEach(x => x.classList.toggle('on', x === tb));
+    panel.replaceChildren(...(keys === 'market' ? [marketPanel()] : keys.map(toolBtn)));
+    locks();
+  };
+  tabBar.appendChild(tb);
+  if (!n) tb.onclick();
+});
+$('tools').append(tabBar, panel);
+
+// stable per-tile pseudo-random value so textures don't flicker between redraws
+const rnd = (i, k = 0) => { const v = Math.sin(i * 12.9898 + k * 78.233) * 43758.5453; return v - Math.floor(v); };
+const D = [[-1, 0], [1, 0], [0, -1], [0, 1]];
+const nbr = (i, dx, dy) => { const x = i % W + dx, y = ((i / W) | 0) + dy; return x >= 0 && y >= 0 && x < W && y < H ? y * W + x : -1; };
+const circle = (x, y, r) => { bx.beginPath(); bx.arc(x, y, r, 0, 7); bx.fill(); };
+const rect = (c, x, y, w, h) => { bx.fillStyle = c; bx.fillRect(x, y, w, h); };
+const poly = (c, ...p) => { bx.fillStyle = c; bx.beginPath(); for (let k = 0; k < p.length; k += 2) bx.lineTo(p[k], p[k + 1]); bx.fill(); };
+// strip of width w along each side of tile i whose neighbour is not `same` (map border counts if `border`)
+const edges = (i, c, w, same, border = true) => {
+  bx.fillStyle = c;
+  D.forEach(([dx, dy]) => {
+    const j = nbr(i, dx, dy);
+    if (j < 0 ? border : !same(st.grid[j])) bx.fillRect(dx > 0 ? U - w : 0, dy > 0 ? U - w : 0, dx ? w : U, dy ? w : U);
+  });
+};
+
+// smooth grass: low-res value noise upscaled with smoothing, so there is no per-tile checkerboard
+function makeGrass() {
+  const small = document.createElement('canvas'); small.width = W * 4; small.height = H * 4;
+  const sx = small.getContext('2d'), img = sx.createImageData(small.width, small.height), d = img.data;
+  const h = (x, y) => rnd(x * 7919 + y * 104729, 5);
+  const vn = (u, v) => {
+    const x = Math.floor(u), y = Math.floor(v), fx = u - x, fy = v - y, a = fx * fx * (3 - 2 * fx), b = fy * fy * (3 - 2 * fy);
+    const p = h(x, y), q = h(x + 1, y), r = h(x, y + 1), s = h(x + 1, y + 1);
+    return p + (q - p) * a + (r - p) * b + (p - q - r + s) * a * b;
+  };
+  for (let y = 0; y < small.height; y++) for (let x = 0; x < small.width; x++) {
+    const n = vn(x / 24, y / 24) * 0.6 + vn(x / 6, y / 6) * 0.3 + rnd(x * 131 + y, 9) * 0.1, k = (y * small.width + x) * 4;
+    d[k] = 66 + n * 34; d[k + 1] = 112 + n * 42; d[k + 2] = 42 + n * 18; d[k + 3] = 255;
+  }
+  sx.putImageData(img, 0, 0);
+  grassTex.width = c.width; grassTex.height = c.height;
+  const gx = grassTex.getContext('2d'); gx.imageSmoothingEnabled = true;
+  gx.drawImage(small, 0, 0, c.width, c.height);
+}
+
+function grass(i) {
+  bx.drawImage(grassTex, (i % W) * S, ((i / W) | 0) * S, S, S, 0, 0, U, U);
+  bx.fillStyle = 'hsla(100,50%,22%,.55)';
+  for (let k = 0; k < 4; k++) bx.fillRect(rnd(i, k + 2) * (U - 2), rnd(i, k + 7) * (U - 3), 1, 3);
+}
+
+// zone districts: neighbouring tiles of one zone share ground and a single outline
+const FAM = { zres: 'res', res: 'res', zoff: 'off', off: 'off', zind: 'ind', ind: 'ind' };
+const ZCOL = { res: '110,215,120', off: '100,160,250', ind: '235,195,70' };
+function lot(i) {
+  const t = st.grid[i], f = FAM[t];
+  if (f === 'res') { grass(i); rect('rgba(190,240,150,.16)', 0, 0, U, U); }
+  else {
+    rect(f === 'off' ? '#a3a6a4' : '#8a867c', 0, 0, U, U);
+    bx.strokeStyle = 'rgba(0,0,0,.1)'; bx.lineWidth = 1;
+    bx.strokeRect(0.5, 0.5, U / 2, U / 2); bx.strokeRect(U / 2 + 0.5, U / 2 + 0.5, U / 2 - 1, U / 2 - 1);
+  }
+  if (B[t].zone) { // still empty: hatched so it reads as "waiting to be built"; grey while it can't grow
+    bx.save(); bx.beginPath(); bx.rect(0, 0, U, U); bx.clip();
+    bx.strokeStyle = `rgba(${st.status[i] ? '160,160,160' : ZCOL[f]},.5)`; bx.lineWidth = 1.5; bx.beginPath();
+    const o = (i % W + (i / W | 0)) * U % 7; // continue stripes across tiles
+    for (let k = -U - o; k < U; k += 7) { bx.moveTo(k, U); bx.lineTo(k + U, 0); }
+    bx.stroke(); bx.restore();
+  }
+  edges(i, `rgb(${ZCOL[f]})`, 2, n => FAM[n] === f, false);
+}
+
+let depth = [];
+function lakeDepth() {
+  const d = st.grid.map(t => t === 'lake' ? 99 : 0), q = d.flatMap((v, i) => v ? [] : [i]);
+  for (let h = 0; h < q.length; h++) for (const [dx, dy] of D) {
+    const j = nbr(q[h], dx, dy);
+    if (j >= 0 && d[j] > d[q[h]] + 1) { d[j] = d[q[h]] + 1; q.push(j); }
+  }
+  return d;
+}
+
+function tile(i) {
+  const g = st.grid, t = g[i];
+  if (t === 'lake') {
+    const dp = Math.min(depth[i], 5);
+    rect(`hsl(${208 + dp * 2},${50 + dp * 3}%,${54 - dp * 5 + rnd(i) * 3}%)`, 0, 0, U, U);
+    edges(i, '#dccb8c', 4, n => n === 'lake', false);
+    edges(i, 'rgba(255,255,255,.25)', 6, n => n === 'lake', false);
+    bx.strokeStyle = 'rgba(255,255,255,.3)'; bx.lineWidth = 1.2; bx.beginPath();
+    bx.arc(7 + rnd(i, 3) * (U - 14), 9 + rnd(i, 4) * (U - 14), 4, Math.PI * 1.1, Math.PI * 1.9); bx.stroke();
+    return;
+  }
+  if (t === 'road') {
+    rect('#3d3f45', 0, 0, U, U);
+    edges(i, '#a5a7aa', 3, n => n === 'road');
+    bx.strokeStyle = '#e8c547'; bx.lineWidth = 1.5; bx.setLineDash([3, 3]); bx.beginPath();
+    D.forEach(([dx, dy]) => { const j = nbr(i, dx, dy); if (j >= 0 && g[j] === 'road') { bx.moveTo(U / 2, U / 2); bx.lineTo(U / 2 + dx * U / 2, U / 2 + dy * U / 2); } });
+    bx.stroke(); bx.setLineDash([]);
+    return;
+  }
+  if (FAM[t]) lot(i); else grass(i);
+  if (t === 'tree') {
+    for (let k = 0; k < 3; k++) {
+      const cx = 7 + rnd(i, k) * (U - 14), cy = 7 + rnd(i, k + 3) * (U - 14), r = 5 + rnd(i, k + 6) * 3;
+      bx.fillStyle = 'rgba(0,0,0,.25)'; circle(cx + 2, cy + 3, r);
+      if (rnd(i, k + 20) < 0.35) { // pine
+        const c = `hsl(${140 + rnd(i, k) * 15},40%,${18 + rnd(i, k + 1) * 6}%)`;
+        poly(c, cx - r, cy + r * 0.8, cx, cy - r * 1.2, cx + r, cy + r * 0.8);
+        poly('rgba(255,255,255,.1)', cx - r * 0.5, cy + r * 0.2, cx, cy - r * 1.2, cx, cy + r * 0.2);
+      } else {
+        bx.fillStyle = `hsl(${100 + rnd(i, k + 9) * 30},45%,${22 + rnd(i, k) * 9}%)`; circle(cx, cy, r);
+        bx.fillStyle = 'rgba(255,255,255,.13)'; circle(cx - r / 3, cy - r / 3, r / 2.5);
+      }
+    }
+  } else if (t === 'rock') {
+    for (let k = 0; k < 2; k++) {
+      const cx = 8 + rnd(i, k) * (U - 16), cy = 8 + rnd(i, k + 4) * (U - 16), r = 5 + rnd(i, k + 8) * 4;
+      bx.fillStyle = 'rgba(0,0,0,.3)'; circle(cx + 2, cy + 2, r);
+      bx.fillStyle = `hsl(30,6%,${48 + rnd(i, k + 2) * 14}%)`; bx.beginPath();
+      for (let a = 0; a < 7; a++) { const ang = a / 7 * Math.PI * 2, rr = r * (0.75 + rnd(i, a + k * 7) * 0.3); bx.lineTo(cx + Math.cos(ang) * rr, cy + Math.sin(ang) * rr); }
+      bx.fill();
+      bx.fillStyle = 'rgba(255,255,255,.2)'; circle(cx - r / 3, cy - r / 3, r / 3);
+    }
+  } else if (DRAW[t]) DRAW[t](0, 0, i);
+}
+
+const shadow = (x, y, w, h) => rect('rgba(0,0,0,.3)', x + 3, y + 3, w, h);
+const grid = (c, x, y, w, h, cols, rows) => {
+  const cw = w / cols, rh = h / rows;
+  for (let r = 0; r < rows; r++) for (let k = 0; k < cols; k++) rect(c, x + k * cw + 1, y + r * rh + 1, cw - 2, rh - 2);
+};
+const pick = (i, arr) => arr[(rnd(i, 11) * arr.length) | 0];
+function cottage(x, y, i) {
+  const roof = pick(i, ['#c8553d', '#8e5b3a', '#3f7f7a', '#6b5ca5']);
+  shadow(x + 5, y + 12, 18, 12);
+  rect(pick(i + 1, ['#eadfc6', '#f2ede4', '#e3cfa8']), x + 5, y + 12, 18, 12);
+  rect('#7a4a2a', x + 12, y + 18, 4, 6);
+  rect('#9fd3f0', x + 7, y + 15, 3, 3); rect('#9fd3f0', x + 18, y + 15, 3, 3);
+  rect('#6d3a2c', x + 18, y + 4, 3, 6);
+  poly(roof, x + 3, y + 13, x + 14, y + 4, x + 25, y + 13);
+  poly('rgba(0,0,0,.18)', x + 14, y + 4, x + 25, y + 13, x + 14, y + 13);
+}
+const DRAW = {
+  house: cottage,
+  res(x, y, i) {
+    if (rnd(i, 12) < 0.5) return cottage(x, y, i);
+    shadow(x + 4, y + 3, 20, 22);
+    rect(pick(i, ['#d8c7a8', '#c9b6d8', '#b9cfc0']), x + 4, y + 3, 20, 22);
+    rect('#7d7873', x + 4, y + 3, 20, 4);
+    grid('#a9d8f5', x + 5, y + 8, 18, 12, 3, 3);
+    rect('#6b4a33', x + 12, y + 21, 4, 4);
+  },
+  off(x, y, i) {
+    const top = 2 + ((rnd(i, 13) * 5) | 0);
+    shadow(x + 6, y + top, 16, 25 - top);
+    rect(pick(i, ['#4e6f95', '#3d5f7a', '#5a6b80']), x + 6, y + top, 16, 25 - top);
+    grid('rgba(190,225,255,.75)', x + 7, y + top + 3, 14, 21 - top, 3, 5);
+    rect('#9fb3c8', x + 6, y + top, 16, 2);
+    rect('#ccc', x + 13, y + top - 2, 1, 2);
+  },
+  ind(x, y) {
+    shadow(x + 3, y + 12, 22, 13);
+    rect('#8c8f94', x + 3, y + 12, 22, 13);
+    poly('#6b6e73', x + 3, y + 12, x + 3, y + 7, x + 10, y + 12, x + 10, y + 7, x + 17, y + 12, x + 17, y + 7, x + 24, y + 12);
+    rect('#f2c14e', x + 6, y + 17, 5, 3); rect('#f2c14e', x + 14, y + 17, 5, 3);
+    rect('#a0522d', x + 20, y + 4, 4, 9);
+    bx.fillStyle = 'rgba(230,230,230,.75)'; circle(x + 22, y + 3, 2.5); circle(x + 25, y + 2, 2);
+  },
+  farm(x, y) {
+    rect('#8a6a3a', x + 2, y + 2, U - 4, U - 4);
+    for (let r = 0; r < 4; r++) rect('#d9b44a', x + 4, y + 4 + r * 5.5, 10, 3);
+    for (let r = 0; r < 2; r++) rect('#d9b44a', x + 16, y + 15 + r * 5.5, 8, 3);
+    shadow(x + 15, y + 4, 10, 8);
+    rect('#b03a2e', x + 15, y + 5, 10, 7);
+    poly('#7d241b', x + 14, y + 6, x + 20, y + 2, x + 26, y + 6);
+    rect('#f4e9d8', x + 19, y + 8, 2, 4);
+  },
+  sawmill(x, y) {
+    shadow(x + 3, y + 4, 15, 12);
+    rect('#9a6b3f', x + 3, y + 6, 15, 10);
+    poly('#6e4a2a', x + 2, y + 7, x + 10, y + 2, x + 19, y + 7);
+    for (const [lx, ly] of [[16, 22], [21, 22], [18.5, 18]]) {
+      bx.fillStyle = '#8b5a2b'; circle(x + lx, y + ly, 3);
+      bx.fillStyle = '#d9b07a'; circle(x + lx, y + ly, 1.5);
+    }
+    rect('#8b5a2b', x + 3, y + 20, 9, 3);
+  },
+  quarry(x, y) {
+    rect('#9a958b', x + 2, y + 2, U - 4, U - 4);
+    rect('#827d73', x + 5, y + 5, U - 10, U - 10);
+    rect('#68645d', x + 9, y + 9, U - 18, U - 18);
+    rect('#c48a3a', x + 17, y + 18, 7, 4);
+    bx.fillStyle = '#333'; circle(x + 18, y + 23, 1.3); circle(x + 23, y + 23, 1.3);
+  },
+  plant(x, y) {
+    shadow(x + 2, y + 14, 13, 11);
+    rect('#6a6f78', x + 2, y + 14, 13, 11);
+    rect('#f2d23f', x + 5, y + 17, 7, 3);
+    for (const tx of [16, 22]) {
+      poly('#c9ccd1', x + tx - 4, y + 25, x + tx - 2, y + 15, x + tx - 3, y + 9, x + tx + 3, y + 9, x + tx + 2, y + 15, x + tx + 4, y + 25);
+      bx.fillStyle = 'rgba(245,245,245,.8)'; circle(x + tx, y + 6, 3);
+    }
+  },
+  pump(x, y) {
+    bx.strokeStyle = '#555'; bx.lineWidth = 1.5; bx.beginPath();
+    bx.moveTo(x + 9, y + 24); bx.lineTo(x + 11, y + 12); bx.moveTo(x + 19, y + 24); bx.lineTo(x + 17, y + 12); bx.stroke();
+    bx.fillStyle = 'rgba(0,0,0,.3)'; circle(x + 17, y + 12, 7);
+    bx.fillStyle = '#3b86c6'; circle(x + 14, y + 9, 7);
+    bx.fillStyle = 'rgba(255,255,255,.35)'; circle(x + 12, y + 7, 2.5);
+    rect('#ddd', x + 4, y + 20, 7, 5);
+  },
+  park(x, y, i) {
+    rect('#4f9a3c', x + 1, y + 1, U - 2, U - 2);
+    rect('#d8c79a', x + 1, y + U / 2 - 2, U - 2, 4); rect('#d8c79a', x + U / 2 - 2, y + 1, 4, U - 2);
+    bx.fillStyle = '#5fb0e0'; circle(x + U / 2, y + U / 2, 3.5);
+    for (const [px, py] of [[7, 7], [21, 7], [7, 21], [21, 21]]) {
+      bx.fillStyle = 'rgba(0,0,0,.25)'; circle(x + px + 1.5, y + py + 2, 4.5);
+      bx.fillStyle = `hsl(${100 + rnd(i, px + py) * 30},50%,30%)`; circle(x + px, y + py, 4.5);
+    }
+    rect('#7a5230', x + 17, y + 12, 5, 1.5);
+  },
+  stop(x, y) {
+    rect('rgba(0,0,0,.3)', x + 8, y + 20, 15, 4);
+    rect('rgba(170,210,240,.6)', x + 7, y + 13, 14, 8);
+    rect('#555', x + 6, y + 13, 1.5, 9); rect('#555', x + 20.5, y + 13, 1.5, 9);
+    rect('#6c7a89', x + 5, y + 10, 18, 3);
+    rect('#8a6a4a', x + 9, y + 18, 10, 2);
+    rect('#444', x + 24, y + 6, 1.5, 17);
+    bx.fillStyle = '#1f6fd1'; circle(x + 24.7, y + 6, 4);
+    bx.fillStyle = '#fff'; bx.font = 'bold 6px sans-serif'; bx.textAlign = 'center'; bx.textBaseline = 'middle';
+    bx.fillText('A', x + 24.7, y + 6.3);
+  },
+  shop(x, y) {
+    shadow(x + 3, y + 5, 22, 19);
+    rect('#efe6d6', x + 3, y + 5, 22, 19);
+    rect('#8b5e3c', x + 3, y + 5, 22, 3);
+    for (let k = 0; k < 6; k++) rect(k % 2 ? '#fff' : '#d33', x + 2 + k * 4, y + 10, 4, 4);
+    rect('#9fd3f0', x + 5, y + 16, 12, 5);
+    rect('#6b4a33', x + 19, y + 16, 4, 8);
+  },
+};
+
+function utils(i) {
+  const g = st.grid;
+  // power slightly up-left, water down-right so both stay visible on one tile
+  for (const [bit, color, off] of [[POWER, '#ffd23f', -4], [WATER, '#4fc3f7', 4]]) {
+    if (!(st.util[i] & bit)) continue;
+    const cx = U / 2 + off, cy = U / 2 + off;
+    bx.strokeStyle = 'rgba(0,0,0,.4)'; bx.lineWidth = 4; bx.beginPath(); seg(); bx.stroke();
+    bx.strokeStyle = color; bx.lineWidth = 2; bx.beginPath(); seg(); bx.stroke();
+    bx.fillStyle = color; circle(cx, cy, 2.5);
+    function seg() {
+      D.forEach(([dx, dy]) => {
+        const j = nbr(i, dx, dy);
+        if (j >= 0 && ((st.util[j] & bit) || (B[g[j]] && B[g[j]].needs))) { bx.moveTo(cx, cy); bx.lineTo(cx + dx * U / 2, cy + dy * U / 2); }
+      });
+    }
+  }
+  if (st.status[i] && !B[g[i]].zone) { // empty zones show it by grey hatching instead, one badge per tile is too noisy
+    bx.fillStyle = '#e33'; circle(U - 6, 6, 5);
+    bx.fillStyle = '#fff'; bx.font = 'bold 9px sans-serif'; bx.textAlign = 'center'; bx.textBaseline = 'middle';
+    bx.fillText('!', U - 6, 6.5);
+  }
+}
+
+function paint() {
+  depth = lakeDepth();
+  const k = S / U, each = f => { for (let i = 0; i < st.grid.length; i++) { bx.setTransform(k, 0, 0, k, (i % W) * S, ((i / W) | 0) * S); f(i); } };
+  each(tile);
+  each(utils); // second pass so lines draw over neighbouring tiles
+  bx.setTransform(1, 0, 0, 1, 0, 0);
+  plots();
+  draw();
+}
+
+// land overlay: free plots are dimmed, owned land gets a border in the owner's colour where the owner changes
+function plots() {
+  const ps = P * S;
+  for (let k = 0; k < PW * PH; k++) {
+    const o = st.plots[k], kx = k % PW, ky = (k / PW) | 0, x = kx * ps, y = ky * ps;
+    if (!o) { bx.fillStyle = 'rgba(0,0,0,.28)'; bx.fillRect(x, y, ps, ps); continue; }
+    const other = (a, b) => a < 0 || b < 0 || a >= PW || b >= PH || st.plots[b * PW + a] !== o;
+    bx.fillStyle = st.players[o].color;
+    if (other(kx - 1, ky)) bx.fillRect(x, y, 3, ps);
+    if (other(kx + 1, ky)) bx.fillRect(x + ps - 3, y, 3, ps);
+    if (other(kx, ky - 1)) bx.fillRect(x, y, ps, 3);
+    if (other(kx, ky + 1)) bx.fillRect(x, y + ps - 3, ps, 3);
+  }
+}
+
+// rectangle between zone-drag start and the hovered tile, in tile coords
+function selRect() {
+  const j = hover >= 0 ? hover : last;
+  return [Math.min(sel % W, j % W), Math.min(sel / W | 0, j / W | 0), Math.max(sel % W, j % W), Math.max(sel / W | 0, j / W | 0)];
+}
+
+function draw() {
+  if (!st) return;
+  ctx.drawImage(base, 0, 0);
+  if (sel >= 0) {
+    const clr = tool === 'clear', [x0, y0, x1, y1] = selRect(), col = clr ? '235,140,60' : ZCOL[B[tool].zone];
+    let cost = 0;
+    let n = 0;
+    for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
+      const k = y * W + x, t = st.grid[k], fits = Game.ownerOf(st, k) === name && (clr ? !!CLEAR[t] : t === 'grass');
+      if (fits) { n++; cost += clr ? CLEAR[t].cost : 10; }
+    }
+    ctx.fillStyle = `rgba(${col},.3)`; ctx.strokeStyle = `rgb(${col})`; ctx.lineWidth = 2;
+    ctx.fillRect(x0 * S, y0 * S, (x1 - x0 + 1) * S, (y1 - y0 + 1) * S);
+    ctx.strokeRect(x0 * S + 1, y0 * S + 1, (x1 - x0 + 1) * S - 2, (y1 - y0 + 1) * S - 2);
+    $('info').textContent = `${TOOLS[tool].label}: ${n} кл. = ${cost}💰`;
+    return;
+  }
+  if (hover < 0) return;
+  if (!st.players[name] || tool === 'buy') { // choosing land: outline the whole plot
+    const k = Game.plotOf(hover), ps = P * S;
+    ctx.strokeStyle = st.plots[k] ? '#f66' : '#ff3'; ctx.lineWidth = 3;
+    ctx.strokeRect((k % PW) * ps + 1.5, ((k / PW) | 0) * ps + 1.5, ps - 3, ps - 3);
+    return;
+  }
+  const t = st.grid[hover], free = Game.ownerOf(st, hover) === name && (tool === 'clear' ? !!CLEAR[t] : tool === 'bulldoze' ? t !== 'lake' && !CLEAR[t] : (tool === 'power' || tool === 'pipe') ? !['lake', 'tree', 'rock'].includes(t) : t === 'grass');
+  ctx.strokeStyle = tool === 'info' ? '#fffa' : free ? '#9f9' : '#f66'; ctx.lineWidth = 2;
+  ctx.strokeRect((hover % W) * S + 1, ((hover / W) | 0) * S + 1, S - 2, S - 2);
+}
+
+function setZoom(n) {
+  const m = $('map'), cx = (m.scrollLeft + m.clientWidth / 2) / S, cy = (m.scrollTop + m.clientHeight / 2) / S;
+  S = Math.max(16, Math.min(48, n));
+  c.width = base.width = W * S; c.height = base.height = H * S;
+  makeGrass();
+  if (st) paint();
+  m.scrollLeft = cx * S - m.clientWidth / 2; m.scrollTop = cy * S - m.clientHeight / 2;
+}
+$('zin').onclick = () => setZoom(S + 6);
+$('zout').onclick = () => setZoom(S - 6);
+$('map').addEventListener('wheel', e => { if (!e.ctrlKey) return; e.preventDefault(); setZoom(S + (e.deltaY < 0 ? 4 : -4)); }, { passive: false });
+setZoom(S);
+
+// hover window over a resource: what adds to it and takes from it this tick
+let tipKey = '';
+const RES_NAME = { money: 'Деньги', wood: 'Дерево', stone: 'Камень', food: 'Еда' };
+const num = v => Math.abs(v) < 0.05 ? '0' : (v > 0 ? '+' : '−') + Math.abs(v).toFixed(1);
+function tipHtml(k) {
+  const me = st.players[name];
+  if (!me) return '';
+  if (k === 'happy')
+    return '<b>😊 Довольство жителей</b><br>' + Object.entries(WANT_TEXT).map(([w, t]) => `${Math.round(((me.needs || {})[w] || 0) * 100)}% — ${t}`).join('<br>') +
+      '<hr><small>Доля мест в домах, где потребность выполнена. Чем выше довольство, тем больше людей живёт в домах.</small>';
+  const rows = ((me.flow || {})[k] || []).map(([what, v]) => `<div class="${v > 0 ? 'up' : 'down'}">${num(v)} ${esc(what)}</div>`);
+  return `<b>${RES[k]} ${RES_NAME[k]} за тик</b>` + (rows.join('') || '<div>ничего не приходит и не уходит</div>') + `<hr>Итого: ${num(me.delta[k] || 0)}` +
+    (k === 'food' && !me.fed ? '<div class="down">Склад пуст — жители голодают, налоги ×0.3</div>' : '');
+}
+function showTip() { $('tip').innerHTML = tipHtml(tipKey); $('tip').style.display = tipKey ? 'block' : 'none'; }
+$('res').onmouseover = e => { const el = e.target.closest('[data-res]'); tipKey = el ? el.dataset.res : ''; showTip(); };
+$('res').onmousemove = e => { $('tip').style.left = Math.max(8, e.clientX - 260) + 'px'; $('tip').style.top = e.clientY + 18 + 'px'; };
+$('res').onmouseleave = () => { tipKey = ''; showTip(); };
+
+function phaseText(me) {
+  if (st.phase === 'lobby')
+    return `Город ещё не начат. Онлайн: ${st.online.length}.` + (st.online.length > 1 ? ' Порядок выбора участков решит жеребьёвка.' : '') + '<button id="startBtn">▶ Начать игру</button>';
+  if (st.phase === 'draft') {
+    const cur = st.order[st.turn];
+    return (st.order.length > 1 ? `🎲 Жеребьёвка: ${st.order.map(n => n === cur ? `<b>${esc(n)}</b>` : esc(n)).join(' → ')}<br>` : '') +
+      (me ? 'Участок выбран, ждём остальных' : cur === name ? '<b>Ваш ход!</b> Кликните по свободному участку на карте' : `Сейчас выбирает ${esc(cur)}`);
+  }
+  return me ? '' : 'Кликните по свободному (затемнённому) участку на карте, чтобы занять его';
+}
+let lastPhase = '', lastLevel = '';
+// dims tools the player's level hasn't opened yet
+function locks() {
+  const me = st && st.players[name];
+  document.querySelectorAll('[data-tool]').forEach(el => {
+    const l = TOOLS[el.dataset.tool].lvl || 0, off = !!me && l > (me.level || 0);
+    el.classList.toggle('locked', off);
+    el.title = off ? `Откроется на уровне «${LEVELS[l].name}»` : '';
+  });
+}
+function levelText(me) {
+  const lv = Game.levelOf(me), next = LEVELS[(me.level || 0) + 1];
+  let h = `${lv.icon} <b>${lv.name}</b> · участков до ${lv.plots}`;
+  if (!next) return h + '<br>Высший уровень!';
+  const opens = Object.values(B).filter(b => b.lvl === (me.level || 0) + 1).map(b => b.label.replace(/ \(.*\)/, '').toLowerCase());
+  const ok = (v, need) => `<span class="${v >= need ? 'up' : 'down'}">${Math.floor(v)}/${need}</span>`;
+  h += `<br>Дальше: ${next.icon} ${next.name} — 👥 ${ok(me.pop, next.pop)} · 💰 ${ok(me.res.money, next.cost)}` +
+    `<br><small>Откроет: до ${next.plots} участков${opens.length ? ', ' + opens.join(', ') : ''}</small>`;
+  return h + `<button id="upBtn"${Game.upgradeBlock(me) ? ' disabled' : ''}>⬆ Стать: ${next.name} (${next.cost}💰)</button>`;
+}
+$('level').onclick = e => { if (e.target.id === 'upBtn') doAct('upgrade', 0); };
+$('phase').onclick = e => {
+  if (e.target.id === 'startBtn') msg({ type: 'start' });
+};
+
+function render() {
+  const me = st.players[name], f = Math.floor;
+  const ph = phaseText(me);
+  if (ph !== lastPhase) $('phase').innerHTML = lastPhase = ph; // rebuild only on change so the start button isn't swapped mid-click
+  document.querySelector('[data-tool=buy] small').textContent = !me ? '' : st.plots.filter(o => o === name).length >= Game.levelOf(me).plots ? '🔒 нужен новый уровень' : Game.plotPrice(st, name) + '💰';
+  locks();
+  $('players').innerHTML = st.online.map(p => `<div style="color:${p.color}">● ${esc(p.name)}${st.players[p.name] ? ` — ${Game.levelOf(st.players[p.name]).icon} 👥 ${st.players[p.name].pop}` : ''}</div>`).join('');
+  $('log').innerHTML = st.log.map(esc).join('<br>');
+  paint(); hoverCard();
+  document.querySelectorAll('#speed button').forEach(b => b.classList.toggle('on', +b.dataset.v === (st.speed ?? 1)));
+  $('tickN').textContent = 'тик ' + st.tick;
+  const lt = me ? levelText(me) : '';
+  if (lt !== lastLevel) $('level').innerHTML = lastLevel = lt; // only on change, so the button isn't swapped mid-click
+  if (!me) { $('res').innerHTML = ''; return; }
+  const r = me.res;
+  const d = k => { const v = me.delta[k] || 0, t = Math.abs(v) < 0.05 ? '0' : (v > 0 ? '+' : '−') + Math.abs(v).toFixed(1); return ` <small class="${v > 0.05 ? 'up' : v < -0.05 ? 'down' : ''}">(${t})</small>`; };
+  $('res').innerHTML = Object.keys(RES).map(k => `<span data-res="${k}">${RES[k]} ${f(r[k])}${d(k)}</span>`).join(' &nbsp; ') +
+    ` &nbsp; <span data-res="happy">😊 ${Math.round((me.happy || 0) * 100)}%</span><br>` +
+    `👥 Жители: ${me.pop} &nbsp; 🛠 Рабочих мест: ${me.jobs}<br>🗺️ Участков: ${st.plots.filter(o => o === name).length}` +
+    (me.fed ? '' : '<br><span style="color:#f77">Голод! Налоги падают</span>');
+  if (tipKey) showTip();
+}
+const esc = s => s.replace(/[&<>"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[ch]);
+const TERR = { grass: 'Трава', tree: 'Лес', rock: 'Камень', lake: 'Озеро' };
+const POLLUTES = ['ind', 'plant', 'quarry'];
+// info window for the hovered tile, kept next to the cursor and rebuilt on every state update
+function card(i) {
+  const t = st.grid[i], b = B[t], miss = st.status[i], rows = [];
+  const yes = ok => ok ? '✅' : '❌';
+  if (b && b.needs) rows.push(miss ? '⚠️ Не работает: ' + [...miss].map(m => NEED_TEXT[m]).join(', ') : '✅ Работает');
+  if (b && b.zone) rows.push('Ждёт застройки: растёт, когда в городе есть спрос');
+  if (b && b.home) {
+    const w = Game.wants(st, i, reach);
+    rows.push(`👥 Жители: <b>${Game.residents(st, i, reach)}</b> из ${b.home}`, `😊 Довольство: <b>${Math.round(Game.happiness(st, i, reach) * 100)}%</b>`,
+      '<u>Потребности жителей</u>', ...Object.entries(w).map(([k, ok]) => `${yes(ok)} ${WANT_TEXT[k]}`));
+  }
+  const owner = Game.ownerOf(st, i), op = st.players[owner], wr = op && op.jobs ? Math.min(1, (op.workers || 0) / op.jobs) : 0;
+  if (b && b.jobs) rows.push(`🛠 Рабочих мест: ${b.jobs} (в городе занято ${Math.round(wr * 100)}%)`);
+  if (b && b.prod) rows.push(`📦 Даёт за тик: ${Object.entries(b.prod).map(([k, v]) => '+' + (v * wr).toFixed(1) + RES[k]).join(' ')}` + (wr < 1 ? ` (из ${costText(b.prod)}, не хватает работников)` : ''));
+  if (b && b.upkeep) rows.push(`💸 Содержание: ${b.upkeep}💰 за тик`);
+  if (POLLUTES.includes(t)) rows.push('🏭 Шумит: жителям в 3 клетках неуютно');
+  if (t === 'park') rows.push('🌳 Радует жителей в радиусе 4 клеток');
+  if (t === 'shop') rows.push('🛒 Нужен жителям в радиусе 5 клеток');
+  if (t === 'stop') rows.push('🚌 Возит на работу жителей в 3 клетках от неё, если на той же дороге есть остановка в 3 клетках от работы');
+  const u = [st.util[i] & POWER && '🔌 ЛЭП', st.util[i] & WATER && '🚰 водопровод'].filter(Boolean);
+  if (u.length) rows.push('Проложено: ' + u.join(', '));
+  return `<b>${b ? (b.icon || '') + ' ' + b.label : TERR[t]}</b> <small>(${i % W}, ${(i / W) | 0})</small><br>🗺️ Участок: ${owner ? esc(owner) : 'свободен'}` + (rows.length ? '<hr>' + rows.join('<br>') : '');
+}
+function hoverCard() {
+  const hc = $('hc');
+  if (!st || hover < 0 || sel >= 0) { hc.style.display = 'none'; return; }
+  hc.innerHTML = card(hover); hc.style.display = 'block';
+  // keep the window on screen: flip to the other side of the cursor near the right / bottom edge
+  const w = hc.offsetWidth, h = hc.offsetHeight;
+  hc.style.left = (mx + 18 + w > innerWidth ? Math.max(4, mx - w - 18) : mx + 18) + 'px';
+  hc.style.top = (my + 18 + h > innerHeight ? Math.max(4, my - h - 18) : my + 18) + 'px';
+}
+
+function msg(m) {
+  if (!net) return;
+  net.send(m).then(err => { $('err').textContent = err || ''; }).catch(() => { $('err').textContent = 'нет связи'; });
+}
+const doAct = (tool, i, j) => msg({ type: 'act', tool, i, j });
+$('speed').onclick = e => { const b = e.target.closest('[data-v]'); if (b) msg({ type: 'speed', v: +b.dataset.v }); };
+const tileAt = e => { const r = c.getBoundingClientRect(), x = ((e.clientX - r.left) / S) | 0, y = ((e.clientY - r.top) / S) | 0; return x >= 0 && y >= 0 && x < W && y < H ? y * W + x : -1; };
+c.oncontextmenu = e => e.preventDefault();
+c.onmousedown = e => {
+  const i = tileAt(e); if (i < 0) return;
+  const t = e.button === 2 ? 'bulldoze' : tool;
+  last = i;
+  if (!st.players[name] && st.phase !== 'lobby' && e.button === 0) return doAct('claim', i); // no land yet: a click picks the starting plot
+  if (t === 'info') return;
+  if (t === 'buy') return doAct('buy', i);
+  if ((B[t] && B[t].zone) || t === 'clear') { sel = i; draw(); return; } // zones and clearing: select a rectangle, applied on release
+  drag = t; doAct(t, i);
+};
+c.onmousemove = e => {
+  hover = tileAt(e); mx = e.clientX; my = e.clientY;
+  if (hover >= 0 && sel >= 0) last = hover;
+  draw(); hoverCard();
+  // only lines and demolition are painted by dragging, so a stray drag doesn't spend money on buildings
+  if (drag && hover >= 0 && hover !== last && (drag === 'bulldoze' || !B[drag].needs)) { last = hover; doAct(drag, hover); }
+};
+window.onmouseup = () => {
+  if (sel >= 0) { doAct(tool, sel, last); sel = -1; draw(); }
+  drag = false;
+};
+c.onmouseleave = () => { hover = -1; draw(); hoverCard(); };
+
+$('restart').onclick = () => {
+  if (confirm('Начать новый город? Текущий город удалится у всех игроков.'))
+    msg({ type: 'restart' });
+};
+
+let reach = new Set(); // homes that can get to work, computed once per state for the hover window
+const onState = x => { st = x; reach = Game.commute(st); render(); };
+
+// Played from our Node server: state comes over SSE, commands go to /msg.
+function serverNet() {
+  let es;
+  const open = () => {
+    if (es) es.close();
+    es = new EventSource('events?name=' + encodeURIComponent(name));
+    es.onmessage = e => onState(JSON.parse(e.data));
+    es.onerror = () => { $('err').textContent = 'переподключение…'; };
+  };
+  open();
+  return { send: m => fetch('msg', { method: 'POST', body: JSON.stringify({ ...m, name }) }).then(r => r.json()).then(d => d.err), rename: open };
+}
+
+// Without a server: one player's browser hosts the game, others join over WebRTC by swapping codes by hand.
+const ICE = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
+const iceDone = pc => new Promise(r => {
+  if (pc.iceGatheringState === 'complete') return r();
+  pc.onicegatheringstatechange = () => pc.iceGatheringState === 'complete' && r();
+  setTimeout(r, 4000); // enough candidates by now even if gathering never reports complete
+});
+async function pack(desc) {
+  const z = new Blob([JSON.stringify(desc)]).stream().pipeThrough(new CompressionStream('deflate-raw'));
+  const b = new Uint8Array(await new Response(z).arrayBuffer());
+  let t = ''; for (const x of b) t += String.fromCharCode(x);
+  return btoa(t);
+}
+async function unpack(code) {
+  const b = Uint8Array.from(atob(code.trim()), ch => ch.charCodeAt(0));
+  const z = new Blob([b]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
+  return JSON.parse(await new Response(z).text());
+}
+
+function hostNet() {
+  let saved = null;
+  try { saved = JSON.parse(localStorage.getItem('city-host')); } catch {}
+  const R = Game.room(saved && saved.plots && saved.grid.length === W * H ? saved : Game.newGame());
+  R.s.status = Game.compute(R.s);
+  R.join('host', name);
+  const peers = new Map(); // connection id -> data channel
+  const keep = () => { try { localStorage.setItem('city-host', JSON.stringify(R.s)); } catch {} };
+  const push = () => {
+    const v = R.view(), txt = JSON.stringify({ state: v });
+    onState(v);
+    for (const dc of peers.values()) if (dc.readyState === 'open') dc.send(txt);
+  };
+  setInterval(() => { if (R.step()) { push(); if (R.s.tick % 5 === 0) keep(); } }, 500);
+  async function invite() {
+    const id = 'p' + Math.random().toString(36).slice(2), pc = new RTCPeerConnection(ICE), dc = pc.createDataChannel('city');
+    peers.set(id, dc);
+    dc.onmessage = e => {
+      let d; try { d = JSON.parse(e.data); } catch { return; }
+      if (d.hello !== undefined) R.join(id, d.hello);
+      else if (R.online.has(id)) dc.send(JSON.stringify({ id: d.id, err: R.handle(R.online.get(id).name, d.m) }));
+      push();
+    };
+    dc.onclose = () => { peers.delete(id); R.leave(id); push(); };
+    await pc.setLocalDescription(await pc.createOffer());
+    await iceDone(pc);
+    return { code: await pack(pc.localDescription), accept: async answer => pc.setRemoteDescription(await unpack(answer)) };
+  }
+  push();
+  return {
+    send: m => { const err = R.handle(name, m); if (m.type === 'restart') keep(); push(); return Promise.resolve(err); },
+    rename: () => { R.join('host', name); push(); },
+    invite,
+  };
+}
+
+async function guestNet(offer) {
+  const pc = new RTCPeerConnection(ICE), pending = new Map();
+  let seq = 0, dc = null;
+  pc.ondatachannel = e => {
+    dc = e.channel;
+    dc.onopen = () => { dc.send(JSON.stringify({ hello: name })); $('netbox').style.display = 'none'; };
+    dc.onmessage = ev => {
+      const d = JSON.parse(ev.data);
+      if (d.state) onState(d.state);
+      else if (pending.has(d.id)) { pending.get(d.id)(d.err); pending.delete(d.id); }
+    };
+    dc.onclose = () => { $('err').textContent = 'связь с хостом потеряна — обновите страницу и подключитесь снова'; };
+  };
+  await pc.setRemoteDescription(await unpack(offer));
+  await pc.setLocalDescription(await pc.createAnswer());
+  await iceDone(pc);
+  return {
+    answer: await pack(pc.localDescription),
+    send: m => new Promise((ok, fail) => {
+      if (!dc || dc.readyState !== 'open') return fail();
+      const id = ++seq; pending.set(id, ok); dc.send(JSON.stringify({ id, m }));
+    }),
+    rename: () => { if (dc && dc.readyState === 'open') dc.send(JSON.stringify({ hello: name })); },
+  };
+}
+
+// start screen when the page isn't served by our Node server (e.g. GitHub Pages or a local file)
+const box = html => { $('netStep').innerHTML = html; $('netbox').style.display = 'flex'; };
+const copyBtn = id => `<button onclick="navigator.clipboard && navigator.clipboard.writeText(document.getElementById('${id}').value)">📋 Скопировать код</button>`;
+function netMenu() {
+  box(`<h3>🏙️ Город вместе</h3>Сервер не найден — играем прямо в браузере. Один игрок создаёт игру и хранит город у себя, остальные подключаются по кодам.
+    <button id="hostBtn">🏠 Создать игру (я хост)</button><button id="joinBtn">🔗 Подключиться к игре</button>`);
+  $('hostBtn').onclick = () => { $('netbox').style.display = 'none'; net = hostNet(); hostInviteUi(); };
+  $('joinBtn').onclick = () => {
+    box(`<b>Подключение</b><br>1. Вставьте код приглашения от хоста:<textarea id="offerIn"></textarea><button id="answerBtn">Получить код ответа</button><div id="answerOut"></div>`);
+    $('answerBtn').onclick = async () => {
+      $('answerOut').textContent = 'Готовим код…';
+      try {
+        const g = await guestNet($('offerIn').value);
+        net = g;
+        $('answerOut').innerHTML = `2. Отправьте хосту этот код ответа:<textarea id="answerCode" readonly>${g.answer}</textarea>${copyBtn('answerCode')}3. Ждём, пока хост вставит его…`;
+      } catch { $('answerOut').textContent = 'Код не подошёл — скопируйте его целиком'; }
+    };
+  };
+}
+function hostInviteUi() {
+  $('invite').innerHTML = '<b>Вы хост.</b> Город хранится в этом браузере — не закрывайте вкладку, пока идёт игра.<button id="inviteBtn">➕ Пригласить игрока</button><div id="inviteStep"></div>';
+  $('inviteBtn').onclick = async () => {
+    $('inviteStep').textContent = 'Готовим код…';
+    const inv = await net.invite();
+    $('inviteStep').innerHTML = `1. Отправьте игроку код приглашения:<textarea id="offerCode" readonly>${inv.code}</textarea>${copyBtn('offerCode')}
+      2. Вставьте его код ответа:<textarea id="answerIn"></textarea><button id="acceptBtn">Подключить</button>`;
+    $('acceptBtn').onclick = async () => {
+      try { await inv.accept($('answerIn').value); $('inviteStep').textContent = 'Подключаем… игрок появится в списке.'; }
+      catch { $('inviteStep').insertAdjacentHTML('beforeend', '<div class="down">Код ответа не подошёл</div>'); }
+    };
+  };
+}
+
+fetch('hello').then(r => r.ok ? r.text() : '').catch(() => '').then(t => { if (t === 'city') net = serverNet(); else netMenu(); });
+</script>
+</body>
+</html>
