@@ -54,11 +54,11 @@
 <body>
 <header id="top">
   <span class="logo">Город вместе</span>
-  <div id="speed"><button data-v="0" title="Пауза"><img class="ic" src="icons/pause.svg?v=10" alt="Пауза"></button><button data-v="1" title="Скорость ×1"><img class="ic" src="icons/play.svg?v=10" alt="×1"></button><button data-v="2" title="Скорость ×2"><img class="ic" src="icons/fast.svg?v=10" alt="×2"></button><button data-v="4" title="Скорость ×4"><img class="ic" src="icons/faster.svg?v=10" alt="×4"></button></div>
+  <div id="speed"><button data-v="0" title="Пауза"><img class="ic" src="icons/pause.svg?v=11" alt="Пауза"></button><button data-v="1" title="Скорость ×1"><img class="ic" src="icons/play.svg?v=11" alt="×1"></button><button data-v="2" title="Скорость ×2"><img class="ic" src="icons/fast.svg?v=11" alt="×2"></button><button data-v="4" title="Скорость ×4"><img class="ic" src="icons/faster.svg?v=11" alt="×4"></button></div>
   <span id="tickN" class="date"></span>
-  <button id="commBtn" title="Показать ЛЭП, водопровод и куда доходят электричество и вода" style="width:auto"><img class="ic" src="icons/power.svg?v=10" alt=""> Коммуникации</button>
-  <button id="polBtn" title="Показать загрязнение от заводов, станций, карьеров и рудников" style="width:auto"><img class="ic" src="icons/pollution.svg?v=10" alt=""> Загрязнение</button>
-  <button id="eduBtn" title="График состава населения по образованию" style="width:auto"><img class="ic" src="icons/edu.svg?v=10" alt=""> Образование</button>
+  <button id="commBtn" title="Показать ЛЭП, водопровод и куда доходят электричество и вода" style="width:auto"><img class="ic" src="icons/power.svg?v=11" alt=""> Коммуникации</button>
+  <button id="polBtn" title="Показать загрязнение от заводов, станций, карьеров и рудников" style="width:auto"><img class="ic" src="icons/pollution.svg?v=11" alt=""> Загрязнение</button>
+  <button id="eduBtn" title="График состава населения по образованию" style="width:auto"><img class="ic" src="icons/edu.svg?v=11" alt=""> Образование</button>
   <div id="res"></div>
   <div id="zoom" title="Масштаб (или Ctrl+колесо)"><button id="zout" aria-label="Уменьшить">−</button><button id="zin" aria-label="Увеличить">+</button></div>
 </header>
@@ -78,12 +78,12 @@
   <div id="invite"></div>
   <h4>Игроки</h4><div id="players"></div>
   <h4>События</h4><div id="log"></div>
-  <button id="restart" style="margin-top:12px;text-align:center"><img class="ic" src="icons/restart.svg?v=10" alt=""> Новый город</button>
+  <button id="restart" style="margin-top:12px;text-align:center"><img class="ic" src="icons/restart.svg?v=11" alt=""> Новый город</button>
 </div>
 </div>
 <div id="netbox"><div class="box" id="netStep"></div></div>
 <!-- ?v= must change with every release: GitHub Pages lets browsers cache files for 10 minutes, and a new page with an old game.js breaks -->
-<script src="game.js?v=10"></script>
+<script src="game.js?v=11"></script>
 <script>
 // W, H, B, NEED_TEXT, POWER, WATER are globals from game.js
 // show script errors instead of a silently frozen game (e.g. a stale cached game.js)
@@ -106,7 +106,7 @@ $('name').onchange = () => {
   if (net) net.rename();
 };
 
-const ic = n => `<img class="ic" src="icons/${n}.svg?v=10" alt="">`; // emoji don't render in every browser, so icons are SVG files
+const ic = n => `<img class="ic" src="icons/${n}.svg?v=11" alt="">`; // emoji don't render in every browser, so icons are SVG files
 const RES = { money: 'money', wood: 'wood', stone: 'stone', food: 'food', iron: 'iron', gold: 'gold' };
 const costText = c => Object.entries(c).map(([k, v]) => v + ic(RES[k])).join(' ');
 const TOOLS = { info: { label: 'Информация', icon: 'info', cost: {} }, buy: { label: 'Купить землю', icon: 'buy', cost: {} }, clear: { label: 'Расчистить', icon: 'clear', cost: {}, note: 'лес 5' + ic('money') + ', камень 10' + ic('money') }, ...B, bulldoze: { label: 'Снести', icon: 'bulldoze', cost: { money: 2 } } };
@@ -827,6 +827,55 @@ $('res').onmouseover = e => { const el = e.target.closest('[data-res]'); tipKey 
 $('res').onmousemove = e => { $('tip').style.left = Math.max(8, Math.min(innerWidth - 280, e.clientX - 130)) + 'px'; $('tip').style.top = e.clientY + 18 + 'px'; };
 $('res').onmouseleave = () => { tipKey = ''; showTip(); };
 
+// short description of a building or tool, shown when hovering it in the build menu
+const DESC = {
+  info: 'Наведите на клетку, чтобы увидеть сведения о ней. Клик по своему заводу открывает выбор товара.',
+  buy: 'Покупка земли рядом с вашей. Зажмите кнопку мыши и выделите прямоугольник.',
+  clear: 'Убирает лес и камни и даёт немного дерева или камня. Можно выделить прямоугольником.',
+  bulldoze: 'Сносит постройку, ЛЭП или трубу и возвращает половину стоимости. Также правая кнопка мыши.',
+  road: 'Связывает город: почти всем зданиям нужна дорога рядом, по дорогам ездят машины и грузовики.',
+  power: 'Несёт электричество от электростанции. Здания тоже передают его соседям.',
+  pipe: 'Несёт воду от водокачки. Здания тоже передают её соседям.',
+  stop: 'Автобус возит жителей на работу между остановками на одной дороге.',
+  zres: 'Участок под жильё: дома вырастают сами, когда в городе есть работа. Выделяется прямоугольником.',
+  zoff: 'Участок под офисы: приносят деньги, но работать в них могут только жители с высшим образованием.',
+  zind: 'Участок под заводы: выпускают товары из сырья, шумят и загрязняют округу.',
+  house: 'Жильё до 8 человек. Чем больше потребностей жителей выполнено, тем больше людей в нём живёт.',
+  shop: 'Продаёт товары, которые привозят со склада, и приносит деньги. Нужен жителям в радиусе 5 клеток.',
+  park: 'Радует жителей в радиусе 4 клеток. Не требует дороги и сетей.',
+  farm: 'Выращивает еду; грузовики отвозят её на склад. Нужна вода.',
+  sawmill: 'Заготавливает дерево. Ставится рядом с лесом.',
+  quarry: 'Добывает камень. Ставится рядом с камнями, шумит.',
+  mine: 'Добывает железо или золото. Ставится прямо на месторождение.',
+  depot: 'Сюда грузовики везут сырьё и товары, а отсюда товары едут в магазины.',
+  kinder: 'Места для 30 детей. Повышает рождаемость.',
+  school: 'Места для 40 детей: они вырастают со школьным образованием.',
+  hospital: 'Обслуживает 150 жителей и вдвое снижает смертность.',
+  uni: 'Даёт высшее образование жителям со школьным. Без него офисы стоят пустыми.',
+  plant: 'Источник электричества для сети ЛЭП. Шумит и загрязняет.',
+  pump: 'Источник воды для водопровода. Ставится у озера, нужно электричество.',
+};
+const NEED_LABEL = { r: 'дорога рядом', p: 'электричество', w: 'вода', t: 'лес рядом', k: 'камень рядом', l: 'озеро рядом' };
+function toolTip(k) {
+  const b = TOOLS[k], me = st && st.players[name], rows = [];
+  if (b.note || Object.keys(b.cost).length) rows.push('Цена: ' + (b.note || costText(b.cost)));
+  if (b.needs) rows.push('Нужно: ' + [...b.needs].map(n => NEED_LABEL[n]).join(', '));
+  if (b.upkeep) rows.push(`Содержание: ${b.upkeep}${ic('money')} за тик`);
+  if (b.jobs) rows.push(`Рабочих мест: ${b.jobs}`);
+  if (b.home) rows.push(`Жителей: до ${b.home}`);
+  const lock = me && (b.lvl || 0) > (me.level || 0) ? `<div class="down">${ic('lock')} Откроется на уровне «${LEVELS[b.lvl].name}»</div>` : '';
+  return `<b>${ic(b.icon || k)} ${b.label}</b><br>${DESC[k] || ''}` + (rows.length ? '<hr>' + rows.join('<br>') : '') + lock;
+}
+$('tools').onmouseover = e => {
+  const el = e.target.closest('[data-tool]'), tip = $('tip');
+  if (!el) { if (!tipKey) tip.style.display = 'none'; return; }
+  tip.innerHTML = toolTip(el.dataset.tool); tip.style.display = 'block';
+  const r = el.getBoundingClientRect(); // to the left of the menu, level with the button
+  tip.style.left = Math.max(4, r.left - tip.offsetWidth - 8) + 'px';
+  tip.style.top = Math.max(4, Math.min(innerHeight - tip.offsetHeight - 4, r.top)) + 'px';
+};
+$('tools').onmouseleave = () => { if (!tipKey) $('tip').style.display = 'none'; };
+
 function phaseText(me) {
   if (st.phase === 'lobby')
     return `Город ещё не начат. Онлайн: ${st.online.length}.` + (st.online.length > 1 ? ' Порядок выбора места решит жеребьёвка.' : '') + `<button id="startBtn">${ic('play')} Начать игру</button>`;
@@ -844,7 +893,6 @@ function locks() {
   document.querySelectorAll('[data-tool]').forEach(el => {
     const l = TOOLS[el.dataset.tool].lvl || 0, off = !!me && l > (me.level || 0);
     el.classList.toggle('locked', off);
-    el.title = off ? `Откроется на уровне «${LEVELS[l].name}»` : '';
   });
 }
 function levelText(me) {
