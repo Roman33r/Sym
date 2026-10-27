@@ -1,42 +1,48 @@
 // Shared game logic: used by the server and loaded by the browser for definitions.
-const W = 80, H = 56;
+const W = 120, H = 84;
 // needs: r = road nearby, p = power, w = water, t = forest within 2, k = rock within 2, l = lake adjacent
 const B = {
   road:    { cost: { money: 5 }, label: 'Дорога', icon: '' },
   power:   { cost: { money: 5, wood: 1 }, label: 'ЛЭП', icon: '' },
   pipe:    { cost: { money: 5, stone: 1 }, label: 'Водопровод', icon: '' },
   // zones: cheap lots that develop on their own into res/off/ind once needs are met and there is demand
-  zres:    { cost: { money: 10 }, needs: 'rpw', zone: 'res', label: 'Жилая зона', icon: '🟩' },
-  zoff:    { cost: { money: 10 }, needs: 'rpw', zone: 'off', lvl: 2, label: 'Офисная зона', icon: '🟦' },
-  zind:    { cost: { money: 10 }, needs: 'rp', zone: 'ind', lvl: 1, label: 'Промзона', icon: '🟨' },
+  zres:    { cost: { money: 10 }, needs: 'rpw', zone: 'res', label: 'Жилая зона', icon: 'zres' },
+  zoff:    { cost: { money: 10 }, needs: 'rpw', zone: 'off', lvl: 2, label: 'Офисная зона', icon: 'zoff' },
+  zind:    { cost: { money: 10 }, needs: 'rp', zone: 'ind', lvl: 1, label: 'Промзона', icon: 'zind' },
   res:     { cost: { money: 10 }, needs: 'rpw', grown: true, home: 6, label: 'Жилой дом', icon: '' },
   off:     { cost: { money: 10 }, needs: 'rpw', grown: true, jobs: 6, prod: { money: 4 }, label: 'Офис', icon: '' },
   ind:     { cost: { money: 10 }, needs: 'rp', grown: true, jobs: 8, prod: { money: 3 }, label: 'Завод', icon: '' },
-  house:   { cost: { money: 50, wood: 10 }, needs: 'rpw', home: 8, label: 'Дом (до 8 жителей)', icon: '🏠' },
-  farm:    { cost: { money: 40, wood: 5 }, needs: 'rw', jobs: 4, prod: { food: 5 }, label: 'Ферма (еда)', icon: '🌾' },
-  sawmill: { cost: { money: 60 }, needs: 'rpt', jobs: 4, prod: { wood: 2 }, label: 'Лесопилка (дерево)', icon: '🌲' },
-  quarry:  { cost: { money: 80, wood: 10 }, needs: 'rpk', jobs: 4, prod: { stone: 1.5 }, label: 'Каменоломня (камень)', icon: '⛏️' },
-  plant:   { cost: { money: 200, stone: 20 }, needs: 'r', upkeep: 3, label: 'Электростанция', icon: '⚡' },
-  pump:    { cost: { money: 150, stone: 10 }, needs: 'rpl', upkeep: 2, label: 'Водокачка (у озера)', icon: '💧' },
-  shop:    { cost: { money: 100, wood: 10, stone: 10 }, needs: 'rpw', lvl: 1, jobs: 6, prod: { money: 6 }, label: 'Магазин (деньги)', icon: '🏪' },
-  park:    { cost: { money: 30 }, label: 'Парк (радует жителей)', icon: '🌳' },
-  stop:    { cost: { money: 40 }, needs: 'r', upkeep: 1, label: 'Остановка (автобус до работы)', icon: '🚏' },
+  house:   { cost: { money: 50, wood: 10 }, needs: 'rpw', home: 8, label: 'Дом (до 8 жителей)', icon: 'house' },
+  farm:    { cost: { money: 40, wood: 5 }, needs: 'rw', jobs: 4, prod: { food: 5 }, label: 'Ферма (еда)', icon: 'farm' },
+  sawmill: { cost: { money: 60 }, needs: 'rpt', jobs: 4, prod: { wood: 2 }, label: 'Лесопилка (дерево)', icon: 'sawmill' },
+  quarry:  { cost: { money: 80, wood: 10 }, needs: 'rpk', jobs: 4, prod: { stone: 1.5 }, label: 'Каменоломня (камень)', icon: 'quarry' },
+  plant:   { cost: { money: 200, stone: 20 }, needs: 'r', upkeep: 3, label: 'Электростанция', icon: 'plant' },
+  pump:    { cost: { money: 150, stone: 10 }, needs: 'rpl', upkeep: 2, label: 'Водокачка (у озера)', icon: 'pump' },
+  shop:    { cost: { money: 100, wood: 10, stone: 10 }, needs: 'rpw', lvl: 1, jobs: 6, prod: { money: 6 }, label: 'Магазин (деньги)', icon: 'shop' },
+  park:    { cost: { money: 30 }, label: 'Парк (радует жителей)', icon: 'park' },
+  stop:    { cost: { money: 40 }, needs: 'r', upkeep: 1, label: 'Остановка (автобус до работы)', icon: 'stop' },
+  // a mine is built on an ore deposit and turns into the matching mine; demolishing it leaves the deposit
+  mine:    { cost: { money: 150, wood: 20 }, lvl: 1, label: 'Рудник (на месторождение)', icon: 'mine' },
+  ironmine: { cost: { money: 150, wood: 20 }, needs: 'rp', grown: true, ore: 'iron', jobs: 5, prod: { iron: 1 }, label: 'Железный рудник', icon: 'mine' },
+  goldmine: { cost: { money: 150, wood: 20 }, needs: 'rp', grown: true, ore: 'gold', jobs: 5, prod: { gold: 0.4 }, label: 'Золотой прииск', icon: 'mine' },
 };
 const NEED_TEXT = { r: 'нет дороги рядом', p: 'нет электричества', w: 'нет воды', t: 'нет леса рядом', k: 'нет камня рядом', l: 'нет озера рядом' };
-const RES_TEXT = { money: 'денег', wood: 'дерева', stone: 'камня', food: 'еды' };
+const RES_TEXT = { money: 'денег', wood: 'дерева', stone: 'камня', food: 'еды', iron: 'железа', gold: 'золота' };
 const POWER = 1, WATER = 2; // bits in s.util: lines/pipes lie on top of grass, roads and buildings
 
-// Land is owned in P x P plots: every player builds only on their own plots and buys neighbouring ones to grow.
-const P = 8, PW = W / P, PH = H / P;
-const plotOf = i => ((i / W | 0) / P | 0) * PW + ((i % W) / P | 0);
-const ownerOf = (s, i) => s.plots[plotOf(i)];
-const plotPrice = (s, who) => 150 * s.plots.filter(o => o === who).length;
-// Settlement levels: reaching the population and paying the cost moves a player up, allowing more plots and new buildings (B[t].lvl).
+// Land is owned tile by tile: a player starts with a START x START square placed anywhere on the grid,
+// builds only on own land and buys more next to it.
+const START = 12;
+const ownerOf = (s, i) => s.owner[i];
+const landOf = (s, who) => s.owner.reduce((n, o) => n + (o === who), 0);
+const landPrice = (s, who) => 3 + Math.floor(landOf(s, who) / 300); // per tile, grows as the city spreads
+// Settlement levels: reaching the population and paying the cost moves a player up, allowing more land and new buildings (B[t].lvl).
+// area: most tiles of land a level may own; rare: rare resources the upgrade costs on top of money
 const LEVELS = [
-  { name: 'Деревня', icon: '🏡', plots: 1 },
-  { name: 'Посёлок', icon: '🏘️', pop: 30, cost: 300, plots: 3 },
-  { name: 'Город', icon: '🏙️', pop: 120, cost: 1000, plots: 6 },
-  { name: 'Мегаполис', icon: '🌆', pop: 400, cost: 3000, plots: 12 },
+  { name: 'Деревня', icon: 'village', area: START * START },
+  { name: 'Посёлок', icon: 'town', pop: 30, cost: 300, area: 400 },
+  { name: 'Город', icon: 'city', pop: 120, cost: 1000, rare: { iron: 20 }, area: 1000 },
+  { name: 'Мегаполис', icon: 'metro', pop: 400, cost: 3000, rare: { iron: 50, gold: 20 }, area: 2500 },
 ];
 const levelOf = p => LEVELS[p.level || 0];
 // what still blocks moving to the next level, or null when it can be done
@@ -45,17 +51,23 @@ function upgradeBlock(p) {
   if (!next) return 'это высший уровень';
   if (p.pop < next.pop) return `для уровня «${next.name}» нужно ${next.pop} жителей`;
   if (p.res.money < next.cost) return `для уровня «${next.name}» нужно ${next.cost} денег`;
+  for (const [k, v] of Object.entries(next.rare || {})) if ((p.res[k] || 0) < v) return `для уровня «${next.name}» нужно ${v} ${RES_TEXT[k]}`;
   return null;
 }
-// Market: fixed money price per unit of a resource.
+// Market: fixed money price per unit to buy (PRICES) or sell (SELL); rare resources can only be sold.
 const PRICES = { wood: 4, stone: 6, food: 3 };
-function trade(s, who, res, n) {
-  const p = s.players[who];
+const SELL = { wood: 2, stone: 3, food: 1, iron: 15, gold: 40 };
+function trade(s, who, res, n, sell = false) {
+  const p = s.players[who], price = (sell ? SELL : PRICES)[res];
   if (!p) return 'сначала выберите стартовый участок';
-  if (!PRICES[res] || !Number.isInteger(n) || n < 1 || n > 1000) return 'неверная сделка';
-  const cost = PRICES[res] * n;
-  if (p.res.money < cost) return `не хватает денег: нужно ${cost}`;
-  p.res.money -= cost; p.res[res] += n;
+  if (!price || !Number.isInteger(n) || n < 1 || n > 1000) return 'неверная сделка';
+  if (sell) {
+    if ((p.res[res] || 0) < n) return 'не хватает ' + RES_TEXT[res];
+    p.res[res] -= n; p.res.money += price * n;
+    return null;
+  }
+  if (p.res.money < price * n) return `не хватает денег: нужно ${price * n}`;
+  p.res.money -= price * n; p.res[res] += n;
   return null;
 }
 // Clearing forest or rock from a tile costs money and yields a little of the material.
@@ -83,12 +95,13 @@ function newGame(seed = (Date.now() % 2147483646) + 1) {
         if ((x - cx) ** 2 + (y - cy) ** 2 < rr * rr && r() < density) grid[y * W + x] = type;
     }
   };
-  blob('lake', 10, 4, 1); blob('tree', 34, 3.5, 0.75); blob('rock', 18, 2, 0.7);
-  // phase: lobby (waiting for start) → draft (players pick a starting plot in drawn order) → play
-  return { grid, util: Array(W * H).fill(0), plots: Array(PW * PH).fill(''), players: {}, phase: 'lobby', order: [], turn: 0, tick: 0, speed: 1 };
+  blob('lake', 22, 4, 1); blob('tree', 76, 3.5, 0.75); blob('rock', 40, 2, 0.7);
+  blob('iron', 12, 0.6, 0.7); blob('gold', 6, 0.3, 0.7); // rare deposits: small scattered clusters
+  // phase: lobby (waiting for start) → draft (players pick a starting area in drawn order) → play
+  return { grid, util: Array(W * H).fill(0), owner: Array(W * H).fill(''), players: {}, phase: 'lobby', order: [], turn: 0, tick: 0, speed: 1 };
 }
 
-// Starts the game: a random draw sets the order of picking starting plots (one player just picks).
+// Starts the game: a random draw sets the order of picking starting areas (one player just picks).
 function start(s, names, rand = Math.random) {
   if (s.phase !== 'lobby') return 'игра уже идёт';
   const order = [...new Set(names)];
@@ -99,28 +112,38 @@ function start(s, names, rand = Math.random) {
 }
 function nextTurn(s) { if (++s.turn >= s.order.length) s.phase = 'play'; }
 
-// Claims a starting plot or buys a neighbouring one; k is the plot index.
-function land(s, who, tool, k) {
-  if (s.plots[k]) return 'участок уже занят';
-  const mine = s.plots.includes(who);
-  if (tool === 'claim') {
-    if (mine) return 'стартовый участок уже выбран — расширяйтесь покупкой';
-    if (s.phase === 'lobby') return 'сначала нажмите «Начать игру»';
-    if (s.phase === 'draft' && s.order[s.turn] !== who) return 'сейчас выбирает ' + s.order[s.turn];
-    s.plots[k] = who;
-    s.players[who] = { res: { money: 1000, wood: 40, stone: 50, food: 50 }, level: 0, pop: 0, jobs: 0, fed: true, delta: {}, color: COLORS[Object.keys(s.players).length % COLORS.length] };
-    if (s.phase === 'draft') nextTurn(s);
-    return null;
-  }
-  if (!mine) return 'сначала выберите стартовый участок';
-  const p = s.players[who], lv = levelOf(p);
-  if (s.plots.filter(o => o === who).length >= lv.plots) return `«${lv.name}» может иметь не больше ${lv.plots} уч. — повысьте уровень`;
-  const x = k % PW, y = k / PW | 0;
-  if (![[x - 1, y], [x + 1, y], [x, y - 1], [x, y + 1]].some(([a, b]) => a >= 0 && b >= 0 && a < PW && b < PH && s.plots[b * PW + a] === who))
-    return 'купить можно только участок рядом со своим';
-  const price = plotPrice(s, who), R = s.players[who].res;
-  if (R.money < price) return `не хватает денег: участок стоит ${price}`;
-  R.money -= price; s.plots[k] = who;
+// top-left corner of the START x START square centred on tile i, kept inside the map
+const startCorner = i => [Math.max(0, Math.min(W - START, i % W - START / 2)), Math.max(0, Math.min(H - START, (i / W | 0) - START / 2))];
+const rectTiles = (x0, y0, x1, y1) => { const o = []; for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) o.push(y * W + x); return o; };
+
+// Takes the free starting square around tile i.
+function claim(s, who, i) {
+  if (s.players[who]) return 'стартовый участок уже выбран — расширяйтесь покупкой земли';
+  if (s.phase === 'lobby') return 'сначала нажмите «Начать игру»';
+  if (s.phase === 'draft' && s.order[s.turn] !== who) return 'сейчас выбирает ' + s.order[s.turn];
+  const [x0, y0] = startCorner(i), tiles = rectTiles(x0, y0, x0 + START - 1, y0 + START - 1);
+  if (tiles.some(k => s.owner[k])) return 'там уже чужая земля — выберите место правее, левее или дальше';
+  for (const k of tiles) s.owner[k] = who;
+  s.players[who] = { res: { money: 1000, wood: 40, stone: 50, food: 50, iron: 0, gold: 0 }, level: 0, pop: 0, jobs: 0, fed: true, delta: {}, color: COLORS[Object.keys(s.players).length % COLORS.length] };
+  if (s.phase === 'draft') nextTurn(s);
+  return null;
+}
+
+// Buys the not-yet-owned tiles of the rectangle between corner tiles i and j; it must touch the player's land.
+function buyArea(s, who, i, j) {
+  const p = s.players[who];
+  if (!p) return 'сначала выберите стартовый участок';
+  const tiles = rectTiles(Math.min(i % W, j % W), Math.min(i / W | 0, j / W | 0), Math.max(i % W, j % W), Math.max(i / W | 0, j / W | 0));
+  if (tiles.some(k => s.owner[k] && s.owner[k] !== who)) return 'в выделении есть чужая земля';
+  const fresh = tiles.filter(k => !s.owner[k]);
+  if (!fresh.length) return 'эта земля уже ваша';
+  if (!fresh.some(k => nb(k).some(n => s.owner[n] === who))) return 'новая земля должна примыкать к вашей';
+  const lv = levelOf(p), have = landOf(s, who);
+  if (have + fresh.length > lv.area) return `«${lv.name}» может владеть не больше ${lv.area} кл. земли (сейчас ${have}) — повысьте уровень`;
+  const cost = fresh.length * landPrice(s, who);
+  if (p.res.money < cost) return `не хватает денег: ${fresh.length} кл. стоят ${cost}`;
+  p.res.money -= cost;
+  for (const k of fresh) s.owner[k] = who;
   return null;
 }
 
@@ -218,7 +241,7 @@ function tick(s) {
     });
     const jobs = Object.entries(cnt).reduce((n, [t, c]) => n + c * (B[t].jobs || 0), 0);
     const wr = jobs ? Math.min(1, workers / jobs) : 0, R = p.res; // share of jobs filled by residents who can get there
-    const before = { ...R }, flow = { money: [], wood: [], stone: [], food: [] };
+    const before = { ...R }, flow = Object.fromEntries(Object.keys(R).map(k => [k, []]));
     const add = (k, what, v) => { if (v) { R[k] += v; flow[k].push([what, v]); } };
     for (const [t, n] of Object.entries(cnt)) {
       for (const [k, v] of Object.entries(B[t].prod || {})) add(k, `${short(t)} ×${n}`, n * v * wr);
@@ -246,11 +269,15 @@ function act(s, who, tool, i) {
     const p = s.players[who];
     if (!p) return 'сначала выберите стартовый участок';
     const e = upgradeBlock(p); if (e) return e;
-    p.level = (p.level || 0) + 1; p.res.money -= levelOf(p).cost;
+    p.level = (p.level || 0) + 1;
+    const lv = levelOf(p);
+    p.res.money -= lv.cost;
+    for (const [k, v] of Object.entries(lv.rare || {})) p.res[k] -= v;
     return null;
   }
   if (!Number.isInteger(i) || i < 0 || i >= W * H) return 'неверная клетка';
-  if (tool === 'claim' || tool === 'buy') return land(s, who, tool, plotOf(i));
+  if (tool === 'claim') return claim(s, who, i);
+  if (tool === 'buy') return buyArea(s, who, i, i);
   const p = s.players[who];
   if (!p || ownerOf(s, i) !== who) return 'это не ваш участок';
   const g = s.grid, t = g[i], R = p.res;
@@ -264,7 +291,12 @@ function act(s, who, tool, i) {
     if (t === 'lake' || (t === 'grass' && !s.util[i])) return 'нечего сносить';
     const e = pay({ money: 2 }); if (e) return e;
     if (B[t]) for (const [k, v] of Object.entries(B[t].cost)) R[k] += Math.floor(v / 2);
-    g[i] = 'grass'; s.util[i] = 0;
+    g[i] = (B[t] && B[t].ore) || 'grass'; s.util[i] = 0;
+  } else if (tool === 'mine') {
+    if (t !== 'iron' && t !== 'gold') return 'рудник ставится на месторождение железа или золота';
+    if ((p.level || 0) < B.mine.lvl) return `откроется на уровне «${LEVELS[B.mine.lvl].name}»`;
+    const e = pay(B.mine.cost); if (e) return e;
+    g[i] = t + 'mine';
   } else if (tool === 'clear') {
     const c = CLEAR[t];
     if (!c) return 'тут нечего расчищать';
@@ -289,8 +321,9 @@ function act(s, who, tool, i) {
 
 // Zones (or clears) every fitting tile of the player's land in the rectangle between corner tiles i and j; stops when resources run out.
 function actArea(s, who, tool, i, j) {
+  if (tool === 'buy') return buyArea(s, who, i, j);
   const clear = tool === 'clear';
-  if (!clear && (!B[tool] || !B[tool].zone)) return 'выделять областью можно только зоны и расчистку';
+  if (!clear && (!B[tool] || !B[tool].zone)) return 'выделять областью можно только зоны, расчистку и покупку земли';
   if (![i, j].every(k => Number.isInteger(k) && k >= 0 && k < W * H)) return 'неверная клетка';
   const x0 = Math.min(i % W, j % W), x1 = Math.max(i % W, j % W), y0 = Math.min(i / W | 0, j / W | 0), y1 = Math.max(i / W | 0, j / W | 0);
   let n = 0;
@@ -345,8 +378,8 @@ function room(s) {
       return null;
     }
     if (m.type === 'trade') {
-      const err = trade(s, who, String(m.res), m.n);
-      if (!err) r.say(`${who}: купил на рынке ${m.n} ${{ wood: '🌲', stone: '🧱', food: '🍞' }[m.res]}`);
+      const err = trade(s, who, String(m.res), m.n, !!m.sell);
+      if (!err) r.say(`${who}: ${m.sell ? 'продал' : 'купил'} на рынке ${m.n} ${RES_TEXT[m.res]}`);
       return err;
     }
     if (m.type === 'act') {
@@ -361,5 +394,5 @@ function room(s) {
   return r;
 }
 
-const api = { W, H, B, NEED_TEXT, WANT_TEXT, POWER, WATER, P, PW, PH, LEVELS, levelOf, upgradeBlock, PRICES, trade, CLEAR, newGame, start, nextTurn, compute, tick, act, actArea, wants, happiness, residents, commute, plotOf, ownerOf, plotPrice, room, SPEEDS };
+const api = { W, H, B, NEED_TEXT, WANT_TEXT, POWER, WATER, START, LEVELS, levelOf, upgradeBlock, PRICES, SELL, RES_TEXT, trade, CLEAR, startCorner, landOf, landPrice, newGame, start, nextTurn, compute, tick, act, actArea, wants, happiness, residents, commute, ownerOf, room, SPEEDS };
 if (typeof module !== 'undefined') module.exports = api; else window.Game = api;

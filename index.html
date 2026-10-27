@@ -4,19 +4,25 @@
 <meta charset="utf-8">
 <title>Город вместе</title>
 <style>
-  body { margin: 0; font: 14px system-ui, sans-serif; background: #1d2330; color: #eee; display: flex; gap: 12px; padding: 12px; height: 100vh; box-sizing: border-box; }
+  body { margin: 0; font: 14px system-ui, sans-serif; background: #1d2330; color: #eee; display: flex; flex-direction: column; height: 100vh; }
+  #top { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; padding: 6px 12px; background: #161b26; border-bottom: 1px solid #333b4d; }
+  #top .logo { color: #f0a830; font-weight: 800; letter-spacing: .5px; text-transform: uppercase; font-size: 17px; }
+  #top .date { font-family: monospace; font-size: 14px; color: #dde; }
+  #main { flex: 1; display: flex; gap: 12px; padding: 12px; min-height: 0; }
+  .ic { width: 16px; height: 16px; vertical-align: -3px; }
+  button .ic { width: 18px; height: 18px; }
   #map { flex: 1; overflow: auto; border: 1px solid #445; border-radius: 6px; background: #142; }
   #side { width: 270px; flex: none; overflow-y: auto; }
   button { display: block; width: 100%; margin: 2px 0; padding: 5px 8px; text-align: left; background: #2c3446; color: #eee; border: 1px solid #445; border-radius: 4px; cursor: pointer; }
   button.sel { background: #3d7a4f; border-color: #6c6; }
   button small { color: #aab; }
-  #zoom button { display: inline-block; width: 36px; text-align: center; }
+  #zoom button { display: inline-block; width: 32px; text-align: center; margin: 0 1px; }
   #tabs { margin: 8px 0 2px; border-bottom: 1px solid #445; }
   #tabs button { display: inline-block; width: auto; margin: 0 1px -1px 0; padding: 4px 5px; text-align: center; border-radius: 4px 4px 0 0; font-size: 12px; }
   #tabs button.on { background: #3a4660; border-color: #8ab; border-bottom-color: #3a4660; }
   .up { color: #7d7; } .down { color: #f88; }
   canvas { display: block; cursor: crosshair; }
-  #res { font-size: 15px; line-height: 1.6; margin: 8px 0; }
+  #res { display: flex; gap: 14px; flex-wrap: wrap; font-size: 14px; }
   #info, #log { font-size: 12px; color: #bbc; min-height: 32px; }
   #err { color: #f77; min-height: 18px; }
   #phase:empty, #level:empty, #invite:empty { display: none; }
@@ -28,7 +34,7 @@
   .pop { position: fixed; display: none; z-index: 10; width: 260px; background: #11161f; border: 1px solid #556; border-radius: 6px; padding: 8px; font-size: 12px; line-height: 1.5; box-shadow: 0 4px 16px #0008; pointer-events: none; }
   .pop hr { border: 0; border-top: 1px solid #445; margin: 4px 0; }
   .pop b { font-size: 13px; }
-  #speed button { display: inline-block; width: auto; padding: 3px 8px; text-align: center; }
+  #speed button { display: inline-block; width: auto; padding: 3px 9px; margin: 0 1px; text-align: center; }
   #speed button.on { background: #3d7a4f; border-color: #6c6; }
   #invite, #netbox .box { background: #262e3e; border: 1px solid #556; border-radius: 6px; padding: 8px; margin: 6px 0; font-size: 13px; }
   textarea { width: 100%; box-sizing: border-box; height: 70px; background: #11161f; color: #ddd; border: 1px solid #556; border-radius: 4px; font: 11px monospace; }
@@ -43,13 +49,18 @@
 </style>
 </head>
 <body>
+<header id="top">
+  <span class="logo">Город вместе</span>
+  <div id="speed"><button data-v="0" title="Пауза"><img class="ic" src="icons/pause.svg" alt="Пауза"></button><button data-v="1" title="Скорость ×1"><img class="ic" src="icons/play.svg" alt="×1"></button><button data-v="2" title="Скорость ×2"><img class="ic" src="icons/fast.svg" alt="×2"></button><button data-v="4" title="Скорость ×4"><img class="ic" src="icons/faster.svg" alt="×4"></button></div>
+  <span id="tickN" class="date"></span>
+  <div id="res"></div>
+  <div id="zoom" title="Масштаб (или Ctrl+колесо)"><button id="zout" aria-label="Уменьшить">−</button><button id="zin" aria-label="Увеличить">+</button></div>
+</header>
+<div id="main">
 <div id="map"><canvas id="c"></canvas></div>
 <div id="side">
   <label>Имя: <input id="name" maxlength="20" style="width:150px"></label>
-  <div id="zoom">Масштаб: <button id="zout" aria-label="Уменьшить">−</button><button id="zin" aria-label="Увеличить">+</button></div>
-  <div id="speed">Время: <button data-v="0" aria-label="Пауза">⏸</button><button data-v="1">×1</button><button data-v="2">×2</button><button data-v="4">×4</button> <small id="tickN"></small></div>
   <div id="phase"></div>
-  <div id="res"></div>
   <div id="level"></div>
   <div id="tools"></div>
   <div id="err"></div>
@@ -59,7 +70,8 @@
   <div id="invite"></div>
   <h4>Игроки</h4><div id="players"></div>
   <h4>События</h4><div id="log"></div>
-  <button id="restart" style="margin-top:12px;text-align:center">🔄 Новый город</button>
+  <button id="restart" style="margin-top:12px;text-align:center"><img class="ic" src="icons/restart.svg" alt=""> Новый город</button>
+</div>
 </div>
 <div id="netbox"><div class="box" id="netStep"></div></div>
 <script src="game.js"></script>
@@ -84,15 +96,16 @@ $('name').onchange = () => {
   if (net) net.rename();
 };
 
-const RES = { money: '💰', wood: '🌲', stone: '🧱', food: '🍞' };
-const costText = c => Object.entries(c).map(([k, v]) => v + RES[k]).join(' ');
-const TOOLS = { info: { label: 'Информация', icon: '🔍', cost: {} }, buy: { label: 'Купить участок', icon: '🗺️', cost: {} }, clear: { label: 'Расчистить', icon: '🪓', cost: {}, note: 'лес 5💰, камень 10💰' }, ...B, bulldoze: { label: 'Снести', icon: '🧨', cost: { money: 2 } } };
+const ic = n => `<img class="ic" src="icons/${n}.svg" alt="">`; // emoji don't render in every browser, so icons are SVG files
+const RES = { money: 'money', wood: 'wood', stone: 'stone', food: 'food', iron: 'iron', gold: 'gold' };
+const costText = c => Object.entries(c).map(([k, v]) => v + ic(RES[k])).join(' ');
+const TOOLS = { info: { label: 'Информация', icon: 'info', cost: {} }, buy: { label: 'Купить землю', icon: 'buy', cost: {} }, clear: { label: 'Расчистить', icon: 'clear', cost: {}, note: 'лес 5' + ic('money') + ', камень 10' + ic('money') }, ...B, bulldoze: { label: 'Снести', icon: 'bulldoze', cost: { money: 2 } } };
 const TABS = [['Сети', ['road', 'power', 'pipe', 'stop']], ['Зоны', ['zres', 'zoff', 'zind']], ['Жильё', ['house', 'shop', 'park']],
-  ['Добыча', ['farm', 'sawmill', 'quarry']], ['Энергия', ['plant', 'pump']], ['Рынок', 'market']];
+  ['Добыча', ['farm', 'sawmill', 'quarry', 'mine']], ['Энергия', ['plant', 'pump']], ['Рынок', 'market']];
 const toolBtn = k => {
   const b = TOOLS[k], el = document.createElement('button');
   el.dataset.tool = k;
-  el.innerHTML = `${b.icon || { road: '🛣️', power: '🔌', pipe: '🚰' }[k]} ${b.label} <small>${b.note || costText(b.cost)}</small>`;
+  el.innerHTML = `${ic(b.icon || k)} ${b.label} <small>${b.note || costText(b.cost)}</small>`;
   el.onclick = () => { tool = k; document.querySelectorAll('[data-tool]').forEach(x => x.classList.toggle('sel', x === el)); };
   if (k === tool) el.classList.add('sel');
   return el;
@@ -100,12 +113,14 @@ const toolBtn = k => {
 $('tools').append(toolBtn('info'), toolBtn('buy'), toolBtn('clear'), toolBtn('bulldoze'));
 function marketPanel() {
   const d = document.createElement('div');
-  d.innerHTML = Object.entries(PRICES).map(([k, v]) =>
-    `<div class="mrow">${RES[k]} ${v}💰 за шт.` + [10, 50].map(n => `<button data-buy="${k}:${n}">+${n} <small>${n * v}💰</small></button>`).join('') + '</div>').join('');
+  const row = (k, v, sell) => `<div class="mrow">${ic(RES[k])} ${v}${ic('money')} за шт.` +
+    [10, 50].map(n => `<button data-trade="${k}:${n}:${sell ? 1 : 0}">${sell ? '−' : '+'}${n} <small>${n * v}</small></button>`).join('') + '</div>';
+  d.innerHTML = '<b>Купить</b>' + Object.entries(PRICES).map(([k, v]) => row(k, v, false)).join('') +
+    '<b>Продать</b>' + Object.entries(SELL).map(([k, v]) => row(k, v, true)).join('');
   d.onclick = e => {
-    const b = e.target.closest('[data-buy]'); if (!b) return;
-    const [res, n] = b.dataset.buy.split(':');
-    msg({ type: 'trade', res, n: +n });
+    const b = e.target.closest('[data-trade]'); if (!b) return;
+    const [res, n, sell] = b.dataset.trade.split(':');
+    msg({ type: 'trade', res, n: +n, sell: sell === '1' });
   };
   return d;
 }
@@ -239,7 +254,16 @@ function tile(i) {
       bx.fill();
       bx.fillStyle = 'rgba(255,255,255,.2)'; circle(cx - r / 3, cy - r / 3, r / 3);
     }
-  } else if (DRAW[t]) DRAW[t](0, 0, i);
+  } else if (t === 'iron' || t === 'gold') ore(i, t);
+  else if (DRAW[t]) DRAW[t](0, 0, i);
+}
+
+// ore deposit: a dark outcrop with coloured nuggets
+function ore(i, t) {
+  const [rock, nugget] = t === 'iron' ? ['#6f6a66', '#c47a42'] : ['#7a6a4a', '#f2c230'];
+  bx.fillStyle = 'rgba(0,0,0,.25)'; circle(15.5, 16.5, 9);
+  bx.fillStyle = rock; circle(14, 14, 9);
+  for (let k = 0; k < 6; k++) { bx.fillStyle = nugget; circle(8 + rnd(i, k) * 12, 8 + rnd(i, k + 5) * 12, 1.4 + rnd(i, k + 9) * 1.2); }
 }
 
 const shadow = (x, y, w, h) => rect('rgba(0,0,0,.3)', x + 3, y + 3, w, h);
@@ -357,6 +381,15 @@ const DRAW = {
     rect('#6b4a33', x + 19, y + 16, 4, 8);
   },
 };
+// a mine: the deposit with a shaft entrance and a headframe over it
+for (const t of ['iron', 'gold']) DRAW[t + 'mine'] = (x, y, i) => {
+  ore(i, t);
+  rect('#5b4a3a', x + 4, y + 18, 20, 6);
+  poly('#2a2622', x + 11, y + 24, x + 11, y + 19.5, x + 17, y + 19.5, x + 17, y + 24);
+  bx.strokeStyle = '#8b5a2b'; bx.lineWidth = 2; bx.beginPath();
+  bx.moveTo(x + 8, y + 18); bx.lineTo(x + 14, y + 4); bx.lineTo(x + 20, y + 18); bx.stroke();
+  bx.fillStyle = '#444'; circle(x + 14, y + 5, 2.5);
+};
 
 function utils(i) {
   const g = st.grid;
@@ -387,22 +420,20 @@ function paint() {
   each(tile);
   each(utils); // second pass so lines draw over neighbouring tiles
   bx.setTransform(1, 0, 0, 1, 0, 0);
-  plots();
+  landLayer();
   draw();
 }
 
-// land overlay: free plots are dimmed, owned land gets a border in the owner's colour where the owner changes
-function plots() {
-  const ps = P * S;
-  for (let k = 0; k < PW * PH; k++) {
-    const o = st.plots[k], kx = k % PW, ky = (k / PW) | 0, x = kx * ps, y = ky * ps;
-    if (!o) { bx.fillStyle = 'rgba(0,0,0,.28)'; bx.fillRect(x, y, ps, ps); continue; }
-    const other = (a, b) => a < 0 || b < 0 || a >= PW || b >= PH || st.plots[b * PW + a] !== o;
-    bx.fillStyle = st.players[o].color;
-    if (other(kx - 1, ky)) bx.fillRect(x, y, 3, ps);
-    if (other(kx + 1, ky)) bx.fillRect(x + ps - 3, y, 3, ps);
-    if (other(kx, ky - 1)) bx.fillRect(x, y, ps, 3);
-    if (other(kx, ky + 1)) bx.fillRect(x, y + ps - 3, ps, 3);
+// land overlay: free land is dimmed, owned land gets a border in the owner's colour where the owner changes
+function landLayer() {
+  const o = st.owner;
+  bx.fillStyle = 'rgba(0,0,0,.28)';
+  for (let i = 0; i < o.length; i++) if (!o[i]) bx.fillRect((i % W) * S, ((i / W) | 0) * S, S, S);
+  for (let i = 0; i < o.length; i++) {
+    if (!o[i]) continue;
+    const x = (i % W) * S, y = ((i / W) | 0) * S;
+    bx.fillStyle = st.players[o[i]].color;
+    D.forEach(([dx, dy]) => { const j = nbr(i, dx, dy); if (j < 0 || o[j] !== o[i]) bx.fillRect(dx > 0 ? x + S - 2 : x, dy > 0 ? y + S - 2 : y, dx ? 2 : S, dy ? 2 : S); });
   }
 }
 
@@ -416,27 +447,30 @@ function draw() {
   if (!st) return;
   ctx.drawImage(base, 0, 0);
   if (sel >= 0) {
-    const clr = tool === 'clear', [x0, y0, x1, y1] = selRect(), col = clr ? '235,140,60' : ZCOL[B[tool].zone];
-    let cost = 0;
-    let n = 0;
+    const clr = tool === 'clear', buy = tool === 'buy', [x0, y0, x1, y1] = selRect(), col = buy ? '255,225,80' : clr ? '235,140,60' : ZCOL[B[tool].zone];
+    const price = buy && st.players[name] ? Game.landPrice(st, name) : 0;
+    let cost = 0, n = 0;
     for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
-      const k = y * W + x, t = st.grid[k], fits = Game.ownerOf(st, k) === name && (clr ? !!CLEAR[t] : t === 'grass');
-      if (fits) { n++; cost += clr ? CLEAR[t].cost : 10; }
+      const k = y * W + x, t = st.grid[k], fits = buy ? !Game.ownerOf(st, k) : Game.ownerOf(st, k) === name && (clr ? !!CLEAR[t] : t === 'grass');
+      if (fits) { n++; cost += buy ? price : clr ? CLEAR[t].cost : 10; }
     }
     ctx.fillStyle = `rgba(${col},.3)`; ctx.strokeStyle = `rgb(${col})`; ctx.lineWidth = 2;
     ctx.fillRect(x0 * S, y0 * S, (x1 - x0 + 1) * S, (y1 - y0 + 1) * S);
     ctx.strokeRect(x0 * S + 1, y0 * S + 1, (x1 - x0 + 1) * S - 2, (y1 - y0 + 1) * S - 2);
-    $('info').textContent = `${TOOLS[tool].label}: ${n} кл. = ${cost}💰`;
+    $('info').innerHTML = `${TOOLS[tool].label}: ${n} кл. = ${cost}${ic('money')}`;
     return;
   }
   if (hover < 0) return;
-  if (!st.players[name] || tool === 'buy') { // choosing land: outline the whole plot
-    const k = Game.plotOf(hover), ps = P * S;
-    ctx.strokeStyle = st.plots[k] ? '#f66' : '#ff3'; ctx.lineWidth = 3;
-    ctx.strokeRect((k % PW) * ps + 1.5, ((k / PW) | 0) * ps + 1.5, ps - 3, ps - 3);
+  if (!st.players[name]) { // choosing the start: outline the square a click would take
+    const [x0, y0] = Game.startCorner(hover);
+    let taken = false;
+    for (let y = y0; y < y0 + START; y++) for (let x = x0; x < x0 + START; x++) taken = taken || !!st.owner[y * W + x];
+    ctx.strokeStyle = taken ? '#f66' : '#ff3'; ctx.lineWidth = 3;
+    ctx.strokeRect(x0 * S + 1.5, y0 * S + 1.5, START * S - 3, START * S - 3);
     return;
   }
-  const t = st.grid[hover], free = Game.ownerOf(st, hover) === name && (tool === 'clear' ? !!CLEAR[t] : tool === 'bulldoze' ? t !== 'lake' && !CLEAR[t] : (tool === 'power' || tool === 'pipe') ? !['lake', 'tree', 'rock'].includes(t) : t === 'grass');
+  const t = st.grid[hover], own = Game.ownerOf(st, hover) === name;
+  const free = tool === 'buy' ? !Game.ownerOf(st, hover) : own && (tool === 'mine' ? t === 'iron' || t === 'gold' : tool === 'clear' ? !!CLEAR[t] : tool === 'bulldoze' ? t !== 'lake' && !CLEAR[t] : (tool === 'power' || tool === 'pipe') ? !['lake', 'tree', 'rock'].includes(t) : t === 'grass');
   ctx.strokeStyle = tool === 'info' ? '#fffa' : free ? '#9f9' : '#f66'; ctx.lineWidth = 2;
   ctx.strokeRect((hover % W) * S + 1, ((hover / W) | 0) * S + 1, S - 2, S - 2);
 }
@@ -456,32 +490,32 @@ setZoom(S);
 
 // hover window over a resource: what adds to it and takes from it this tick
 let tipKey = '';
-const RES_NAME = { money: 'Деньги', wood: 'Дерево', stone: 'Камень', food: 'Еда' };
+const RES_NAME = { money: 'Деньги', wood: 'Дерево', stone: 'Камень', food: 'Еда', iron: 'Железо', gold: 'Золото' };
 const num = v => Math.abs(v) < 0.05 ? '0' : (v > 0 ? '+' : '−') + Math.abs(v).toFixed(1);
 function tipHtml(k) {
   const me = st.players[name];
   if (!me) return '';
   if (k === 'happy')
-    return '<b>😊 Довольство жителей</b><br>' + Object.entries(WANT_TEXT).map(([w, t]) => `${Math.round(((me.needs || {})[w] || 0) * 100)}% — ${t}`).join('<br>') +
+    return `<b>${ic('happy')} Довольство жителей</b><br>` + Object.entries(WANT_TEXT).map(([w, t]) => `${Math.round(((me.needs || {})[w] || 0) * 100)}% — ${t}`).join('<br>') +
       '<hr><small>Доля мест в домах, где потребность выполнена. Чем выше довольство, тем больше людей живёт в домах.</small>';
   const rows = ((me.flow || {})[k] || []).map(([what, v]) => `<div class="${v > 0 ? 'up' : 'down'}">${num(v)} ${esc(what)}</div>`);
-  return `<b>${RES[k]} ${RES_NAME[k]} за тик</b>` + (rows.join('') || '<div>ничего не приходит и не уходит</div>') + `<hr>Итого: ${num(me.delta[k] || 0)}` +
+  return `<b>${ic(RES[k])} ${RES_NAME[k]} за тик</b>` + (rows.join('') || '<div>ничего не приходит и не уходит</div>') + `<hr>Итого: ${num(me.delta[k] || 0)}` +
     (k === 'food' && !me.fed ? '<div class="down">Склад пуст — жители голодают, налоги ×0.3</div>' : '');
 }
 function showTip() { $('tip').innerHTML = tipHtml(tipKey); $('tip').style.display = tipKey ? 'block' : 'none'; }
 $('res').onmouseover = e => { const el = e.target.closest('[data-res]'); tipKey = el ? el.dataset.res : ''; showTip(); };
-$('res').onmousemove = e => { $('tip').style.left = Math.max(8, e.clientX - 260) + 'px'; $('tip').style.top = e.clientY + 18 + 'px'; };
+$('res').onmousemove = e => { $('tip').style.left = Math.max(8, Math.min(innerWidth - 280, e.clientX - 130)) + 'px'; $('tip').style.top = e.clientY + 18 + 'px'; };
 $('res').onmouseleave = () => { tipKey = ''; showTip(); };
 
 function phaseText(me) {
   if (st.phase === 'lobby')
-    return `Город ещё не начат. Онлайн: ${st.online.length}.` + (st.online.length > 1 ? ' Порядок выбора участков решит жеребьёвка.' : '') + '<button id="startBtn">▶ Начать игру</button>';
+    return `Город ещё не начат. Онлайн: ${st.online.length}.` + (st.online.length > 1 ? ' Порядок выбора места решит жеребьёвка.' : '') + `<button id="startBtn">${ic('play')} Начать игру</button>`;
   if (st.phase === 'draft') {
     const cur = st.order[st.turn];
-    return (st.order.length > 1 ? `🎲 Жеребьёвка: ${st.order.map(n => n === cur ? `<b>${esc(n)}</b>` : esc(n)).join(' → ')}<br>` : '') +
-      (me ? 'Участок выбран, ждём остальных' : cur === name ? '<b>Ваш ход!</b> Кликните по свободному участку на карте' : `Сейчас выбирает ${esc(cur)}`);
+    return (st.order.length > 1 ? `${ic('dice')} Жеребьёвка: ${st.order.map(n => n === cur ? `<b>${esc(n)}</b>` : esc(n)).join(' → ')}<br>` : '') +
+      (me ? 'Место выбрано, ждём остальных' : cur === name ? `<b>Ваш ход!</b> Кликните по свободному месту на карте — займёте квадрат ${START}×${START}` : `Сейчас выбирает ${esc(cur)}`);
   }
-  return me ? '' : 'Кликните по свободному (затемнённому) участку на карте, чтобы занять его';
+  return me ? '' : `Кликните по свободному (затемнённому) месту на карте — займёте квадрат ${START}×${START}`;
 }
 let lastPhase = '', lastLevel = '';
 // dims tools the player's level hasn't opened yet
@@ -495,66 +529,69 @@ function locks() {
 }
 function levelText(me) {
   const lv = Game.levelOf(me), next = LEVELS[(me.level || 0) + 1];
-  let h = `${lv.icon} <b>${lv.name}</b> · участков до ${lv.plots}`;
+  let h = `${ic(lv.icon)} <b>${lv.name}</b> · земли до ${lv.area} кл.`;
   if (!next) return h + '<br>Высший уровень!';
   const opens = Object.values(B).filter(b => b.lvl === (me.level || 0) + 1).map(b => b.label.replace(/ \(.*\)/, '').toLowerCase());
   const ok = (v, need) => `<span class="${v >= need ? 'up' : 'down'}">${Math.floor(v)}/${need}</span>`;
-  h += `<br>Дальше: ${next.icon} ${next.name} — 👥 ${ok(me.pop, next.pop)} · 💰 ${ok(me.res.money, next.cost)}` +
-    `<br><small>Откроет: до ${next.plots} участков${opens.length ? ', ' + opens.join(', ') : ''}</small>`;
-  return h + `<button id="upBtn"${Game.upgradeBlock(me) ? ' disabled' : ''}>⬆ Стать: ${next.name} (${next.cost}💰)</button>`;
+  const rare = Object.entries(next.rare || {});
+  h += `<br>Дальше: ${ic(next.icon)} ${next.name} — ${ic('pop')} ${ok(me.pop, next.pop)} · ${ic('money')} ${ok(me.res.money, next.cost)}` +
+    rare.map(([k, v]) => ` · ${ic(RES[k])} ${ok(me.res[k] || 0, v)}`).join('') +
+    `<br><small>Откроет: до ${next.area} кл. земли${opens.length ? ', ' + opens.join(', ') : ''}</small>`;
+  return h + `<button id="upBtn"${Game.upgradeBlock(me) ? ' disabled' : ''}>${ic('upgrade')} Стать: ${next.name} (${next.cost}${ic('money')}${rare.map(([k, v]) => ' ' + v + ic(RES[k])).join('')})</button>`;
 }
-$('level').onclick = e => { if (e.target.id === 'upBtn') doAct('upgrade', 0); };
+$('level').onclick = e => { if (e.target.closest('#upBtn')) doAct('upgrade', 0); };
 $('phase').onclick = e => {
-  if (e.target.id === 'startBtn') msg({ type: 'start' });
+  if (e.target.closest('#startBtn')) msg({ type: 'start' });
 };
 
 function render() {
   const me = st.players[name], f = Math.floor;
   const ph = phaseText(me);
   if (ph !== lastPhase) $('phase').innerHTML = lastPhase = ph; // rebuild only on change so the start button isn't swapped mid-click
-  document.querySelector('[data-tool=buy] small').textContent = !me ? '' : st.plots.filter(o => o === name).length >= Game.levelOf(me).plots ? '🔒 нужен новый уровень' : Game.plotPrice(st, name) + '💰';
+  document.querySelector('[data-tool=buy] small').innerHTML = !me ? '' : Game.landOf(st, name) >= Game.levelOf(me).area ? ic('lock') + ' нужен новый уровень' : Game.landPrice(st, name) + ic('money') + ' за клетку';
   locks();
-  $('players').innerHTML = st.online.map(p => `<div style="color:${p.color}">● ${esc(p.name)}${st.players[p.name] ? ` — ${Game.levelOf(st.players[p.name]).icon} 👥 ${st.players[p.name].pop}` : ''}</div>`).join('');
+  $('players').innerHTML = st.online.map(p => `<div style="color:${p.color}">● ${esc(p.name)}${st.players[p.name] ? ` — ${ic(Game.levelOf(st.players[p.name]).icon)} ${ic('pop')} ${st.players[p.name].pop}` : ''}</div>`).join('');
   $('log').innerHTML = st.log.map(esc).join('<br>');
   paint(); hoverCard();
   document.querySelectorAll('#speed button').forEach(b => b.classList.toggle('on', +b.dataset.v === (st.speed ?? 1)));
-  $('tickN').textContent = 'тик ' + st.tick;
+  $('tickN').textContent = new Date(1950, 0, 1 + st.tick).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' }); // a tick is a day
   const lt = me ? levelText(me) : '';
   if (lt !== lastLevel) $('level').innerHTML = lastLevel = lt; // only on change, so the button isn't swapped mid-click
   if (!me) { $('res').innerHTML = ''; return; }
   const r = me.res;
   const d = k => { const v = me.delta[k] || 0, t = Math.abs(v) < 0.05 ? '0' : (v > 0 ? '+' : '−') + Math.abs(v).toFixed(1); return ` <small class="${v > 0.05 ? 'up' : v < -0.05 ? 'down' : ''}">(${t})</small>`; };
-  $('res').innerHTML = Object.keys(RES).map(k => `<span data-res="${k}">${RES[k]} ${f(r[k])}${d(k)}</span>`).join(' &nbsp; ') +
-    ` &nbsp; <span data-res="happy">😊 ${Math.round((me.happy || 0) * 100)}%</span><br>` +
-    `👥 Жители: ${me.pop} &nbsp; 🛠 Рабочих мест: ${me.jobs}<br>🗺️ Участков: ${st.plots.filter(o => o === name).length}` +
-    (me.fed ? '' : '<br><span style="color:#f77">Голод! Налоги падают</span>');
+  $('res').innerHTML = Object.keys(RES).map(k => `<span data-res="${k}" title="${RES_NAME[k]}">${ic(RES[k])} ${f(r[k] || 0)}${d(k)}</span>`).join('') +
+    `<span data-res="happy">${ic('happy')} ${Math.round((me.happy || 0) * 100)}%</span>` +
+    `<span title="Жители">${ic('pop')} ${me.pop}</span><span title="Рабочие места">${ic('jobs')} ${me.jobs}</span><span title="Земля, клеток">${ic('land')} ${Game.landOf(st, name)}</span>` +
+    (me.fed ? '' : '<span style="color:#f77">Голод! Налоги падают</span>');
   if (tipKey) showTip();
 }
 const esc = s => s.replace(/[&<>"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[ch]);
-const TERR = { grass: 'Трава', tree: 'Лес', rock: 'Камень', lake: 'Озеро' };
+const TERR = { grass: 'Трава', tree: 'Лес', rock: 'Камень', lake: 'Озеро', iron: 'Месторождение железа', gold: 'Месторождение золота' };
 const POLLUTES = ['ind', 'plant', 'quarry'];
 // info window for the hovered tile, kept next to the cursor and rebuilt on every state update
 function card(i) {
   const t = st.grid[i], b = B[t], miss = st.status[i], rows = [];
-  const yes = ok => ok ? '✅' : '❌';
-  if (b && b.needs) rows.push(miss ? '⚠️ Не работает: ' + [...miss].map(m => NEED_TEXT[m]).join(', ') : '✅ Работает');
+  const yes = ok => ic(ok ? 'ok' : 'no');
+  if (b && b.needs) rows.push(miss ? ic('warn') + ' Не работает: ' + [...miss].map(m => NEED_TEXT[m]).join(', ') : ic('ok') + ' Работает');
   if (b && b.zone) rows.push('Ждёт застройки: растёт, когда в городе есть спрос');
   if (b && b.home) {
     const w = Game.wants(st, i, reach);
-    rows.push(`👥 Жители: <b>${Game.residents(st, i, reach)}</b> из ${b.home}`, `😊 Довольство: <b>${Math.round(Game.happiness(st, i, reach) * 100)}%</b>`,
+    rows.push(`${ic('pop')} Жители: <b>${Game.residents(st, i, reach)}</b> из ${b.home}`, `${ic('happy')} Довольство: <b>${Math.round(Game.happiness(st, i, reach) * 100)}%</b>`,
       '<u>Потребности жителей</u>', ...Object.entries(w).map(([k, ok]) => `${yes(ok)} ${WANT_TEXT[k]}`));
   }
   const owner = Game.ownerOf(st, i), op = st.players[owner], wr = op && op.jobs ? Math.min(1, (op.workers || 0) / op.jobs) : 0;
-  if (b && b.jobs) rows.push(`🛠 Рабочих мест: ${b.jobs} (в городе занято ${Math.round(wr * 100)}%)`);
-  if (b && b.prod) rows.push(`📦 Даёт за тик: ${Object.entries(b.prod).map(([k, v]) => '+' + (v * wr).toFixed(1) + RES[k]).join(' ')}` + (wr < 1 ? ` (из ${costText(b.prod)}, не хватает работников)` : ''));
-  if (b && b.upkeep) rows.push(`💸 Содержание: ${b.upkeep}💰 за тик`);
-  if (POLLUTES.includes(t)) rows.push('🏭 Шумит: жителям в 3 клетках неуютно');
-  if (t === 'park') rows.push('🌳 Радует жителей в радиусе 4 клеток');
-  if (t === 'shop') rows.push('🛒 Нужен жителям в радиусе 5 клеток');
-  if (t === 'stop') rows.push('🚌 Возит на работу жителей в 3 клетках от неё, если на той же дороге есть остановка в 3 клетках от работы');
-  const u = [st.util[i] & POWER && '🔌 ЛЭП', st.util[i] & WATER && '🚰 водопровод'].filter(Boolean);
+  if (b && b.jobs) rows.push(`${ic('jobs')} Рабочих мест: ${b.jobs} (в городе занято ${Math.round(wr * 100)}%)`);
+  if (b && b.prod) rows.push(`${ic('prod')} Даёт за тик: ${Object.entries(b.prod).map(([k, v]) => '+' + (v * wr).toFixed(1) + ic(RES[k])).join(' ')}` + (wr < 1 ? ` (из ${costText(b.prod)}, не хватает работников)` : ''));
+  if (b && b.upkeep) rows.push(`${ic('upkeep')} Содержание: ${b.upkeep}${ic('money')} за тик`);
+  if (POLLUTES.includes(t)) rows.push(ic('noise') + ' Шумит: жителям в 3 клетках неуютно');
+  if (t === 'park') rows.push(ic('park') + ' Радует жителей в радиусе 4 клеток');
+  if (t === 'shop') rows.push(ic('shop') + ' Нужен жителям в радиусе 5 клеток');
+  if (t === 'iron' || t === 'gold') rows.push(ic('mine') + ` Постройте здесь рудник (с уровня «${LEVELS[B.mine.lvl].name}»)`);
+  if (t === 'stop') rows.push(ic('bus') + ' Возит на работу жителей в 3 клетках от неё, если на той же дороге есть остановка в 3 клетках от работы');
+  const u = [st.util[i] & POWER && ic('power') + ' ЛЭП', st.util[i] & WATER && ic('pipe') + ' водопровод'].filter(Boolean);
   if (u.length) rows.push('Проложено: ' + u.join(', '));
-  return `<b>${b ? (b.icon || '') + ' ' + b.label : TERR[t]}</b> <small>(${i % W}, ${(i / W) | 0})</small><br>🗺️ Участок: ${owner ? esc(owner) : 'свободен'}` + (rows.length ? '<hr>' + rows.join('<br>') : '');
+  return `<b>${b ? ic(b.icon || t) + ' ' + b.label : TERR[t]}</b> <small>(${i % W}, ${(i / W) | 0})</small><br>${ic('land')} Земля: ${owner ? esc(owner) : 'свободна'}` + (rows.length ? '<hr>' + rows.join('<br>') : '');
 }
 function hoverCard() {
   const hc = $('hc');
@@ -578,10 +615,9 @@ c.onmousedown = e => {
   const i = tileAt(e); if (i < 0) return;
   const t = e.button === 2 ? 'bulldoze' : tool;
   last = i;
-  if (!st.players[name] && st.phase !== 'lobby' && e.button === 0) return doAct('claim', i); // no land yet: a click picks the starting plot
+  if (!st.players[name] && st.phase !== 'lobby' && e.button === 0) return doAct('claim', i); // no land yet: a click takes the start square around it
   if (t === 'info') return;
-  if (t === 'buy') return doAct('buy', i);
-  if ((B[t] && B[t].zone) || t === 'clear') { sel = i; draw(); return; } // zones and clearing: select a rectangle, applied on release
+  if ((B[t] && B[t].zone) || t === 'clear' || t === 'buy') { sel = i; draw(); return; } // zones, clearing and land: select a rectangle, applied on release
   drag = t; doAct(t, i);
 };
 c.onmousemove = e => {
@@ -640,7 +676,7 @@ async function unpack(code) {
 function hostNet() {
   let saved = null;
   try { saved = JSON.parse(localStorage.getItem('city-host')); } catch {}
-  const R = Game.room(saved && saved.plots && saved.grid.length === W * H ? saved : Game.newGame());
+  const R = Game.room(saved && saved.owner && saved.grid.length === W * H ? saved : Game.newGame());
   R.s.status = Game.compute(R.s);
   R.join('host', name);
   const peers = new Map(); // connection id -> data channel
@@ -701,10 +737,10 @@ async function guestNet(offer) {
 
 // start screen when the page isn't served by our Node server (e.g. GitHub Pages or a local file)
 const box = html => { $('netStep').innerHTML = html; $('netbox').style.display = 'flex'; };
-const copyBtn = id => `<button onclick="navigator.clipboard && navigator.clipboard.writeText(document.getElementById('${id}').value)">📋 Скопировать код</button>`;
+const copyBtn = id => `<button onclick="navigator.clipboard && navigator.clipboard.writeText(document.getElementById('${id}').value)">${ic('copy')} Скопировать код</button>`;
 function netMenu() {
-  box(`<h3>🏙️ Город вместе</h3>Сервер не найден — играем прямо в браузере. Один игрок создаёт игру и хранит город у себя, остальные подключаются по кодам.
-    <button id="hostBtn">🏠 Создать игру (я хост)</button><button id="joinBtn">🔗 Подключиться к игре</button>`);
+  box(`<h3>${ic('city')} Город вместе</h3>Сервер не найден — играем прямо в браузере. Один игрок создаёт игру и хранит город у себя, остальные подключаются по кодам.
+    <button id="hostBtn">${ic('host')} Создать игру (я хост)</button><button id="joinBtn">${ic('join')} Подключиться к игре</button>`);
   $('hostBtn').onclick = () => { $('netbox').style.display = 'none'; net = hostNet(); hostInviteUi(); };
   $('joinBtn').onclick = () => {
     box(`<b>Подключение</b><br>1. Вставьте код приглашения от хоста:<textarea id="offerIn"></textarea><button id="answerBtn">Получить код ответа</button><div id="answerOut"></div>`);
@@ -719,7 +755,7 @@ function netMenu() {
   };
 }
 function hostInviteUi() {
-  $('invite').innerHTML = '<b>Вы хост.</b> Город хранится в этом браузере — не закрывайте вкладку, пока идёт игра.<button id="inviteBtn">➕ Пригласить игрока</button><div id="inviteStep"></div>';
+  $('invite').innerHTML = '<b>Вы хост.</b> Город хранится в этом браузере — не закрывайте вкладку, пока идёт игра.<button id="inviteBtn">' + ic('invite') + ' Пригласить игрока</button><div id="inviteStep"></div>';
   $('inviteBtn').onclick = async () => {
     $('inviteStep').textContent = 'Готовим код…';
     const inv = await net.invite();

@@ -5,7 +5,7 @@ const PORT = process.env.PORT || 3000, SAVE = path.join(__dirname, 'city.json');
 
 let s;
 try { s = JSON.parse(fs.readFileSync(SAVE, 'utf8')); } catch {}
-if (!s || s.grid.length !== G.W * G.H || !s.plots) s = G.newGame(); // saves from another map size or before land plots start over
+if (!s || s.grid.length !== G.W * G.H || !s.owner) s = G.newGame(); // saves from another map size or the old plot system start over
 s.status = G.compute(s);
 const R = G.room(s), clients = new Map(); // SSE response -> connection id
 let ids = 0;
@@ -24,6 +24,10 @@ http.createServer((req, res) => {
   const u = new URL(req.url, 'http://x');
   if (u.pathname === '/') return send(res, 'text/html; charset=utf-8', 'index.html');
   if (u.pathname === '/game.js') return send(res, 'text/javascript; charset=utf-8', 'game.js');
+  if (/^\/icons\/[a-z]+\.svg$/.test(u.pathname)) { // name pattern keeps requests inside icons/
+    if (!fs.existsSync(path.join(__dirname, u.pathname))) return res.writeHead(404).end();
+    return send(res, 'image/svg+xml', u.pathname);
+  }
   if (u.pathname === '/hello') return res.writeHead(200).end('city'); // lets the page know a server is running here
   if (u.pathname === '/events') {
     res.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache' });
