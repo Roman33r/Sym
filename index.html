@@ -51,7 +51,7 @@
 <body>
 <header id="top">
   <span class="logo">Город вместе</span>
-  <div id="speed"><button data-v="0" title="Пауза"><img class="ic" src="icons/pause.svg?v=5" alt="Пауза"></button><button data-v="1" title="Скорость ×1"><img class="ic" src="icons/play.svg?v=5" alt="×1"></button><button data-v="2" title="Скорость ×2"><img class="ic" src="icons/fast.svg?v=5" alt="×2"></button><button data-v="4" title="Скорость ×4"><img class="ic" src="icons/faster.svg?v=5" alt="×4"></button></div>
+  <div id="speed"><button data-v="0" title="Пауза"><img class="ic" src="icons/pause.svg?v=6" alt="Пауза"></button><button data-v="1" title="Скорость ×1"><img class="ic" src="icons/play.svg?v=6" alt="×1"></button><button data-v="2" title="Скорость ×2"><img class="ic" src="icons/fast.svg?v=6" alt="×2"></button><button data-v="4" title="Скорость ×4"><img class="ic" src="icons/faster.svg?v=6" alt="×4"></button></div>
   <span id="tickN" class="date"></span>
   <div id="res"></div>
   <div id="zoom" title="Масштаб (или Ctrl+колесо)"><button id="zout" aria-label="Уменьшить">−</button><button id="zin" aria-label="Увеличить">+</button></div>
@@ -70,12 +70,12 @@
   <div id="invite"></div>
   <h4>Игроки</h4><div id="players"></div>
   <h4>События</h4><div id="log"></div>
-  <button id="restart" style="margin-top:12px;text-align:center"><img class="ic" src="icons/restart.svg?v=5" alt=""> Новый город</button>
+  <button id="restart" style="margin-top:12px;text-align:center"><img class="ic" src="icons/restart.svg?v=6" alt=""> Новый город</button>
 </div>
 </div>
 <div id="netbox"><div class="box" id="netStep"></div></div>
 <!-- ?v= must change with every release: GitHub Pages lets browsers cache files for 10 minutes, and a new page with an old game.js breaks -->
-<script src="game.js?v=5"></script>
+<script src="game.js?v=6"></script>
 <script>
 // W, H, B, NEED_TEXT, POWER, WATER are globals from game.js
 // show script errors instead of a silently frozen game (e.g. a stale cached game.js)
@@ -99,7 +99,7 @@ $('name').onchange = () => {
   if (net) net.rename();
 };
 
-const ic = n => `<img class="ic" src="icons/${n}.svg?v=5" alt="">`; // emoji don't render in every browser, so icons are SVG files
+const ic = n => `<img class="ic" src="icons/${n}.svg?v=6" alt="">`; // emoji don't render in every browser, so icons are SVG files
 const RES = { money: 'money', wood: 'wood', stone: 'stone', food: 'food', iron: 'iron', gold: 'gold' };
 const costText = c => Object.entries(c).map(([k, v]) => v + ic(RES[k])).join(' ');
 const TOOLS = { info: { label: 'Информация', icon: 'info', cost: {} }, buy: { label: 'Купить землю', icon: 'buy', cost: {} }, clear: { label: 'Расчистить', icon: 'clear', cost: {}, note: 'лес 5' + ic('money') + ', камень 10' + ic('money') }, ...B, bulldoze: { label: 'Снести', icon: 'bulldoze', cost: { money: 2 } } };
@@ -417,27 +417,42 @@ function utils(i) {
   }
 }
 
-function paint() {
-  depth = lakeDepth();
-  const k = S / U, each = f => { for (let i = 0; i < st.grid.length; i++) { bx.setTransform(k, 0, 0, k, (i % W) * S, ((i / W) | 0) * S); f(i); } };
-  each(tile);
-  each(utils); // second pass so lines draw over neighbouring tiles
-  bx.setTransform(1, 0, 0, 1, 0, 0);
-  landLayer();
+// Redraws only tiles whose look changed since the last paint, plus their neighbours (roads, shores, lines
+// and borders depend on them); a full repaint happens on the first state, on zoom and when lakes change.
+let painted = null; // per tile: what it was drawn from
+function paint(full = false) {
+  const n = st.grid.length, sig = new Array(n);
+  for (let i = 0; i < n; i++) sig[i] = st.grid[i] + '|' + st.util[i] + '|' + st.status[i] + '|' + st.owner[i];
+  let dirty;
+  if (full || !painted) dirty = sig.map((_, i) => i);
+  else {
+    const d = new Set();
+    for (let i = 0; i < n; i++) if (sig[i] !== painted[i]) {
+      if (st.grid[i] === 'lake' || painted[i].startsWith('lake|')) full = true; // shores and depth spread further
+      d.add(i);
+      for (const [dx, dy] of D) { const j = nbr(i, dx, dy); if (j >= 0) d.add(j); }
+    }
+    dirty = full ? sig.map((_, i) => i) : [...d];
+  }
+  if (full || !painted) depth = lakeDepth();
+  painted = sig;
+  const k = S / U;
+  for (const i of dirty) {
+    const x = (i % W) * S, y = ((i / W) | 0) * S;
+    bx.save(); bx.beginPath(); bx.rect(x, y, S, S); bx.clip(); // keep each tile inside its square so partial redraws match
+    bx.setTransform(k, 0, 0, k, x, y); tile(i); utils(i);
+    bx.setTransform(1, 0, 0, 1, 0, 0); landTile(i, x, y);
+    bx.restore();
+  }
   draw();
 }
 
 // land overlay: free land is dimmed, owned land gets a border in the owner's colour where the owner changes
-function landLayer() {
-  const o = st.owner;
-  bx.fillStyle = 'rgba(0,0,0,.28)';
-  for (let i = 0; i < o.length; i++) if (!o[i]) bx.fillRect((i % W) * S, ((i / W) | 0) * S, S, S);
-  for (let i = 0; i < o.length; i++) {
-    if (!o[i]) continue;
-    const x = (i % W) * S, y = ((i / W) | 0) * S;
-    bx.fillStyle = st.players[o[i]].color;
-    D.forEach(([dx, dy]) => { const j = nbr(i, dx, dy); if (j < 0 || o[j] !== o[i]) bx.fillRect(dx > 0 ? x + S - 2 : x, dy > 0 ? y + S - 2 : y, dx ? 2 : S, dy ? 2 : S); });
-  }
+function landTile(i, x, y) {
+  const o = st.owner[i];
+  if (!o) { bx.fillStyle = 'rgba(0,0,0,.28)'; bx.fillRect(x, y, S, S); return; }
+  bx.fillStyle = st.players[o].color;
+  D.forEach(([dx, dy]) => { const j = nbr(i, dx, dy); if (j < 0 || st.owner[j] !== o) bx.fillRect(dx > 0 ? x + S - 2 : x, dy > 0 ? y + S - 2 : y, dx ? 2 : S, dy ? 2 : S); });
 }
 
 // rectangle between zone-drag start and the hovered tile, in tile coords
@@ -483,7 +498,7 @@ function setZoom(n) {
   S = Math.max(16, Math.min(48, n));
   c.width = base.width = W * S; c.height = base.height = H * S;
   makeGrass();
-  if (st) paint();
+  if (st) paint(true);
   m.scrollLeft = cx * S - m.clientWidth / 2; m.scrollTop = cy * S - m.clientHeight / 2;
 }
 $('zin').onclick = () => setZoom(S + 6);
@@ -642,7 +657,12 @@ $('restart').onclick = () => {
 };
 
 let reach = new Set(); // homes that can get to work, computed once per state for the hover window
-const onState = x => { st = x; reach = Game.commute(st); render(); };
+// states can arrive faster than the screen redraws (dragging roads, fast game speed): draw only the latest, once per frame
+let frame = 0;
+const onState = x => {
+  st = x;
+  if (!frame) frame = requestAnimationFrame(() => { frame = 0; reach = Game.commute(st); render(); });
+};
 
 // Played from our Node server: state comes over SSE, commands go to /msg.
 function serverNet() {

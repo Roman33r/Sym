@@ -263,8 +263,11 @@ function tick(s) {
   s.status = compute(s); s.tick++;
 }
 
-// Applies a player action; returns an error string or null.
-function act(s, who, tool, i) {
+// land changes move network borders, so the status is recomputed after a successful claim or purchase
+const withStatus = (s, e) => { if (!e) s.status = compute(s); return e; };
+
+// Applies a player action; returns an error string or null. recompute = false lets a caller placing many tiles recompute once.
+function act(s, who, tool, i, recompute = true) {
   if (tool === 'upgrade') {
     const p = s.players[who];
     if (!p) return 'сначала выберите стартовый участок';
@@ -276,8 +279,8 @@ function act(s, who, tool, i) {
     return null;
   }
   if (!Number.isInteger(i) || i < 0 || i >= W * H) return 'неверная клетка';
-  if (tool === 'claim') return claim(s, who, i);
-  if (tool === 'buy') return buyArea(s, who, i, i);
+  if (tool === 'claim') return withStatus(s, claim(s, who, i));
+  if (tool === 'buy') return withStatus(s, buyArea(s, who, i, i));
   const p = s.players[who];
   if (!p || ownerOf(s, i) !== who) return 'это не ваш участок';
   const g = s.grid, t = g[i], R = p.res;
@@ -315,13 +318,13 @@ function act(s, who, tool, i) {
     const e = pay(B[tool].cost); if (e) return e;
     g[i] = tool;
   }
-  s.status = compute(s);
+  if (recompute) s.status = compute(s);
   return null;
 }
 
 // Zones (or clears) every fitting tile of the player's land in the rectangle between corner tiles i and j; stops when resources run out.
 function actArea(s, who, tool, i, j) {
-  if (tool === 'buy') return buyArea(s, who, i, j);
+  if (tool === 'buy') return withStatus(s, buyArea(s, who, i, j));
   const clear = tool === 'clear';
   if (!clear && (!B[tool] || !B[tool].zone)) return 'выделять областью можно только зоны, расчистку и покупку земли';
   if (![i, j].every(k => Number.isInteger(k) && k >= 0 && k < W * H)) return 'неверная клетка';
@@ -330,10 +333,11 @@ function actArea(s, who, tool, i, j) {
   for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
     const k = y * W + x;
     if ((clear ? !CLEAR[s.grid[k]] : s.grid[k] !== 'grass') || ownerOf(s, k) !== who) continue;
-    const e = act(s, who, tool, k);
-    if (e) return e;
+    const e = act(s, who, tool, k, false);
+    if (e) { if (n) s.status = compute(s); return e; }
     n++;
   }
+  if (n) s.status = compute(s); // once for the whole rectangle, not per tile
   return n ? null : clear ? 'нечего расчищать на вашей земле' : 'нет свободных клеток на вашей земле';
 }
 

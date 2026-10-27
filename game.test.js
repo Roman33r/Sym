@@ -49,6 +49,7 @@ assert.strictEqual(s.grid[5], 'off');
 // area zoning skips occupied tiles: row 2 cols 0..6 holds 7 free grass tiles
 assert.strictEqual(G.actArea(s, 'A', 'zind', 2 * W + 6, 2 * W), null);
 assert.strictEqual(s.grid.slice(2 * W, 2 * W + 7).filter(t => t === 'zind').length, 7);
+assert.deepStrictEqual(s.status, G.compute(s), 'status is recomputed once after the whole rectangle');
 assert.strictEqual(G.actArea(s, 'A', 'zind', 2 * W, 2 * W + 6), 'нет свободных клеток на вашей земле');
 assert.strictEqual(G.actArea(s, 'A', 'house', 30, 31), 'выделять областью можно только зоны, расчистку и покупку земли');
 // zone lots accept a road up to 3 tiles away, plain buildings need it adjacent (road is row 1)
