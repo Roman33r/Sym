@@ -51,9 +51,9 @@
 <body>
 <header id="top">
   <span class="logo">Город вместе</span>
-  <div id="speed"><button data-v="0" title="Пауза"><img class="ic" src="icons/pause.svg?v=8" alt="Пауза"></button><button data-v="1" title="Скорость ×1"><img class="ic" src="icons/play.svg?v=8" alt="×1"></button><button data-v="2" title="Скорость ×2"><img class="ic" src="icons/fast.svg?v=8" alt="×2"></button><button data-v="4" title="Скорость ×4"><img class="ic" src="icons/faster.svg?v=8" alt="×4"></button></div>
+  <div id="speed"><button data-v="0" title="Пауза"><img class="ic" src="icons/pause.svg?v=9" alt="Пауза"></button><button data-v="1" title="Скорость ×1"><img class="ic" src="icons/play.svg?v=9" alt="×1"></button><button data-v="2" title="Скорость ×2"><img class="ic" src="icons/fast.svg?v=9" alt="×2"></button><button data-v="4" title="Скорость ×4"><img class="ic" src="icons/faster.svg?v=9" alt="×4"></button></div>
   <span id="tickN" class="date"></span>
-  <button id="commBtn" title="Показать ЛЭП, водопровод и куда доходят электричество и вода" style="width:auto"><img class="ic" src="icons/power.svg?v=8" alt=""> Коммуникации</button>
+  <button id="commBtn" title="Показать ЛЭП, водопровод и куда доходят электричество и вода" style="width:auto"><img class="ic" src="icons/power.svg?v=9" alt=""> Коммуникации</button>
   <div id="res"></div>
   <div id="zoom" title="Масштаб (или Ctrl+колесо)"><button id="zout" aria-label="Уменьшить">−</button><button id="zin" aria-label="Увеличить">+</button></div>
 </header>
@@ -71,21 +71,20 @@
   <div id="invite"></div>
   <h4>Игроки</h4><div id="players"></div>
   <h4>События</h4><div id="log"></div>
-  <button id="restart" style="margin-top:12px;text-align:center"><img class="ic" src="icons/restart.svg?v=8" alt=""> Новый город</button>
+  <button id="restart" style="margin-top:12px;text-align:center"><img class="ic" src="icons/restart.svg?v=9" alt=""> Новый город</button>
 </div>
 </div>
 <div id="netbox"><div class="box" id="netStep"></div></div>
 <!-- ?v= must change with every release: GitHub Pages lets browsers cache files for 10 minutes, and a new page with an old game.js breaks -->
-<script src="game.js?v=8"></script>
+<script src="game.js?v=9"></script>
 <script>
 // W, H, B, NEED_TEXT, POWER, WATER are globals from game.js
 // show script errors instead of a silently frozen game (e.g. a stale cached game.js)
 window.onerror = m => { const e = document.getElementById('err'); if (e) e.textContent = 'Ошибка: ' + m + ' — обновите страницу (Ctrl+F5)'; };
-const U = 28; // tiles are drawn in a 28-unit space and scaled to the current zoom S
-let S = 28;
+let S = 20; // zoom: half the width of a tile diamond, in pixels
 const c = document.getElementById('c'), ctx = c.getContext('2d');
 // the map is painted to an offscreen canvas on each state update; mouse moves only redraw the overlay
-const base = document.createElement('canvas'), bx = base.getContext('2d'), grassTex = document.createElement('canvas');
+const base = document.createElement('canvas'), bx = base.getContext('2d');
 const $ = id => document.getElementById(id);
 let st = null, tool = 'info', hover = -1, drag = false, last = -1, sel = -1, mx = 0, my = 0;
 
@@ -100,7 +99,7 @@ $('name').onchange = () => {
   if (net) net.rename();
 };
 
-const ic = n => `<img class="ic" src="icons/${n}.svg?v=8" alt="">`; // emoji don't render in every browser, so icons are SVG files
+const ic = n => `<img class="ic" src="icons/${n}.svg?v=9" alt="">`; // emoji don't render in every browser, so icons are SVG files
 const RES = { money: 'money', wood: 'wood', stone: 'stone', food: 'food', iron: 'iron', gold: 'gold' };
 const costText = c => Object.entries(c).map(([k, v]) => v + ic(RES[k])).join(' ');
 const TOOLS = { info: { label: 'Информация', icon: 'info', cost: {} }, buy: { label: 'Купить землю', icon: 'buy', cost: {} }, clear: { label: 'Расчистить', icon: 'clear', cost: {}, note: 'лес 5' + ic('money') + ', камень 10' + ic('money') }, ...B, bulldoze: { label: 'Снести', icon: 'bulldoze', cost: { money: 2 } } };
@@ -146,68 +145,84 @@ TABS.forEach(([title, keys], n) => {
 });
 $('tools').append(tabBar, panel);
 
+// ---- Isometric map. A tile is a diamond 2S wide and S tall; heights are in units of S.
+// P(x, y, z) turns tile coordinates (fractions allowed) and a height into a canvas point.
+let OX = 0, OY = 0; // where tile (0, 0) sits, set by setZoom
+const MT = 5; // room above the map for tall buildings, in S
+const MAXH = 4.5; // nothing is drawn higher than this above its tile (offices, smoke)
+const P = (x, y, z = 0) => [OX + (x - y) * S, OY + (x + y) * S / 2 - z * S];
+let gx = null; // context the shape helpers draw into: the map layer, or the screen for traffic
+// tintK darkens every colour drawn through the helpers (free land, communications mode) instead of an overlay,
+// which would show seams where diamonds meet
+let tintK = 1;
+function tint(c) {
+  if (tintK === 1) return c;
+  let m;
+  if (c[0] === '#') return shade(c, tintK);
+  if ((m = c.match(/^rgba?\(([\d.]+),\s*([\d.]+),\s*([\d.]+)(?:,\s*([\d.]+))?\)/))) return `rgba(${m[1] * tintK | 0},${m[2] * tintK | 0},${m[3] * tintK | 0},${m[4] ?? 1})`;
+  if ((m = c.match(/^hsl\(([\d.]+),\s*([\d.]+)%,\s*([\d.]+)%\)/))) return `hsl(${m[1]},${m[2]}%,${m[3] * tintK}%)`;
+  return c;
+}
+const poly = (col, pts) => { gx.fillStyle = tint(col); gx.beginPath(); pts.forEach(([a, b], k) => (k ? gx.lineTo(a, b) : gx.moveTo(a, b))); gx.closePath(); gx.fill(); };
+const line = (col, w, a, b, dash) => { gx.strokeStyle = tint(col); gx.lineWidth = w; gx.setLineDash(dash || []); gx.beginPath(); gx.moveTo(...a); gx.lineTo(...b); gx.stroke(); gx.setLineDash([]); };
+const dot = (col, [x, y], r) => { gx.fillStyle = tint(col); gx.beginPath(); gx.arc(x, y, r, 0, 7); gx.fill(); };
+const oval = (col, [x, y], rx, ry) => { gx.fillStyle = tint(col); gx.beginPath(); gx.ellipse(x, y, rx, ry, 0, 0, 7); gx.fill(); };
+const shade = (hex, k) => { const n = parseInt(hex.slice(1), 16), f = v => Math.round(Math.min(255, v * k)); return `rgb(${f(n >> 16)},${f((n >> 8) & 255)},${f(n & 255)})`; };
+// flat quad over the tile-space rectangle x0..x1, y0..y1 at height z
+const flat = (x0, y0, x1, y1, z, col) => poly(col, [P(x0, y0, z), P(x1, y0, z), P(x1, y1, z), P(x0, y1, z)]);
+// a tile's ground, a little larger than the tile so antialiased edges of neighbours don't leave seams
+const groundFill = (x, y, col) => flat(x - 0.02, y - 0.02, x + 1.02, y + 1.02, 0, col);
+// a box: the two faces turned to the viewer (along y1 and x1) and the top; light comes from the back left
+function block(x0, y0, x1, y1, h, col, z0 = 0) {
+  poly(shade(col, 0.82), [P(x0, y1, z0), P(x1, y1, z0), P(x1, y1, z0 + h), P(x0, y1, z0 + h)]);
+  poly(shade(col, 0.64), [P(x1, y0, z0), P(x1, y1, z0), P(x1, y1, z0 + h), P(x1, y0, z0 + h)]);
+  flat(x0, y0, x1, y1, z0 + h, shade(col, 1.06));
+}
+// pyramid roof over a box top
+function roof(x0, y0, x1, y1, z, h, col) {
+  const ap = P((x0 + x1) / 2, (y0 + y1) / 2, z + h), a = P(x0, y0, z), b = P(x1, y0, z), cc = P(x1, y1, z), d = P(x0, y1, z);
+  poly(shade(col, 1.12), [d, a, ap]); poly(shade(col, 1.0), [a, b, ap]); poly(shade(col, 0.66), [b, cc, ap]); poly(shade(col, 0.84), [cc, d, ap]);
+}
+// window grid on the front-left face (along y1) and the front-right face (along x1) of a box
+function windows(x0, y0, x1, y1, z0, h, rows, cols, col) {
+  const wz = h / rows;
+  for (let r = 0; r < rows; r++) for (let k = 0; k < cols; k++) {
+    const za = z0 + r * wz + wz * 0.28, zb = za + wz * 0.42;
+    const ua = x0 + (x1 - x0) * (k + 0.25) / cols, ub = x0 + (x1 - x0) * (k + 0.75) / cols;
+    poly(col, [P(ua, y1, za), P(ub, y1, za), P(ub, y1, zb), P(ua, y1, zb)]);
+    const va = y0 + (y1 - y0) * (k + 0.25) / cols, vb = y0 + (y1 - y0) * (k + 0.75) / cols;
+    poly(shade(col.startsWith('#') ? col : '#bfe3ff', 0.8), [P(x1, va, za), P(x1, vb, za), P(x1, vb, zb), P(x1, va, zb)]);
+  }
+}
+
 // stable per-tile pseudo-random value so textures don't flicker between redraws
 const rnd = (i, k = 0) => { const v = Math.sin(i * 12.9898 + k * 78.233) * 43758.5453; return v - Math.floor(v); };
 const D = [[-1, 0], [1, 0], [0, -1], [0, 1]];
 const nbr = (i, dx, dy) => { const x = i % W + dx, y = ((i / W) | 0) + dy; return x >= 0 && y >= 0 && x < W && y < H ? y * W + x : -1; };
-const circle = (x, y, r) => { bx.beginPath(); bx.arc(x, y, r, 0, 7); bx.fill(); };
-const rect = (c, x, y, w, h) => { bx.fillStyle = c; bx.fillRect(x, y, w, h); };
-const poly = (c, ...p) => { bx.fillStyle = c; bx.beginPath(); for (let k = 0; k < p.length; k += 2) bx.lineTo(p[k], p[k + 1]); bx.fill(); };
-// strip of width w along each side of tile i whose neighbour is not `same` (map border counts if `border`)
-const edges = (i, c, w, same, border = true) => {
-  bx.fillStyle = c;
-  D.forEach(([dx, dy]) => {
-    const j = nbr(i, dx, dy);
-    if (j < 0 ? border : !same(st.grid[j])) bx.fillRect(dx > 0 ? U - w : 0, dy > 0 ? U - w : 0, dx ? w : U, dy ? w : U);
-  });
+const pick = (i, arr) => arr[(rnd(i, 11) * arr.length) | 0];
+// strip of width w along the tile edge facing neighbour (dx, dy)
+const edge = (x, y, dx, dy, w, col, z = 0) => flat(dx > 0 ? x + 1 - w : x, dy > 0 ? y + 1 - w : y, dx < 0 ? x + w : x + 1, dy < 0 ? y + w : y + 1, z, col);
+const edges = (i, w, col, same, border = true) => {
+  const x = i % W, y = (i / W) | 0;
+  for (const [dx, dy] of D) { const j = nbr(i, dx, dy); if (j < 0 ? border : !same(st.grid[j])) edge(x, y, dx, dy, w, col); }
 };
 
-// smooth grass: low-res value noise upscaled with smoothing, so there is no per-tile checkerboard
-function makeGrass() {
-  const small = document.createElement('canvas'); small.width = W * 4; small.height = H * 4;
-  const sx = small.getContext('2d'), img = sx.createImageData(small.width, small.height), d = img.data;
+// smooth grass shade per tile: two octaves of value noise, so meadows have soft light and dark patches
+const gnoise = new Float32Array(W * H);
+{
   const h = (x, y) => rnd(x * 7919 + y * 104729, 5);
   const vn = (u, v) => {
     const x = Math.floor(u), y = Math.floor(v), fx = u - x, fy = v - y, a = fx * fx * (3 - 2 * fx), b = fy * fy * (3 - 2 * fy);
     const p = h(x, y), q = h(x + 1, y), r = h(x, y + 1), s = h(x + 1, y + 1);
     return p + (q - p) * a + (r - p) * b + (p - q - r + s) * a * b;
   };
-  for (let y = 0; y < small.height; y++) for (let x = 0; x < small.width; x++) {
-    const n = vn(x / 24, y / 24) * 0.6 + vn(x / 6, y / 6) * 0.3 + rnd(x * 131 + y, 9) * 0.1, k = (y * small.width + x) * 4;
-    d[k] = 66 + n * 34; d[k + 1] = 112 + n * 42; d[k + 2] = 42 + n * 18; d[k + 3] = 255;
-  }
-  sx.putImageData(img, 0, 0);
-  grassTex.width = c.width; grassTex.height = c.height;
-  const gx = grassTex.getContext('2d'); gx.imageSmoothingEnabled = true;
-  gx.drawImage(small, 0, 0, c.width, c.height);
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) gnoise[y * W + x] = vn(x / 6, y / 6) * 0.7 + vn(x / 1.5, y / 1.5) * 0.3;
 }
+const grassCol = i => { const n = gnoise[i]; return `rgb(${66 + n * 34 | 0},${112 + n * 42 | 0},${42 + n * 18 | 0})`; };
 
-function grass(i) {
-  bx.drawImage(grassTex, (i % W) * S, ((i / W) | 0) * S, S, S, 0, 0, U, U);
-  bx.fillStyle = 'hsla(100,50%,22%,.55)';
-  for (let k = 0; k < 4; k++) bx.fillRect(rnd(i, k + 2) * (U - 2), rnd(i, k + 7) * (U - 3), 1, 3);
-}
-
-// zone districts: neighbouring tiles of one zone share ground and a single outline
+// zone districts: neighbouring tiles of one zone share ground and one outline
 const FAM = { zres: 'res', res: 'res', zoff: 'off', off: 'off', zind: 'ind', ind: 'ind' };
 const ZCOL = { res: '110,215,120', off: '100,160,250', ind: '235,195,70' };
-function lot(i) {
-  const t = st.grid[i], f = FAM[t];
-  if (f === 'res') { grass(i); rect('rgba(190,240,150,.16)', 0, 0, U, U); }
-  else {
-    rect(f === 'off' ? '#a3a6a4' : '#8a867c', 0, 0, U, U);
-    bx.strokeStyle = 'rgba(0,0,0,.1)'; bx.lineWidth = 1;
-    bx.strokeRect(0.5, 0.5, U / 2, U / 2); bx.strokeRect(U / 2 + 0.5, U / 2 + 0.5, U / 2 - 1, U / 2 - 1);
-  }
-  if (B[t].zone) { // still empty: hatched so it reads as "waiting to be built"; grey while it can't grow
-    bx.save(); bx.beginPath(); bx.rect(0, 0, U, U); bx.clip();
-    bx.strokeStyle = `rgba(${st.status[i] ? '160,160,160' : ZCOL[f]},.5)`; bx.lineWidth = 1.5; bx.beginPath();
-    const o = (i % W + (i / W | 0)) * U % 7; // continue stripes across tiles
-    for (let k = -U - o; k < U; k += 7) { bx.moveTo(k, U); bx.lineTo(k + U, 0); }
-    bx.stroke(); bx.restore();
-  }
-  edges(i, `rgb(${ZCOL[f]})`, 2, n => FAM[n] === f, false);
-}
 
 let depth = [];
 function lakeDepth() {
@@ -219,192 +234,179 @@ function lakeDepth() {
   return d;
 }
 
-function tile(i) {
-  const g = st.grid, t = g[i];
+// ground of a tile: grass, water, road, zone lot, field
+function ground(i) {
+  const t = st.grid[i], x = i % W, y = (i / W) | 0, f = FAM[t];
   if (t === 'lake') {
     const dp = Math.min(depth[i], 5);
-    rect(`hsl(${208 + dp * 2},${50 + dp * 3}%,${54 - dp * 5 + rnd(i) * 3}%)`, 0, 0, U, U);
-    edges(i, '#dccb8c', 4, n => n === 'lake', false);
-    edges(i, 'rgba(255,255,255,.25)', 6, n => n === 'lake', false);
-    bx.strokeStyle = 'rgba(255,255,255,.3)'; bx.lineWidth = 1.2; bx.beginPath();
-    bx.arc(7 + rnd(i, 3) * (U - 14), 9 + rnd(i, 4) * (U - 14), 4, Math.PI * 1.1, Math.PI * 1.9); bx.stroke();
+    groundFill(x, y, `hsl(${208 + dp * 2},${50 + dp * 3}%,${52 - dp * 5 + rnd(i) * 3}%)`);
+    edges(i, 0.16, '#dccb8c', n => n === 'lake', false);
+    edges(i, 0.24, 'rgba(255,255,255,.18)', n => n === 'lake', false);
+    if (rnd(i, 3) < 0.5) line('rgba(255,255,255,.35)', 1, P(x + 0.3, y + 0.5), P(x + 0.55, y + 0.5));
     return;
   }
   if (t === 'road') {
-    rect('#3d3f45', 0, 0, U, U);
-    edges(i, '#a5a7aa', 3, n => n === 'road');
-    bx.strokeStyle = '#e8c547'; bx.lineWidth = 1.5; bx.setLineDash([3, 3]); bx.beginPath();
-    D.forEach(([dx, dy]) => { const j = nbr(i, dx, dy); if (j >= 0 && g[j] === 'road') { bx.moveTo(U / 2, U / 2); bx.lineTo(U / 2 + dx * U / 2, U / 2 + dy * U / 2); } });
-    bx.stroke(); bx.setLineDash([]);
+    groundFill(x, y, '#45474e');
+    edges(i, 0.1, '#a5a7aa', n => n === 'road');
+    for (const [dx, dy] of D) {
+      const j = nbr(i, dx, dy);
+      if (j >= 0 && st.grid[j] === 'road') line('#e8c547', Math.max(1, S / 16), P(x + 0.5, y + 0.5), P(x + 0.5 + dx / 2, y + 0.5 + dy / 2), [S / 6, S / 6]);
+    }
     return;
   }
-  if (FAM[t]) lot(i); else grass(i);
-  if (t === 'tree') {
-    for (let k = 0; k < 3; k++) {
-      const cx = 7 + rnd(i, k) * (U - 14), cy = 7 + rnd(i, k + 3) * (U - 14), r = 5 + rnd(i, k + 6) * 3;
-      bx.fillStyle = 'rgba(0,0,0,.25)'; circle(cx + 2, cy + 3, r);
-      if (rnd(i, k + 20) < 0.35) { // pine
-        const c = `hsl(${140 + rnd(i, k) * 15},40%,${18 + rnd(i, k + 1) * 6}%)`;
-        poly(c, cx - r, cy + r * 0.8, cx, cy - r * 1.2, cx + r, cy + r * 0.8);
-        poly('rgba(255,255,255,.1)', cx - r * 0.5, cy + r * 0.2, cx, cy - r * 1.2, cx, cy + r * 0.2);
-      } else {
-        bx.fillStyle = `hsl(${100 + rnd(i, k + 9) * 30},45%,${22 + rnd(i, k) * 9}%)`; circle(cx, cy, r);
-        bx.fillStyle = 'rgba(255,255,255,.13)'; circle(cx - r / 3, cy - r / 3, r / 2.5);
-      }
+  if (f) {
+    groundFill(x, y, f === 'res' ? shade(grassColHex(i), 1.12) : f === 'off' ? '#a3a6a4' : '#8a867c');
+    if (B[t].zone) { // still empty: dashed inner outline, grey while it can't grow
+      gx.strokeStyle = `rgba(${st.status[i] ? '170,170,170' : ZCOL[f]},.8)`; gx.lineWidth = 1; gx.setLineDash([3, 3]); gx.beginPath();
+      [P(x + 0.2, y + 0.2), P(x + 0.8, y + 0.2), P(x + 0.8, y + 0.8), P(x + 0.2, y + 0.8)].forEach((p, k) => (k ? gx.lineTo(...p) : gx.moveTo(...p)));
+      gx.closePath(); gx.stroke(); gx.setLineDash([]);
     }
-  } else if (t === 'rock') {
-    for (let k = 0; k < 2; k++) {
-      const cx = 8 + rnd(i, k) * (U - 16), cy = 8 + rnd(i, k + 4) * (U - 16), r = 5 + rnd(i, k + 8) * 4;
-      bx.fillStyle = 'rgba(0,0,0,.3)'; circle(cx + 2, cy + 2, r);
-      bx.fillStyle = `hsl(30,6%,${48 + rnd(i, k + 2) * 14}%)`; bx.beginPath();
-      for (let a = 0; a < 7; a++) { const ang = a / 7 * Math.PI * 2, rr = r * (0.75 + rnd(i, a + k * 7) * 0.3); bx.lineTo(cx + Math.cos(ang) * rr, cy + Math.sin(ang) * rr); }
-      bx.fill();
-      bx.fillStyle = 'rgba(255,255,255,.2)'; circle(cx - r / 3, cy - r / 3, r / 3);
-    }
-  } else if (t === 'iron' || t === 'gold') ore(i, t);
-  else if (DRAW[t]) DRAW[t](0, 0, i);
+    edges(i, 0.06, `rgb(${ZCOL[f]})`, n => FAM[n] === f, false);
+    return;
+  }
+  groundFill(x, y, grassCol(i));
+  if (t === 'farm') {
+    flat(x + 0.06, y + 0.06, x + 0.94, y + 0.94, 0, '#8a6a3a');
+    for (let r = 0; r < 4; r++) flat(x + 0.1, y + 0.12 + r * 0.2, x + 0.9, y + 0.2 + r * 0.2, 0, '#d9b44a');
+  } else if (t === 'park') {
+    flat(x + 0.04, y + 0.04, x + 0.96, y + 0.96, 0, '#4f9a3c');
+    flat(x + 0.44, y + 0.04, x + 0.56, y + 0.96, 0, '#d8c79a'); flat(x + 0.04, y + 0.44, x + 0.96, y + 0.56, 0, '#d8c79a');
+  } else if (t === 'quarry') {
+    flat(x + 0.08, y + 0.08, x + 0.92, y + 0.92, 0, '#9a958b');
+    flat(x + 0.22, y + 0.22, x + 0.78, y + 0.78, 0, '#827d73');
+    flat(x + 0.36, y + 0.36, x + 0.64, y + 0.64, 0, '#68645d');
+  } else {
+    for (let k = 0; k < 3; k++) { const p = P(x + rnd(i, k + 2), y + rnd(i, k + 7)); gx.fillStyle = 'rgba(30,70,20,.45)'; gx.fillRect(p[0], p[1] - S * 0.12, 1, S * 0.12); }
+  }
 }
+const grassColHex = i => { const n = gnoise[i]; const h = v => (v | 0).toString(16).padStart(2, '0'); return '#' + h(66 + n * 34) + h(112 + n * 42) + h(42 + n * 18); };
 
-// ore deposit: a dark outcrop with coloured nuggets
-function ore(i, t) {
+function tree(i, x, y, k) {
+  const fx = x + 0.2 + rnd(i, k) * 0.6, fy = y + 0.2 + rnd(i, k + 3) * 0.6, r = S * (0.2 + rnd(i, k + 6) * 0.1), g0 = P(fx, fy);
+  oval('rgba(0,0,0,.25)', [g0[0] + r * 0.4, g0[1]], r * 0.9, r * 0.45);
+  gx.fillStyle = '#6b4a2a'; gx.fillRect(g0[0] - S * 0.03, g0[1] - S * 0.3, S * 0.06, S * 0.3);
+  if (rnd(i, k + 20) < 0.4) { // pine
+    const c = `hsl(${140 + rnd(i, k) * 15},40%,${20 + rnd(i, k + 1) * 6}%)`;
+    poly(c, [[g0[0] - r, g0[1] - S * 0.2], [g0[0] + r, g0[1] - S * 0.2], [g0[0], g0[1] - S * 0.2 - r * 2.6]]);
+    poly('rgba(0,0,0,.18)', [[g0[0], g0[1] - S * 0.2], [g0[0] + r, g0[1] - S * 0.2], [g0[0], g0[1] - S * 0.2 - r * 2.6]]);
+  } else {
+    dot(`hsl(${100 + rnd(i, k + 9) * 30},45%,${24 + rnd(i, k) * 9}%)`, [g0[0], g0[1] - S * 0.45], r);
+    dot('rgba(255,255,220,.14)', [g0[0] - r * 0.35, g0[1] - S * 0.45 - r * 0.35], r * 0.45);
+  }
+}
+function rocks(i, x, y) {
+  for (let k = 0; k < 2; k++) {
+    const p = P(x + 0.25 + rnd(i, k) * 0.5, y + 0.25 + rnd(i, k + 4) * 0.5), r = S * (0.18 + rnd(i, k + 8) * 0.12);
+    oval('rgba(0,0,0,.3)', [p[0] + r * 0.3, p[1] + r * 0.15], r, r * 0.5);
+    const pts = [];
+    for (let a = 0; a < 7; a++) { const ang = a / 7 * Math.PI * 2, rr = r * (0.75 + rnd(i, a + k * 7) * 0.3); pts.push([p[0] + Math.cos(ang) * rr, p[1] - r * 0.4 + Math.sin(ang) * rr * 0.7]); }
+    poly(`hsl(30,6%,${50 + rnd(i, k + 2) * 14}%)`, pts);
+    dot('rgba(255,255,255,.22)', [p[0] - r * 0.3, p[1] - r * 0.7], r * 0.3);
+  }
+}
+function ore(i, x, y, t) {
   const [rock, nugget] = t === 'iron' ? ['#6f6a66', '#c47a42'] : ['#7a6a4a', '#f2c230'];
-  bx.fillStyle = 'rgba(0,0,0,.25)'; circle(15.5, 16.5, 9);
-  bx.fillStyle = rock; circle(14, 14, 9);
-  for (let k = 0; k < 6; k++) { bx.fillStyle = nugget; circle(8 + rnd(i, k) * 12, 8 + rnd(i, k + 5) * 12, 1.4 + rnd(i, k + 9) * 1.2); }
+  const p = P(x + 0.5, y + 0.5);
+  oval('rgba(0,0,0,.25)', [p[0] + S * 0.1, p[1] + S * 0.06], S * 0.7, S * 0.32);
+  oval(rock, [p[0], p[1] - S * 0.08], S * 0.66, S * 0.3);
+  for (let k = 0; k < 6; k++) dot(nugget, P(x + 0.25 + rnd(i, k) * 0.5, y + 0.25 + rnd(i, k + 5) * 0.5, 0.08), S * (0.05 + rnd(i, k + 9) * 0.04));
 }
 
-const shadow = (x, y, w, h) => rect('rgba(0,0,0,.3)', x + 3, y + 3, w, h);
-const grid = (c, x, y, w, h, cols, rows) => {
-  const cw = w / cols, rh = h / rows;
-  for (let r = 0; r < rows; r++) for (let k = 0; k < cols; k++) rect(c, x + k * cw + 1, y + r * rh + 1, cw - 2, rh - 2);
-};
-const pick = (i, arr) => arr[(rnd(i, 11) * arr.length) | 0];
-function cottage(x, y, i) {
-  const roof = pick(i, ['#c8553d', '#8e5b3a', '#3f7f7a', '#6b5ca5']);
-  shadow(x + 5, y + 12, 18, 12);
-  rect(pick(i + 1, ['#eadfc6', '#f2ede4', '#e3cfa8']), x + 5, y + 12, 18, 12);
-  rect('#7a4a2a', x + 12, y + 18, 4, 6);
-  rect('#9fd3f0', x + 7, y + 15, 3, 3); rect('#9fd3f0', x + 18, y + 15, 3, 3);
-  rect('#6d3a2c', x + 18, y + 4, 3, 6);
-  poly(roof, x + 3, y + 13, x + 14, y + 4, x + 25, y + 13);
-  poly('rgba(0,0,0,.18)', x + 14, y + 4, x + 25, y + 13, x + 14, y + 13);
+const ROOFS = ['#c8553d', '#8e5b3a', '#3f7f7a', '#6b5ca5'];
+function house(x, y, i) {
+  const wall = pick(i + 1, ['#eadfc6', '#f2ede4', '#e3cfa8']);
+  block(x + 0.2, y + 0.22, x + 0.8, y + 0.8, 0.5, wall);
+  poly('#7a4a2a', [P(x + 0.45, y + 0.8), P(x + 0.57, y + 0.8), P(x + 0.57, y + 0.8, 0.32), P(x + 0.45, y + 0.8, 0.32)]);
+  windows(x + 0.2, y + 0.22, x + 0.8, y + 0.8, 0.08, 0.42, 1, 2, '#9fd3f0');
+  roof(x + 0.16, y + 0.18, x + 0.84, y + 0.84, 0.5, 0.45, pick(i, ROOFS));
+  block(x + 0.62, y + 0.3, x + 0.7, y + 0.38, 0.3, '#6d3a2c', 0.7);
 }
-const DRAW = {
-  house: cottage,
+// what stands on each tile type, drawn after the ground
+const OBJ = {
+  tree(x, y, i) { const ks = [0, 1, 2].sort((a, b) => (rnd(i, a) + rnd(i, a + 3)) - (rnd(i, b) + rnd(i, b + 3))); for (const k of ks) tree(i, x, y, k); },
+  rock(x, y, i) { rocks(i, x, y); },
+  iron(x, y, i) { ore(i, x, y, 'iron'); },
+  gold(x, y, i) { ore(i, x, y, 'gold'); },
+  house,
   res(x, y, i) {
-    if (rnd(i, 12) < 0.5) return cottage(x, y, i);
-    shadow(x + 4, y + 3, 20, 22);
-    rect(pick(i, ['#d8c7a8', '#c9b6d8', '#b9cfc0']), x + 4, y + 3, 20, 22);
-    rect('#7d7873', x + 4, y + 3, 20, 4);
-    grid('#a9d8f5', x + 5, y + 8, 18, 12, 3, 3);
-    rect('#6b4a33', x + 12, y + 21, 4, 4);
+    if (rnd(i, 12) < 0.45) return house(x, y, i);
+    const h = 1.1 + rnd(i, 13) * 0.6, col = pick(i, ['#d8c7a8', '#c9b6d8', '#b9cfc0']);
+    block(x + 0.14, y + 0.14, x + 0.86, y + 0.86, h, col);
+    windows(x + 0.14, y + 0.14, x + 0.86, y + 0.86, 0.05, h - 0.05, Math.round(h * 3), 3, '#a9d8f5');
+    block(x + 0.14, y + 0.14, x + 0.86, y + 0.86, 0.06, '#7d7873', h);
   },
   off(x, y, i) {
-    const top = 2 + ((rnd(i, 13) * 5) | 0);
-    shadow(x + 6, y + top, 16, 25 - top);
-    rect(pick(i, ['#4e6f95', '#3d5f7a', '#5a6b80']), x + 6, y + top, 16, 25 - top);
-    grid('rgba(190,225,255,.75)', x + 7, y + top + 3, 14, 21 - top, 3, 5);
-    rect('#9fb3c8', x + 6, y + top, 16, 2);
-    rect('#ccc', x + 13, y + top - 2, 1, 2);
+    const h = 2 + rnd(i, 13) * 1.6, col = pick(i, ['#4e6f95', '#3d5f7a', '#5a6b80']);
+    block(x + 0.2, y + 0.2, x + 0.8, y + 0.8, h, col);
+    windows(x + 0.2, y + 0.2, x + 0.8, y + 0.8, 0.1, h - 0.1, Math.round(h * 3), 3, 'rgba(190,225,255,.75)');
+    block(x + 0.28, y + 0.28, x + 0.72, y + 0.72, 0.12, '#9fb3c8', h);
+    line('#ccc', 1, P(x + 0.5, y + 0.5, h + 0.12), P(x + 0.5, y + 0.5, h + 0.5));
   },
   ind(x, y) {
-    shadow(x + 3, y + 12, 22, 13);
-    rect('#8c8f94', x + 3, y + 12, 22, 13);
-    poly('#6b6e73', x + 3, y + 12, x + 3, y + 7, x + 10, y + 12, x + 10, y + 7, x + 17, y + 12, x + 17, y + 7, x + 24, y + 12);
-    rect('#f2c14e', x + 6, y + 17, 5, 3); rect('#f2c14e', x + 14, y + 17, 5, 3);
-    rect('#a0522d', x + 20, y + 4, 4, 9);
-    bx.fillStyle = 'rgba(230,230,230,.75)'; circle(x + 22, y + 3, 2.5); circle(x + 25, y + 2, 2);
+    block(x + 0.1, y + 0.14, x + 0.9, y + 0.86, 0.6, '#8c8f94');
+    for (let k = 0; k < 3; k++) roof(x + 0.1 + k * 0.267, y + 0.14, x + 0.367 + k * 0.267, y + 0.86, 0.6, 0.22, '#6b6e73');
+    block(x + 0.7, y + 0.2, x + 0.8, y + 0.3, 1.3, '#a0522d');
+    dot('rgba(230,230,230,.75)', P(x + 0.75, y + 0.25, 1.6), S * 0.12); dot('rgba(230,230,230,.6)', P(x + 0.7, y + 0.2, 1.9), S * 0.16);
+    windows(x + 0.1, y + 0.14, x + 0.9, y + 0.86, 0.12, 0.35, 1, 4, '#f2c14e');
   },
-  farm(x, y) {
-    rect('#8a6a3a', x + 2, y + 2, U - 4, U - 4);
-    for (let r = 0; r < 4; r++) rect('#d9b44a', x + 4, y + 4 + r * 5.5, 10, 3);
-    for (let r = 0; r < 2; r++) rect('#d9b44a', x + 16, y + 15 + r * 5.5, 8, 3);
-    shadow(x + 15, y + 4, 10, 8);
-    rect('#b03a2e', x + 15, y + 5, 10, 7);
-    poly('#7d241b', x + 14, y + 6, x + 20, y + 2, x + 26, y + 6);
-    rect('#f4e9d8', x + 19, y + 8, 2, 4);
+  farm(x, y, i) { block(x + 0.55, y + 0.08, x + 0.9, y + 0.42, 0.45, '#b03a2e'); roof(x + 0.52, y + 0.05, x + 0.93, y + 0.45, 0.45, 0.3, '#7d241b'); },
+  sawmill(x, y, i) {
+    block(x + 0.1, y + 0.1, x + 0.6, y + 0.55, 0.5, '#9a6b3f'); roof(x + 0.07, y + 0.07, x + 0.63, y + 0.58, 0.5, 0.3, '#6e4a2a');
+    for (const [a, b, z] of [[0.7, 0.75, 0.1], [0.82, 0.75, 0.1], [0.76, 0.7, 0.28]]) { const p = P(x + a, y + b, z); dot('#8b5a2b', p, S * 0.1); dot('#d9b07a', p, S * 0.05); }
   },
-  sawmill(x, y) {
-    shadow(x + 3, y + 4, 15, 12);
-    rect('#9a6b3f', x + 3, y + 6, 15, 10);
-    poly('#6e4a2a', x + 2, y + 7, x + 10, y + 2, x + 19, y + 7);
-    for (const [lx, ly] of [[16, 22], [21, 22], [18.5, 18]]) {
-      bx.fillStyle = '#8b5a2b'; circle(x + lx, y + ly, 3);
-      bx.fillStyle = '#d9b07a'; circle(x + lx, y + ly, 1.5);
-    }
-    rect('#8b5a2b', x + 3, y + 20, 9, 3);
-  },
-  quarry(x, y) {
-    rect('#9a958b', x + 2, y + 2, U - 4, U - 4);
-    rect('#827d73', x + 5, y + 5, U - 10, U - 10);
-    rect('#68645d', x + 9, y + 9, U - 18, U - 18);
-    rect('#c48a3a', x + 17, y + 18, 7, 4);
-    bx.fillStyle = '#333'; circle(x + 18, y + 23, 1.3); circle(x + 23, y + 23, 1.3);
-  },
+  quarry(x, y) { block(x + 0.6, y + 0.62, x + 0.82, y + 0.76, 0.15, '#c48a3a'); },
   plant(x, y) {
-    shadow(x + 2, y + 14, 13, 11);
-    rect('#6a6f78', x + 2, y + 14, 13, 11);
-    rect('#f2d23f', x + 5, y + 17, 7, 3);
-    for (const tx of [16, 22]) {
-      poly('#c9ccd1', x + tx - 4, y + 25, x + tx - 2, y + 15, x + tx - 3, y + 9, x + tx + 3, y + 9, x + tx + 2, y + 15, x + tx + 4, y + 25);
-      bx.fillStyle = 'rgba(245,245,245,.8)'; circle(x + tx, y + 6, 3);
+    block(x + 0.06, y + 0.5, x + 0.5, y + 0.94, 0.6, '#6a6f78');
+    windows(x + 0.06, y + 0.5, x + 0.5, y + 0.94, 0.15, 0.35, 1, 2, '#f2d23f');
+    for (const [a, b] of [[0.55, 0.28], [0.8, 0.55]]) {
+      const base = P(x + a, y + b), top = P(x + a, y + b, 1.5), mid = P(x + a, y + b, 1.0), r = S * 0.26;
+      poly('#c9ccd1', [[base[0] - r, base[1]], [mid[0] - r * 0.7, mid[1]], [top[0] - r * 0.8, top[1]], [top[0] + r * 0.8, top[1]], [mid[0] + r * 0.7, mid[1]], [base[0] + r, base[1]]]);
+      poly('#a9acb1', [[base[0], base[1] + r * 0.3], [mid[0], mid[1] + r * 0.2], [top[0], top[1] + r * 0.2], [top[0] + r * 0.8, top[1]], [mid[0] + r * 0.7, mid[1]], [base[0] + r, base[1]]]);
+      oval('#8e9196', top, r * 0.8, r * 0.35);
+      dot('rgba(245,245,245,.8)', P(x + a, y + b, 1.9), S * 0.22);
     }
   },
   pump(x, y) {
-    bx.strokeStyle = '#555'; bx.lineWidth = 1.5; bx.beginPath();
-    bx.moveTo(x + 9, y + 24); bx.lineTo(x + 11, y + 12); bx.moveTo(x + 19, y + 24); bx.lineTo(x + 17, y + 12); bx.stroke();
-    bx.fillStyle = 'rgba(0,0,0,.3)'; circle(x + 17, y + 12, 7);
-    bx.fillStyle = '#3b86c6'; circle(x + 14, y + 9, 7);
-    bx.fillStyle = 'rgba(255,255,255,.35)'; circle(x + 12, y + 7, 2.5);
-    rect('#ddd', x + 4, y + 20, 7, 5);
-  },
-  depot(x, y) {
-    shadow(x + 2, y + 6, 24, 18);
-    rect('#b9a27a', x + 2, y + 6, 24, 18);
-    poly('#7a6648', x + 1, y + 8, x + 14, y + 2, x + 27, y + 8);
-    rect('#5d5f66', x + 8, y + 13, 12, 11);
-    for (let k = 0; k < 4; k++) rect('#73767e', x + 8, y + 14 + k * 2.6, 12, 1);
-    rect('#c49a5e', x + 3, y + 19, 4, 4); rect('#a87a3e', x + 21, y + 19, 4, 4);
-  },
-  park(x, y, i) {
-    rect('#4f9a3c', x + 1, y + 1, U - 2, U - 2);
-    rect('#d8c79a', x + 1, y + U / 2 - 2, U - 2, 4); rect('#d8c79a', x + U / 2 - 2, y + 1, 4, U - 2);
-    bx.fillStyle = '#5fb0e0'; circle(x + U / 2, y + U / 2, 3.5);
-    for (const [px, py] of [[7, 7], [21, 7], [7, 21], [21, 21]]) {
-      bx.fillStyle = 'rgba(0,0,0,.25)'; circle(x + px + 1.5, y + py + 2, 4.5);
-      bx.fillStyle = `hsl(${100 + rnd(i, px + py) * 30},50%,30%)`; circle(x + px, y + py, 4.5);
-    }
-    rect('#7a5230', x + 17, y + 12, 5, 1.5);
-  },
-  stop(x, y) {
-    rect('rgba(0,0,0,.3)', x + 8, y + 20, 15, 4);
-    rect('rgba(170,210,240,.6)', x + 7, y + 13, 14, 8);
-    rect('#555', x + 6, y + 13, 1.5, 9); rect('#555', x + 20.5, y + 13, 1.5, 9);
-    rect('#6c7a89', x + 5, y + 10, 18, 3);
-    rect('#8a6a4a', x + 9, y + 18, 10, 2);
-    rect('#444', x + 24, y + 6, 1.5, 17);
-    bx.fillStyle = '#1f6fd1'; circle(x + 24.7, y + 6, 4);
-    bx.fillStyle = '#fff'; bx.font = 'bold 6px sans-serif'; bx.textAlign = 'center'; bx.textBaseline = 'middle';
-    bx.fillText('A', x + 24.7, y + 6.3);
+    block(x + 0.1, y + 0.6, x + 0.4, y + 0.9, 0.3, '#dddddd');
+    for (const [a, b] of [[0.45, 0.35], [0.75, 0.35], [0.6, 0.6]]) line('#555', Math.max(1, S / 14), P(x + a, y + b), P(x + 0.6, y + 0.43, 1.1));
+    const c0 = P(x + 0.6, y + 0.43, 1.1);
+    gx.fillStyle = '#2f6fa8'; gx.fillRect(c0[0] - S * 0.32, c0[1] - S * 0.5, S * 0.64, S * 0.5);
+    oval('#3b86c6', [c0[0], c0[1]], S * 0.32, S * 0.15); oval('#5aa0dc', [c0[0], c0[1] - S * 0.5], S * 0.32, S * 0.15);
   },
   shop(x, y) {
-    shadow(x + 3, y + 5, 22, 19);
-    rect('#efe6d6', x + 3, y + 5, 22, 19);
-    rect('#8b5e3c', x + 3, y + 5, 22, 3);
-    for (let k = 0; k < 6; k++) rect(k % 2 ? '#fff' : '#d33', x + 2 + k * 4, y + 10, 4, 4);
-    rect('#9fd3f0', x + 5, y + 16, 12, 5);
-    rect('#6b4a33', x + 19, y + 16, 4, 8);
+    block(x + 0.12, y + 0.15, x + 0.88, y + 0.85, 0.6, '#efe6d6');
+    for (let k = 0; k < 6; k++) { const a = x + 0.12 + k * 0.127; poly(k % 2 ? '#ffffff' : '#d33', [P(a, y + 0.85, 0.45), P(a + 0.127, y + 0.85, 0.45), P(a + 0.127, y + 0.97, 0.35), P(a, y + 0.97, 0.35)]); }
+    poly('#9fd3f0', [P(x + 0.2, y + 0.85, 0.08), P(x + 0.6, y + 0.85, 0.08), P(x + 0.6, y + 0.85, 0.32), P(x + 0.2, y + 0.85, 0.32)]);
+    block(x + 0.12, y + 0.15, x + 0.88, y + 0.85, 0.06, '#8b5e3c', 0.6);
+  },
+  park(x, y, i) {
+    dot('#5fb0e0', P(x + 0.5, y + 0.5), S * 0.15);
+    for (const [a, b] of [[0.22, 0.22], [0.78, 0.22], [0.22, 0.78], [0.78, 0.78]]) {
+      const p = P(x + a, y + b); oval('rgba(0,0,0,.25)', [p[0] + 2, p[1]], S * 0.18, S * 0.09);
+      dot(`hsl(${100 + rnd(i, a * 10 + b) * 30},50%,30%)`, [p[0], p[1] - S * 0.25], S * 0.18);
+    }
+  },
+  stop(x, y) {
+    block(x + 0.25, y + 0.62, x + 0.7, y + 0.74, 0.32, '#9dc3e0');
+    block(x + 0.22, y + 0.58, x + 0.73, y + 0.78, 0.04, '#6c7a89', 0.32);
+    line('#444', Math.max(1, S / 16), P(x + 0.82, y + 0.72), P(x + 0.82, y + 0.72, 0.6));
+    dot('#1f6fd1', P(x + 0.82, y + 0.72, 0.65), S * 0.12);
+  },
+  depot(x, y) {
+    block(x + 0.08, y + 0.12, x + 0.92, y + 0.88, 0.6, '#b9a27a');
+    roof(x + 0.05, y + 0.09, x + 0.95, y + 0.91, 0.6, 0.25, '#7a6648');
+    poly('#5d5f66', [P(x + 0.3, y + 0.88), P(x + 0.7, y + 0.88), P(x + 0.7, y + 0.88, 0.42), P(x + 0.3, y + 0.88, 0.42)]);
+    block(x + 0.6, y + 0.9, x + 0.75, y + 0.99, 0.12, '#c49a5e');
   },
 };
-// a mine: the deposit with a shaft entrance and a headframe over it
-for (const t of ['iron', 'gold']) DRAW[t + 'mine'] = (x, y, i) => {
-  ore(i, t);
-  rect('#5b4a3a', x + 4, y + 18, 20, 6);
-  poly('#2a2622', x + 11, y + 24, x + 11, y + 19.5, x + 17, y + 19.5, x + 17, y + 24);
-  bx.strokeStyle = '#8b5a2b'; bx.lineWidth = 2; bx.beginPath();
-  bx.moveTo(x + 8, y + 18); bx.lineTo(x + 14, y + 4); bx.lineTo(x + 20, y + 18); bx.stroke();
-  bx.fillStyle = '#444'; circle(x + 14, y + 5, 2.5);
+for (const t of ['iron', 'gold']) OBJ[t + 'mine'] = (x, y, i) => { // the deposit with a shed and a headframe over the shaft
+  ore(i, x, y, t);
+  block(x + 0.55, y + 0.6, x + 0.85, y + 0.85, 0.3, '#5b4a3a');
+  const top = P(x + 0.4, y + 0.4, 1.4);
+  line('#8b5a2b', Math.max(1.5, S / 10), P(x + 0.25, y + 0.55), top); line('#8b5a2b', Math.max(1.5, S / 10), P(x + 0.55, y + 0.25), top);
+  dot('#444', top, S * 0.12);
 };
+const TOP = { house: 1.3, res: 2, off: 4, ind: 2, plant: 2.2, pump: 1.7, shop: 0.9, depot: 1, stop: 0.8, farm: 0.9, sawmill: 1, quarry: 0.5, ironmine: 1.5, goldmine: 1.5 };
 
 // communications mode: power lines, pipes and which buildings get electricity / water; hidden otherwise
 let comm = false, nets = null;
@@ -417,83 +419,112 @@ function setComm(on) {
 $('commBtn').onclick = () => setComm(!comm);
 
 function utils(i) {
-  const g = st.grid;
+  const g = st.grid, x = i % W, y = (i / W) | 0;
   if (comm) {
-    rect('rgba(10,15,30,.45)', 0, 0, U, U); // dim the town so the networks stand out
     const b = B[g[i]];
-    if (b && b.needs) { // two marks: electricity, water; filled = has it, outline = needs it but has none
-      for (const [need, set, color, x] of [['p', nets.powered, '#ffd23f', 3], ['w', nets.watered, '#4fc3f7', 10]]) {
+    if (b && b.needs) { // two marks at the front corner: electricity, water; filled = has it, outline = needs it but has none
+      for (const [need, set, color, a] of [['p', nets.powered, '#ffd23f', 0.62], ['w', nets.watered, '#4fc3f7', 0.82]]) {
         if (!b.needs.includes(need)) continue;
-        if (set.has(i)) rect(color, x, U - 9, 6, 6);
-        else { bx.strokeStyle = color; bx.lineWidth = 1.5; bx.strokeRect(x + 0.75, U - 8.25, 4.5, 4.5); }
+        const pts = [P(x + a, y + 0.86), P(x + a + 0.12, y + 0.86), P(x + a + 0.12, y + 0.98), P(x + a, y + 0.98)];
+        if (set.has(i)) poly(color, pts);
+        else { gx.strokeStyle = color; gx.lineWidth = 1.5; gx.beginPath(); pts.forEach((p, k) => (k ? gx.lineTo(...p) : gx.moveTo(...p))); gx.closePath(); gx.stroke(); }
       }
     }
-  }
-  // power slightly up-left, water down-right so both stay visible on one tile
-  for (const [bit, color, off] of [[POWER, '#ffd23f', -4], [WATER, '#4fc3f7', 4]]) {
-    if (!comm || !(st.util[i] & bit)) continue;
-    const cx = U / 2 + off, cy = U / 2 + off;
-    bx.strokeStyle = 'rgba(0,0,0,.4)'; bx.lineWidth = 4; bx.beginPath(); seg(); bx.stroke();
-    bx.strokeStyle = color; bx.lineWidth = 2; bx.beginPath(); seg(); bx.stroke();
-    bx.fillStyle = color; circle(cx, cy, 2.5);
-    function seg() {
-      D.forEach(([dx, dy]) => {
+    for (const [bit, color, off] of [[POWER, '#ffd23f', -0.12], [WATER, '#4fc3f7', 0.12]]) {
+      if (!(st.util[i] & bit)) continue;
+      const cx = x + 0.5 + off, cy = y + 0.5 - off, z = bit === POWER ? 0.06 : 0.03;
+      for (const [dx, dy] of D) {
         const j = nbr(i, dx, dy);
-        if (j >= 0 && ((st.util[j] & bit) || (B[g[j]] && B[g[j]].needs))) { bx.moveTo(cx, cy); bx.lineTo(cx + dx * U / 2, cy + dy * U / 2); }
-      });
+        if (j >= 0 && ((st.util[j] & bit) || (B[g[j]] && B[g[j]].needs))) {
+          line('rgba(0,0,0,.5)', Math.max(2, S / 6), P(cx, cy, z), P(cx + dx * 0.5, cy + dy * 0.5, z));
+          line(color, Math.max(1.2, S / 12), P(cx, cy, z), P(cx + dx * 0.5, cy + dy * 0.5, z));
+        }
+      }
+      dot(color, P(cx, cy, z), Math.max(1.5, S / 10));
     }
   }
-  if (st.status[i] && !B[g[i]].zone) { // empty zones show it by grey hatching instead, one badge per tile is too noisy
-    bx.fillStyle = '#e33'; circle(U - 6, 6, 5);
-    bx.fillStyle = '#fff'; bx.font = 'bold 9px sans-serif'; bx.textAlign = 'center'; bx.textBaseline = 'middle';
-    bx.fillText('!', U - 6, 6.5);
+  if (st.status[i] && !B[g[i]].zone) { // empty zones show it by grey outline instead, one badge per tile is too noisy
+    const p = P(x + 0.5, y + 0.5, (TOP[g[i]] || 0.8) + 0.2), r = Math.max(4, S * 0.22);
+    dot('#e33', p, r);
+    gx.fillStyle = '#fff'; gx.font = `bold ${Math.round(r * 1.5)}px sans-serif`; gx.textAlign = 'center'; gx.textBaseline = 'middle';
+    gx.fillText('!', p[0], p[1] + 0.5);
   }
 }
 
-// Redraws only tiles whose look changed since the last paint, plus their neighbours (roads, shores, lines
-// and borders depend on them); a full repaint happens on the first state, on zoom and when lakes change.
+// land overlay on the ground: free land is dimmed, owned land gets a border in the owner's colour where the owner changes
+function landTile(i) {
+  const o = st.owner[i], x = i % W, y = (i / W) | 0;
+  if (!o) return; // free land is drawn darker in drawTile
+  for (const [dx, dy] of D) { const j = nbr(i, dx, dy); if (j < 0 || st.owner[j] !== o) edge(x, y, dx, dy, 0.05, st.players[o].color); }
+}
+
+function drawTile(i) {
+  const x = i % W, y = (i / W) | 0, t = st.grid[i];
+  tintK = comm ? 0.45 : st.owner[i] ? 1 : 0.72; // communications mode dims the town so the networks stand out
+  ground(i);
+  landTile(i);
+  if (OBJ[t]) OBJ[t](x, y, i);
+  tintK = 1;
+  utils(i);
+}
+
+// canvas box a tile's drawing can reach: its diamond plus everything up to MAXH above it
+const tileBox = i => { const x = i % W, y = (i / W) | 0; return [OX + (x - y - 1) * S, OY + (x + y) * S / 2 - MAXH * S, 2 * S, MAXH * S + S]; };
+const BG = '#16201a';
+
+// Redraws only tiles whose look changed since the last paint. In isometry a tile's drawing overlaps the tiles
+// around and behind it, so each changed spot is cleared and every tile reaching into it is drawn again, back to front.
 let painted = null; // per tile: what it was drawn from
+const order = []; // tiles back to front
+for (let s2 = 0; s2 < W + H - 1; s2++) for (let x = Math.max(0, s2 - H + 1); x <= Math.min(W - 1, s2); x++) order.push((s2 - x) * W + x);
 function paint(full = false) {
   const n = st.grid.length, sig = new Array(n);
   for (let i = 0; i < n; i++) sig[i] = st.grid[i] + '|' + st.util[i] + '|' + st.status[i] + '|' + st.owner[i];
   if (comm) nets = Game.networks(st);
-  let dirty;
-  if (full || !painted) dirty = sig.map((_, i) => i);
-  else {
+  let dirty = [];
+  if (!full && painted) {
     const d = new Set();
     for (let i = 0; i < n; i++) if (sig[i] !== painted[i]) {
       if (st.grid[i] === 'lake' || painted[i].startsWith('lake|')) full = true; // shores and depth spread further
       d.add(i);
       for (const [dx, dy] of D) { const j = nbr(i, dx, dy); if (j >= 0) d.add(j); }
     }
-    dirty = full ? sig.map((_, i) => i) : [...d];
+    dirty = [...d];
   }
-  if (full || !painted) depth = lakeDepth();
+  if (full || !painted) { depth = lakeDepth(); full = true; }
   painted = sig;
-  if (dirty.length) trafficRebuild();
-  const k = S / U;
-  for (const i of dirty) {
-    const x = (i % W) * S, y = ((i / W) | 0) * S;
-    bx.save(); bx.beginPath(); bx.rect(x, y, S, S); bx.clip(); // keep each tile inside its square so partial redraws match
-    bx.setTransform(k, 0, 0, k, x, y); tile(i); utils(i);
-    bx.setTransform(1, 0, 0, 1, 0, 0); landTile(i, x, y);
+  if (full || dirty.length) trafficRebuild();
+  gx = bx;
+  if (full) {
+    bx.fillStyle = BG; bx.fillRect(0, 0, base.width, base.height);
+    for (const i of order) drawTile(i);
+  } else if (dirty.length > 400) return paint(true);
+  else for (const d of dirty) {
+    const [bx0, by0, bw, bh] = tileBox(d), dx0 = d % W, dy0 = (d / W) | 0, hit = [];
+    for (let y = Math.max(0, dy0 - 10); y <= Math.min(H - 1, dy0 + 10); y++) for (let x = Math.max(0, dx0 - 10); x <= Math.min(W - 1, dx0 + 10); x++) {
+      const [ax, ay, aw, ah] = tileBox(y * W + x);
+      if (ax < bx0 + bw && ax + aw > bx0 && ay < by0 + bh && ay + ah > by0) hit.push(y * W + x);
+    }
+    hit.sort((a, b) => ((a % W) + (a / W | 0)) - ((b % W) + (b / W | 0)) || (a % W) - (b % W));
+    bx.save(); bx.beginPath(); bx.rect(bx0, by0, bw, bh); bx.clip();
+    bx.fillStyle = BG; bx.fillRect(bx0, by0, bw, bh);
+    for (const i of hit) drawTile(i);
     bx.restore();
   }
   draw();
-}
-
-// land overlay: free land is dimmed, owned land gets a border in the owner's colour where the owner changes
-function landTile(i, x, y) {
-  const o = st.owner[i];
-  if (!o) { bx.fillStyle = 'rgba(0,0,0,.28)'; bx.fillRect(x, y, S, S); return; }
-  bx.fillStyle = st.players[o].color;
-  D.forEach(([dx, dy]) => { const j = nbr(i, dx, dy); if (j < 0 || st.owner[j] !== o) bx.fillRect(dx > 0 ? x + S - 2 : x, dy > 0 ? y + S - 2 : y, dx ? 2 : S, dy ? 2 : S); });
 }
 
 // rectangle between zone-drag start and the hovered tile, in tile coords
 function selRect() {
   const j = hover >= 0 ? hover : last;
   return [Math.min(sel % W, j % W), Math.min(sel / W | 0, j / W | 0), Math.max(sel % W, j % W), Math.max(sel / W | 0, j / W | 0)];
+}
+// outline (and optional fill) of the tile-space rectangle x0..x1, y0..y1 on the screen layer
+function outline(x0, y0, x1, y1, stroke, fillCol, w = 2) {
+  const pts = [P(x0, y0), P(x1, y0), P(x1, y1), P(x0, y1)];
+  ctx.beginPath(); pts.forEach((p, k) => (k ? ctx.lineTo(...p) : ctx.moveTo(...p))); ctx.closePath();
+  if (fillCol) { ctx.fillStyle = fillCol; ctx.fill(); }
+  ctx.strokeStyle = stroke; ctx.lineWidth = w; ctx.stroke();
 }
 
 function draw() {
@@ -510,9 +541,7 @@ function draw() {
       const k = y * W + x, t = st.grid[k], fits = buy ? !Game.ownerOf(st, k) : Game.ownerOf(st, k) === name && (clr ? !!CLEAR[t] : t === 'grass');
       if (fits) { n++; cost += buy ? price : clr ? CLEAR[t].cost : 10; }
     }
-    ctx.fillStyle = `rgba(${col},.3)`; ctx.strokeStyle = `rgb(${col})`; ctx.lineWidth = 2;
-    ctx.fillRect(x0 * S, y0 * S, (x1 - x0 + 1) * S, (y1 - y0 + 1) * S);
-    ctx.strokeRect(x0 * S + 1, y0 * S + 1, (x1 - x0 + 1) * S - 2, (y1 - y0 + 1) * S - 2);
+    outline(x0, y0, x1 + 1, y1 + 1, `rgb(${col})`, `rgba(${col},.3)`);
     $('info').innerHTML = `${TOOLS[tool].label}: ${n} кл. = ${cost}${ic('money')}`;
     return;
   }
@@ -521,14 +550,12 @@ function draw() {
     const [x0, y0] = Game.startCorner(hover);
     let taken = false;
     for (let y = y0; y < y0 + START; y++) for (let x = x0; x < x0 + START; x++) taken = taken || !!st.owner[y * W + x];
-    ctx.strokeStyle = taken ? '#f66' : '#ff3'; ctx.lineWidth = 3;
-    ctx.strokeRect(x0 * S + 1.5, y0 * S + 1.5, START * S - 3, START * S - 3);
+    outline(x0, y0, x0 + START, y0 + START, taken ? '#f66' : '#ff3', null, 3);
     return;
   }
-  const t = st.grid[hover], own = Game.ownerOf(st, hover) === name;
+  const t = st.grid[hover], own = Game.ownerOf(st, hover) === name, hx = hover % W, hy = (hover / W) | 0;
   const free = tool === 'buy' ? !Game.ownerOf(st, hover) : own && (tool === 'mine' ? t === 'iron' || t === 'gold' : tool === 'clear' ? !!CLEAR[t] : tool === 'bulldoze' ? t !== 'lake' && !CLEAR[t] : (tool === 'power' || tool === 'pipe') ? !['lake', 'tree', 'rock'].includes(t) : t === 'grass');
-  ctx.strokeStyle = tool === 'info' ? '#fffa' : free ? '#9f9' : '#f66'; ctx.lineWidth = 2;
-  ctx.strokeRect((hover % W) * S + 1, ((hover / W) | 0) * S + 1, S - 2, S - 2);
+  outline(hx, hy, hx + 1, hy + 1, tool === 'info' ? '#fffa' : free ? '#9f9' : '#f66', null, 2);
 }
 
 // ---- Traffic: people, cars, buses and trucks moving along the roads.
@@ -655,46 +682,44 @@ function trafficStep(dt) {
   });
 }
 
-// screen position and heading of an agent between the centres of its current and next tile
+// tile-space position of an agent between the centres of its current and next tile, and its heading
 function agentPos(a) {
   const p = a.path[a.k], q = a.path[Math.min(a.k + 1, a.path.length - 1)];
-  const px = p % W, py = (p / W) | 0, qx = q % W, qy = (q / W) | 0, dx = qx - px, dy = qy - py;
-  const off = a.kind === 'ped' ? 10.5 * a.side : 4.5; // vehicles keep to the right, people walk on the kerb
-  const x = (px + dx * a.f) * U + U / 2 - dy * off, y = (py + dy * a.f) * U + U / 2 + dx * off;
-  return [x * S / U, y * S / U, Math.atan2(dy, dx)];
+  const px = p % W, py = (p / W) | 0, qx = q % W, qy = (q / W) | 0;
+  let dx = qx - px, dy = qy - py;
+  if (!dx && !dy) dx = 1;
+  const off = a.kind === 'ped' ? 0.38 * a.side : 0.13; // vehicles keep to the right, people walk on the kerb
+  return [px + dx * a.f + 0.5 - dy * off, py + dy * a.f + 0.5 + dx * off, dx, dy];
 }
 
-function drawAgent(a, x, y, ang) {
-  const k = S / U;
-  ctx.save(); ctx.translate(x, y); ctx.scale(k, k);
+function drawAgent(a, fx, fy, dx, dy) {
+  gx = ctx;
   if (a.kind === 'ped') {
-    const sw = Math.sin(a.ph) * 1.6;
-    ctx.strokeStyle = '#2b2b33'; ctx.lineWidth = 1.1; ctx.beginPath();
-    ctx.moveTo(0, 1.5); ctx.lineTo(-0.8 + sw * 0.5, 4.2); ctx.moveTo(0, 1.5); ctx.lineTo(0.8 - sw * 0.5, 4.2); ctx.stroke();
-    ctx.fillStyle = a.shirt; ctx.fillRect(-1.3, -1.8, 2.6, 3.6);
-    ctx.fillStyle = a.skin; ctx.beginPath(); ctx.arc(0, -3.2, 1.6, 0, 7); ctx.fill();
-  } else {
-    ctx.rotate(ang);
-    const len = a.kind === 'bus' ? 15 : a.kind === 'truck' ? 13 : 9, wid = a.kind === 'car' ? 5 : 6;
-    ctx.fillStyle = 'rgba(0,0,0,.3)'; ctx.fillRect(-len / 2 + 1, -wid / 2 + 1, len, wid);
-    if (a.kind === 'truck') {
-      ctx.fillStyle = a.cargo; ctx.fillRect(-len / 2, -wid / 2, len - 4, wid);
-      ctx.fillStyle = '#c0392b'; ctx.fillRect(len / 2 - 4, -wid / 2 + 0.5, 4, wid - 1);
-      ctx.fillStyle = '#bfe3ff'; ctx.fillRect(len / 2 - 1.5, -wid / 2 + 1, 1, wid - 2);
-    } else {
-      ctx.fillStyle = a.color; ctx.fillRect(-len / 2, -wid / 2, len, wid);
-      ctx.fillStyle = '#bfe3ff';
-      if (a.kind === 'bus') for (let w = -len / 2 + 2; w < len / 2 - 2; w += 3) { ctx.fillRect(w, -wid / 2 + 0.6, 2, 1.2); ctx.fillRect(w, wid / 2 - 1.8, 2, 1.2); }
-      else { ctx.fillRect(len / 2 - 3, -wid / 2 + 0.7, 1.5, wid - 1.4); ctx.fillRect(-len / 2 + 1.2, -wid / 2 + 0.9, 1.2, wid - 1.8); }
-    }
+    const [x, y] = P(fx, fy), k = S / 20, sw = Math.sin(a.ph) * 1.2 * k;
+    ctx.strokeStyle = '#2b2b33'; ctx.lineWidth = Math.max(1, k); ctx.beginPath();
+    ctx.moveTo(x, y - 3 * k); ctx.lineTo(x - 0.8 * k + sw, y); ctx.moveTo(x, y - 3 * k); ctx.lineTo(x + 0.8 * k - sw, y); ctx.stroke();
+    ctx.fillStyle = a.shirt; ctx.fillRect(x - 1.3 * k, y - 6.5 * k, 2.6 * k, 3.8 * k);
+    dot(a.skin, [x, y - 8 * k], 1.6 * k);
+    return;
   }
-  ctx.restore();
+  const len = a.kind === 'bus' ? 0.5 : a.kind === 'truck' ? 0.42 : 0.3, wid = a.kind === 'car' ? 0.15 : 0.18, h = a.kind === 'car' ? 0.12 : 0.2;
+  const [x0, y0, x1, y1] = dx ? [fx - len / 2, fy - wid / 2, fx + len / 2, fy + wid / 2] : [fx - wid / 2, fy - len / 2, fx + wid / 2, fy + len / 2];
+  flat(x0 + 0.05, y0 + 0.05, x1 + 0.05, y1 + 0.05, 0, 'rgba(0,0,0,.3)');
+  if (a.kind === 'truck') { // red cab in front, load box behind it in the cargo's colour
+    const c = 0.12, cab = dx > 0 ? [x1 - c, y0, x1, y1] : dx < 0 ? [x0, y0, x0 + c, y1] : dy > 0 ? [x0, y1 - c, x1, y1] : [x0, y0, x1, y0 + c];
+    const load = dx > 0 ? [x0, y0, x1 - c, y1] : dx < 0 ? [x0 + c, y0, x1, y1] : dy > 0 ? [x0, y0, x1, y1 - c] : [x0, y0 + c, x1, y1];
+    block(...load, h + 0.04, a.cargo); block(...cab, h - 0.02, '#c0392b');
+  } else {
+    block(x0, y0, x1, y1, h, a.color);
+    const ins = a.kind === 'bus' ? 0.02 : 0.05;
+    block(x0 + ins, y0 + ins, x1 - ins, y1 - ins, a.kind === 'bus' ? 0.02 : 0.07, '#bfe3ff', h);
+  }
 }
 
 function drawTraffic(vx, vy, vw, vh) {
   for (const a of traffic.agents) {
-    const [x, y, ang] = agentPos(a);
-    if (x > vx - S && y > vy - S && x < vx + vw + S && y < vy + vh + S) drawAgent(a, x, y, ang); // only what is on screen
+    const [fx, fy, dx, dy] = agentPos(a), [x, y] = P(fx, fy);
+    if (x > vx - S && y > vy - S && x < vx + vw + S && y < vy + vh + 2 * S) drawAgent(a, fx, fy, dx, dy); // only what is on screen
   }
 }
 
@@ -708,17 +733,22 @@ function frameLoop(t) {
 }
 requestAnimationFrame(frameLoop);
 
+// keeps the point under the middle of the view in place; the map canvas is (W + H) diamonds wide.
+// S stays at 32 or below: the two map-sized canvases grow with the square of it.
+let zoomed = false;
 function setZoom(n) {
-  const m = $('map'), cx = (m.scrollLeft + m.clientWidth / 2) / S, cy = (m.scrollTop + m.clientHeight / 2) / S;
-  S = Math.max(16, Math.min(48, n));
-  c.width = base.width = W * S; c.height = base.height = H * S;
-  makeGrass();
+  const m = $('map');
+  const u = zoomed ? (m.scrollLeft + m.clientWidth / 2 - OX) / S : (W - H) / 2; // u = x - y, v = x + y of the middle
+  const v = zoomed ? (m.scrollTop + m.clientHeight / 2 - OY) / (S / 2) : (W + H) / 2;
+  S = Math.max(10, Math.min(32, n)); zoomed = true;
+  OX = H * S; OY = MT * S;
+  c.width = base.width = (W + H) * S; c.height = base.height = (W + H) * S / 2 + MT * S;
   if (st) paint(true);
-  m.scrollLeft = cx * S - m.clientWidth / 2; m.scrollTop = cy * S - m.clientHeight / 2;
+  m.scrollLeft = OX + u * S - m.clientWidth / 2; m.scrollTop = OY + v * S / 2 - m.clientHeight / 2;
 }
-$('zin').onclick = () => setZoom(S + 6);
-$('zout').onclick = () => setZoom(S - 6);
-$('map').addEventListener('wheel', e => { if (!e.ctrlKey) return; e.preventDefault(); setZoom(S + (e.deltaY < 0 ? 4 : -4)); }, { passive: false });
+$('zin').onclick = () => setZoom(S + 4);
+$('zout').onclick = () => setZoom(S - 4);
+$('map').addEventListener('wheel', e => { if (!e.ctrlKey) return; e.preventDefault(); setZoom(S + (e.deltaY < 0 ? 2 : -2)); }, { passive: false });
 setZoom(S);
 
 // hover window over a resource: what adds to it and takes from it this tick
@@ -847,7 +877,12 @@ function msg(m) {
 }
 const doAct = (tool, i, j) => msg({ type: 'act', tool, i, j });
 $('speed').onclick = e => { const b = e.target.closest('[data-v]'); if (b) msg({ type: 'speed', v: +b.dataset.v }); };
-const tileAt = e => { const r = c.getBoundingClientRect(), x = ((e.clientX - r.left) / S) | 0, y = ((e.clientY - r.top) / S) | 0; return x >= 0 && y >= 0 && x < W && y < H ? y * W + x : -1; };
+// screen point → tile on the ground: invert P() with u = x - y and v = x + y
+const tileAt = e => {
+  const r = c.getBoundingClientRect(), u = (e.clientX - r.left - OX) / S, v = (e.clientY - r.top - OY) / (S / 2);
+  const x = Math.floor((u + v) / 2), y = Math.floor((v - u) / 2);
+  return x >= 0 && y >= 0 && x < W && y < H ? y * W + x : -1;
+};
 c.oncontextmenu = e => e.preventDefault();
 c.onmousedown = e => {
   const i = tileAt(e); if (i < 0) return;
