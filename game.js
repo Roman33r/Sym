@@ -11,17 +11,22 @@ const B = {
   zind:    { cost: { money: 10 }, needs: 'rp', zone: 'ind', lvl: 1, label: 'Промзона', icon: 'zind' },
   res:     { cost: { money: 10 }, needs: 'rpw', grown: true, home: 6, label: 'Жилой дом', icon: '' },
   off:     { cost: { money: 10 }, needs: 'rpw', grown: true, jobs: 6, prod: { money: 4 }, label: 'Офис', icon: '' },
-  ind:     { cost: { money: 10 }, needs: 'rp', grown: true, jobs: 8, prod: { money: 3 }, label: 'Завод', icon: '' },
+  ind:     { cost: { money: 10 }, needs: 'rp', grown: true, jobs: 8, label: 'Завод', icon: '' }, // makes a product, see PRODUCTS
   house:   { cost: { money: 50, wood: 10 }, needs: 'rpw', home: 8, label: 'Дом (до 8 жителей)', icon: 'house' },
   farm:    { cost: { money: 40, wood: 5 }, needs: 'rw', jobs: 4, prod: { food: 5 }, label: 'Ферма (еда)', icon: 'farm' },
   sawmill: { cost: { money: 60 }, needs: 'rpt', jobs: 4, prod: { wood: 2 }, label: 'Лесопилка (дерево)', icon: 'sawmill' },
   quarry:  { cost: { money: 80, wood: 10 }, needs: 'rpk', jobs: 4, prod: { stone: 1.5 }, label: 'Каменоломня (камень)', icon: 'quarry' },
   plant:   { cost: { money: 200, stone: 20 }, needs: 'r', upkeep: 3, label: 'Электростанция', icon: 'plant' },
   pump:    { cost: { money: 150, stone: 10 }, needs: 'rpl', upkeep: 2, label: 'Водокачка (у озера)', icon: 'pump' },
-  shop:    { cost: { money: 100, wood: 10, stone: 10 }, needs: 'rpw', lvl: 1, jobs: 6, prod: { money: 6 }, label: 'Магазин (деньги)', icon: 'shop' },
+  shop:    { cost: { money: 100, wood: 10, stone: 10 }, needs: 'rpw', lvl: 1, jobs: 6, prod: { money: 1 }, label: 'Магазин (продаёт товары)', icon: 'shop' },
   park:    { cost: { money: 30 }, label: 'Парк (радует жителей)', icon: 'park' },
   stop:    { cost: { money: 40 }, needs: 'r', upkeep: 1, label: 'Остановка (автобус до работы)', icon: 'stop' },
   depot:   { cost: { money: 80, wood: 10 }, needs: 'r', label: 'Склад (сюда грузовики везут товары)', icon: 'depot' },
+  // services: see SEATS for how many each serves
+  kinder:  { cost: { money: 120, wood: 20 }, needs: 'rpw', jobs: 3, upkeep: 2, label: 'Детский сад (30 детей)', icon: 'kinder' },
+  school:  { cost: { money: 200, stone: 20 }, needs: 'rpw', jobs: 4, upkeep: 3, label: 'Школа (40 учеников)', icon: 'school' },
+  hospital: { cost: { money: 400, stone: 40 }, needs: 'rpw', lvl: 1, jobs: 6, upkeep: 5, label: 'Больница (150 жителей)', icon: 'hospital' },
+  uni:     { cost: { money: 600, stone: 60, iron: 10 }, needs: 'rpw', lvl: 2, jobs: 6, upkeep: 6, label: 'Университет (высшее образование)', icon: 'uni' },
   // a mine is built on an ore deposit and turns into the matching mine; demolishing it leaves the deposit
   mine:    { cost: { money: 150, wood: 20 }, lvl: 1, label: 'Рудник (на месторождение)', icon: 'mine' },
   ironmine: { cost: { money: 150, wood: 20 }, needs: 'rp', grown: true, ore: 'iron', jobs: 5, prod: { iron: 1 }, label: 'Железный рудник', icon: 'mine' },
@@ -125,7 +130,7 @@ function claim(s, who, i) {
   const [x0, y0] = startCorner(i), tiles = rectTiles(x0, y0, x0 + START - 1, y0 + START - 1);
   if (tiles.some(k => s.owner[k])) return 'там уже чужая земля — выберите место правее, левее или дальше';
   for (const k of tiles) s.owner[k] = who;
-  s.players[who] = { res: { money: 1000, wood: 40, stone: 50, food: 50, iron: 0, gold: 0 }, level: 0, pop: 0, jobs: 0, fed: true, delta: {}, color: COLORS[Object.keys(s.players).length % COLORS.length] };
+  s.players[who] = { res: { money: 1000, wood: 40, stone: 50, food: 50, iron: 0, gold: 0 }, demo: newDemo(), hist: [], level: 0, pop: 0, jobs: 0, fed: true, delta: {}, color: COLORS[Object.keys(s.players).length % COLORS.length] };
   if (s.phase === 'draft') nextTurn(s);
   return null;
 }
@@ -223,7 +228,7 @@ const wants = (s, i, reach = commute(s)) => {
   const g = s.grid, p = s.players[ownerOf(s, i)] || { res: { food: 0 }, jobs: 0, pop: 1 };
   return {
     food: p.res.food > 0,
-    jobs: p.jobs >= p.pop,
+    jobs: p.jobs >= (p.demo ? p.demo.none + p.demo.school + p.demo.higher : p.pop), // enough jobs for the adults
     work: reach.has(i),
     shop: near(g, i, 'shop', 5),
     park: near(g, i, 'park', 4) || near(g, i, 'tree', 2),
@@ -239,62 +244,175 @@ const short = t => B[t].label.replace(/ \(.*\)/, '');
 
 // Goods don't go straight to the treasury: a producer fills its own stock, a full load leaves by truck for the
 // owner's nearest depot on the same road network and counts when it arrives (2 tiles per tick).
+// Factories make products the same way; depots then send products on to shops, which sell them for money.
 const CARGO_RES = ['food', 'wood', 'stone', 'iron', 'gold'];
 const LOAD = 8, STORE = 3 * LOAD; // a truck load; a producer with nowhere to send goods stops at STORE
-function ship(s, comp, who, i, res) {
+// what a factory (ind) can be set to make; input is taken from the owner's stock per unit made
+const PRODUCTS = {
+  clothes:   { label: 'Одежда', input: {}, price: 3 },
+  furniture: { label: 'Мебель', input: { wood: 1 }, price: 5 },
+  canned:    { label: 'Консервы', input: { food: 1 }, price: 4 },
+  tools:     { label: 'Инструменты', input: { iron: 0.5 }, price: 7 },
+  jewelry:   { label: 'Украшения', input: { gold: 0.25 }, price: 14 },
+};
+const FACTORY_RATE = 1, SHOP_SALES = 2; // units per tick with a full staff
+const isDepot = (s, who) => d => s.grid[d] === 'depot' && !s.status[d] && ownerOf(s, d) === who;
+// nearest tile passing isDest that shares a road network with tile i: { from, to, dest, dist } (from/to are road tiles)
+function findRoute(s, comp, i, isDest) {
   let best = null;
-  for (const r of nb(i).filter(k => comp[k] >= 0))
-    s.grid.forEach((t, d) => {
-      if (t !== 'depot' || s.status[d] || ownerOf(s, d) !== who) return;
-      for (const rd of nb(d)) if (comp[rd] === comp[r]) {
-        const dist = Math.abs(rd % W - r % W) + Math.abs((rd / W | 0) - (r / W | 0));
-        if (!best || dist < best.dist) best = { from: r, to: rd, dist };
-      }
-    });
-  if (!best) return false;
-  s.ships.push({ id: ++s.shipSeq, who, res, n: LOAD, from: best.from, to: best.to, t0: s.tick, at: s.tick + Math.max(1, Math.ceil(best.dist / 2)) });
-  return true;
+  const mine = nb(i).filter(k => comp[k] >= 0);
+  if (!mine.length) return null;
+  s.grid.forEach((t, d) => {
+    if (!isDest(d)) return;
+    for (const r of mine) for (const rd of nb(d)) if (comp[rd] === comp[r]) {
+      const dist = Math.abs(rd % W - r % W) + Math.abs((rd / W | 0) - (r / W | 0));
+      if (!best || dist < best.dist) best = { from: r, to: rd, dest: d, dist };
+    }
+  });
+  return best;
+}
+function sendTruck(s, who, res, route, kind) {
+  s.ships.push({ id: ++s.shipSeq, who, res, n: LOAD, from: route.from, to: route.to, dest: route.dest, kind, t0: s.tick, at: s.tick + Math.max(1, Math.ceil(route.dist / 2)) });
+}
+// load from producer i to the nearest depot
+function ship(s, comp, who, i, res) {
+  const r = findRoute(s, comp, i, isDepot(s, who));
+  if (r) sendTruck(s, who, res, r, 'depot');
+  return !!r;
+}
+
+// Residents by age and education; schools, kindergartens, hospitals and universities change how the groups move.
+const GROUPS = { kids: 'Дети', none: 'Без образования', school: 'Школьное образование', higher: 'Высшее образование', old: 'Пенсионеры' };
+const SEATS = { kinder: 30, school: 40, hospital: 150, uni: 1.5 }; // kids / pupils / patients per building; uni: graduates per tick
+const popOf = d => d.kids + d.none + d.school + d.higher + d.old;
+const newDemo = () => ({ kids: 0, none: 0, school: 0, higher: 0, old: 0 });
+// one tick of births, newcomers, growing up, studying, ageing and deaths; cap is how many the homes can hold
+function demographics(d, cap, cnt, hap) {
+  const now = popOf(d), adults = d.none + d.school + d.higher, room = cap - now;
+  const kinderCov = Math.min(1, (cnt.kinder || 0) * SEATS.kinder / Math.max(1, d.kids));
+  const schoolCov = Math.min(1, (cnt.school || 0) * SEATS.school / Math.max(1, d.kids));
+  const hospCov = Math.min(1, (cnt.hospital || 0) * SEATS.hospital / Math.max(1, now));
+  if (room > 0) {
+    d.kids += Math.min(room, adults * 0.004 * (0.5 + hap) * (1 + kinderCov)); // births, more with kindergartens
+    const inn = Math.min(room, 1 + room * 0.15) * (0.3 + 0.7 * hap); // newcomers, mostly without a degree
+    d.none += inn * 0.5; d.school += inn * 0.4; d.higher += inn * 0.1;
+  } else if (room < 0) { // too many people for the homes: some leave
+    const k = Math.min(1, -room * 0.2 / now);
+    for (const g in d) d[g] -= d[g] * k;
+  }
+  const grow = d.kids / 30; // kids grow up, with school if there are seats for them
+  d.kids -= grow; d.school += grow * schoolCov; d.none += grow * (1 - schoolCov);
+  const study = Math.min(d.school / 40, (cnt.uni || 0) * SEATS.uni); // university turns school graduates into specialists
+  d.school -= study; d.higher += study;
+  for (const g of ['none', 'school', 'higher']) { const a = d[g] / 150; d[g] -= a; d.old += a; }
+  d.old -= d.old / 50 * (1 - 0.5 * hospCov); // hospitals halve deaths
+  d.kids -= d.kids * 0.001 * (1 - hospCov);
+  return { kinderCov, schoolCov, hospCov };
+}
+
+// Pollution per tile from factories, power plants, quarries and mines, fading over 5 tiles.
+const POLLUTERS = { ind: 1, plant: 0.8, quarry: 0.5, ironmine: 0.6, goldmine: 0.6 };
+function pollution(s) {
+  const p = new Float32Array(W * H);
+  s.grid.forEach((t, i) => {
+    const k = POLLUTERS[t]; if (!k) return;
+    const x = i % W, y = i / W | 0;
+    for (let dy = -5; dy <= 5; dy++) for (let dx = -5; dx <= 5; dx++) {
+      const X = x + dx, Y = y + dy;
+      if (X >= 0 && Y >= 0 && X < W && Y < H) p[Y * W + X] += k * Math.max(0, 1 - Math.max(Math.abs(dx), Math.abs(dy)) / 6);
+    }
+  });
+  return p;
+}
+
+// Sets what an owned factory makes.
+function setSpec(s, who, i, v) {
+  if (!Number.isInteger(i) || i < 0 || i >= W * H) return 'неверная клетка';
+  if (ownerOf(s, i) !== who) return 'это не ваш участок';
+  if (s.grid[i] !== 'ind') return 'выпуск настраивается только у завода';
+  if (!PRODUCTS[v]) return 'неизвестный товар';
+  (s.spec = s.spec || {})[i] = v;
+  return null;
 }
 
 function tick(s) {
   const st = compute(s), own = s.grid.map((_, i) => ownerOf(s, i));
   s.status = st;
   const reach = commute(s, st), comp = roadNets(s.grid);
-  s.ships = s.ships || []; s.stock = s.stock || {}; s.shipSeq = s.shipSeq || 0;
-  const undelivered = [];
+  s.ships = s.ships || []; s.stock = s.stock || {}; s.shipSeq = s.shipSeq || 0; s.spec = s.spec || {}; s.shopStock = s.shopStock || {};
+  const undelivered = [], starved = [];
   for (const [who, p] of Object.entries(s.players)) {
     const cnt = {}, needs = Object.fromEntries(Object.keys(WANT_TEXT).map(k => [k, 0]));
-    let pop = 0, workers = 0, places = 0, happy = 0;
+    let cap = 0, reachCap = 0, places = 0, happy = 0;
     s.grid.forEach((t, i) => {
       if (own[i] !== who || st[i] || !B[t]) return;
       cnt[t] = (cnt[t] || 0) + 1;
       if (!B[t].home) return;
       const w = wants(s, i, reach), h = share(w), n = fill(s, i, h);
-      pop += n; if (w.work) workers += n;
+      cap += n; if (w.work) reachCap += n;
       places += B[t].home; happy += h * B[t].home;
       for (const k in w) needs[k] += w[k] ? B[t].home : 0;
     });
-    const jobs = Object.entries(cnt).reduce((n, [t, c]) => n + c * (B[t].jobs || 0), 0);
-    const wr = jobs ? Math.min(1, workers / jobs) : 0, R = p.res; // share of jobs filled by residents who can get there
+    const hap = places ? happy / places : 0;
+    // saves from before demographics: everyone counts as an adult without a degree
+    const d = p.demo || (p.demo = { ...newDemo(), none: p.pop || 0 });
+    const before0 = popOf(d), cov = demographics(d, cap, cnt, hap), pop = Math.round(popOf(d));
+    // who can work where: offices need a degree, every other job takes anyone; only people who can get to work count
+    const r = cap ? reachCap / cap : 0, jobs = Object.entries(cnt).reduce((n, [t, c]) => n + c * (B[t].jobs || 0), 0);
+    const offJobs = (cnt.off || 0) * B.off.jobs, otherJobs = jobs - offJobs;
+    const fo = Math.min(offJobs, d.higher * r), fOther = Math.min(otherJobs, (d.none + d.school + d.higher) * r - fo);
+    const wrOff = offJobs ? fo / offJobs : 0, wrOther = otherJobs ? Math.max(0, fOther) / otherJobs : 0;
+    const wrOf = t => (t === 'off' ? wrOff : wrOther);
+    const R = p.res;
+    for (const k of [...CARGO_RES, ...Object.keys(PRODUCTS)]) R[k] = R[k] || 0;
     const before = { ...R }, flow = Object.fromEntries(Object.keys(R).map(k => [k, []]));
     const add = (k, what, v) => { if (v) { R[k] += v; flow[k].push([what, v]); } };
     for (const [t, n] of Object.entries(cnt)) {
-      for (const [k, v] of Object.entries(B[t].prod || {})) if (!CARGO_RES.includes(k)) add(k, `${short(t)} ×${n}`, n * v * wr);
+      for (const [k, v] of Object.entries(B[t].prod || {})) if (!CARGO_RES.includes(k)) add(k, `${short(t)} ×${n}`, n * v * wrOf(t));
       if (B[t].upkeep) add('money', `Содержание: ${short(t)} ×${n}`, -n * B[t].upkeep);
     }
-    // goods: fill each producer's stock, send full loads, take in the trucks that arrived
+    // raw goods and factory products: fill each producer's stock, send full loads to a depot
+    const used = {};
     s.grid.forEach((t, i) => {
-      if (own[i] !== who || st[i] || !B[t] || !B[t].prod) return;
-      for (const [k, v] of Object.entries(B[t].prod)) {
-        if (!CARGO_RES.includes(k)) continue;
-        s.stock[i] = Math.min(STORE, (s.stock[i] || 0) + v * wr);
-        if (s.stock[i] >= LOAD) { if (ship(s, comp, who, i, k)) s.stock[i] -= LOAD; else undelivered.push(i); }
+      if (own[i] !== who || st[i] || !B[t]) return;
+      let res = null, made = 0;
+      if (t === 'ind') {
+        res = s.spec[i] || 'clothes';
+        made = FACTORY_RATE * wrOther;
+        for (const [k, v] of Object.entries(PRODUCTS[res].input)) made = Math.min(made, R[k] / v); // limited by raw material
+        if (made < FACTORY_RATE * wrOther * 0.99) starved.push(i);
+        for (const [k, v] of Object.entries(PRODUCTS[res].input)) { R[k] -= v * made; used[k] = (used[k] || 0) + v * made; }
+      } else if (B[t].prod) {
+        res = Object.keys(B[t].prod).find(k => CARGO_RES.includes(k));
+        if (res) made = B[t].prod[res] * wrOther;
       }
+      if (!res) return;
+      s.stock[i] = Math.min(STORE, (s.stock[i] || 0) + made);
+      if (s.stock[i] >= LOAD) { if (ship(s, comp, who, i, res)) s.stock[i] -= LOAD; else undelivered.push(i); }
     });
+    for (const [k, v] of Object.entries(used)) { R[k] += v; add(k, 'Заводы берут сырьё', -v); } // re-run through add() for the breakdown
+    // shops: sell what they have, order a load of the most stocked product from the nearest depot when running low
+    let sold = 0, income = 0;
+    s.grid.forEach((t, i) => {
+      if (t !== 'shop' || own[i] !== who || st[i]) return;
+      const box = s.shopStock[i] = s.shopStock[i] || {};
+      let left = SHOP_SALES * wrOther;
+      for (const k of Object.keys(box)) { const n = Math.min(left, box[k]); box[k] -= n; left -= n; sold += n; income += n * PRODUCTS[k].price; if (!box[k]) delete box[k]; }
+      const have = Object.values(box).reduce((a, b) => a + b, 0);
+      if (have >= LOAD || s.ships.some(sh => sh.kind === 'shop' && sh.dest === i)) return;
+      const best = Object.keys(PRODUCTS).filter(k => R[k] >= LOAD).sort((a, b) => R[b] - R[a])[0];
+      if (!best) return;
+      const route = findRoute(s, comp, i, isDepot(s, who));
+      if (!route) return;
+      sendTruck(s, who, best, { from: route.to, to: route.from, dest: i, dist: route.dist }, 'shop'); // depot → shop
+      add(best, 'Отправлено в магазины', -LOAD);
+    });
+    if (income) add('money', `Магазины продали товары (${Math.round(sold)} шт.)`, income);
     const came = {};
     s.ships = s.ships.filter(sh => {
       if (sh.who !== who || sh.at > s.tick) return true;
-      came[sh.res] = (came[sh.res] || 0) + 1;
+      if (sh.kind === 'shop') { if (s.grid[sh.dest] === 'shop') { const box = s.shopStock[sh.dest] = s.shopStock[sh.dest] || {}; box[sh.res] = (box[sh.res] || 0) + sh.n; } }
+      else came[sh.res] = (came[sh.res] || 0) + 1;
       return false;
     });
     for (const [k, c] of Object.entries(came)) add(k, `Привезли грузовики ×${c}`, c * LOAD);
@@ -309,11 +427,15 @@ function tick(s) {
       if (z && !st[i] && want[k] > 0 && Math.random() < 0.3) { s.grid[i] = z; want[k] -= 6; }
     });
     for (const k in needs) needs[k] = places ? needs[k] / places : 0;
-    Object.assign(p, { pop, jobs, workers, fed, flow, needs, happy: places ? happy / places : 0 });
+    p.hist = p.hist || [];
+    if (s.tick % 5 === 0) { p.hist.push({ t: s.tick, ...Object.fromEntries(Object.keys(GROUPS).map(g => [g, Math.round(d[g] * 10) / 10])) }); if (p.hist.length > 120) p.hist.shift(); }
+    Object.assign(p, { pop, cap, growth: popOf(d) - before0, jobs, workers: Math.round(fo + Math.max(0, fOther)), wr: { off: wrOff, other: wrOther }, cov, fed, flow, needs, happy: hap });
   }
-  for (const i in s.stock) if (!B[s.grid[i]] || !B[s.grid[i]].prod) delete s.stock[i]; // building gone
+  for (const i in s.stock) if (!B[s.grid[i]] || !(B[s.grid[i]].prod || s.grid[i] === 'ind')) delete s.stock[i]; // building gone
+  for (const i in s.spec) if (s.grid[i] !== 'ind') delete s.spec[i];
+  for (const i in s.shopStock) if (s.grid[i] !== 'shop') delete s.shopStock[i];
   s.ships = s.ships.filter(sh => s.grid[sh.from] === 'road' && s.grid[sh.to] === 'road'); // a removed road loses the load
-  s.undelivered = undelivered;
+  s.undelivered = undelivered; s.starved = starved;
   s.status = compute(s); s.tick++;
 }
 
@@ -430,6 +552,11 @@ function room(s) {
       if (!err) r.say(names.length > 1 ? `Жеребьёвка! Порядок выбора участков: ${s.order.join(' → ')}` : 'Игра началась: выберите стартовый участок');
       return err;
     }
+    if (m.type === 'spec') {
+      const err = setSpec(s, who, m.i, String(m.v));
+      if (!err) r.say(`${who}: завод выпускает ${PRODUCTS[m.v].label.toLowerCase()}`);
+      return err;
+    }
     if (m.type === 'speed') {
       if (!SPEEDS.includes(m.v)) return 'неверная скорость';
       s.speed = m.v; r.say(`${who}: ${m.v ? 'скорость ×' + m.v : 'пауза'}`);
@@ -452,5 +579,5 @@ function room(s) {
   return r;
 }
 
-const api = { W, H, B, NEED_TEXT, WANT_TEXT, POWER, WATER, START, LEVELS, levelOf, upgradeBlock, PRICES, SELL, RES_TEXT, trade, CLEAR, startCorner, landOf, landPrice, newGame, start, nextTurn, compute, tick, act, actArea, wants, happiness, residents, commute, ownerOf, room, SPEEDS, LOAD, roadNets, networks };
+const api = { W, H, B, NEED_TEXT, WANT_TEXT, POWER, WATER, START, LEVELS, levelOf, upgradeBlock, PRICES, SELL, RES_TEXT, trade, CLEAR, startCorner, landOf, landPrice, newGame, start, nextTurn, compute, tick, act, actArea, wants, happiness, residents, commute, ownerOf, room, SPEEDS, LOAD, roadNets, networks, PRODUCTS, GROUPS, SEATS, pollution, setSpec, popOf, demographics };
 if (typeof module !== 'undefined') module.exports = api; else window.Game = api;

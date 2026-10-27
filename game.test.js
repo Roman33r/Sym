@@ -22,12 +22,15 @@ assert.strictEqual(G.act(s, 'A', 'pipe', 3), 'уже проложено');
 assert.strictEqual(G.act(s, 'A', 'house', 2), 'клетка занята');
 G.tick(s);
 assert.deepStrictEqual([s.status[1], s.status[2], s.status[4]], ['', '', '']);
-// during the tick: food and jobs (0 >= 0) met; no workplace, shop or park, power plant next door: 8 * (0.4 + 0.6 * 2/6)
-assert.strictEqual(s.players.A.pop, 5);
-// that tick's change: tax 5 * 0.5 minus plant (3) and pump (2) upkeep; 5 residents eat 0.2 each
-assert.strictEqual(s.players.A.delta.money, 5 * 0.5 - 3 - 2);
-assert.strictEqual(s.players.A.delta.food, -5 * 0.2);
-// now 5 residents have 0 jobs, so the jobs need fails too
+// homes: food and jobs (0 >= 0) met; no workplace, shop or park, power plant next door: room for 8 * (0.4 + 0.6 * 2/6)
+const A = s.players.A;
+assert.strictEqual(A.cap, 5);
+assert.ok(A.pop >= 1 && A.pop <= A.cap, 'people move in gradually'); // the first newcomers
+// that tick's change: tax 0.5 per resident minus plant (3) and pump (2) upkeep; residents eat 0.2 each
+const near = (a, b) => assert.ok(Math.abs(a - b) < 1e-9, a + ' ≈ ' + b);
+near(A.delta.money, A.pop * 0.5 - 3 - 2);
+near(A.delta.food, -A.pop * 0.2);
+// now the residents have 0 jobs, so the jobs need fails too
 assert.deepStrictEqual(G.wants(s, 4), { food: true, jobs: false, work: false, shop: false, park: false, quiet: false });
 s.grid[W * 2 + 7] = 'park'; s.grid[W * 2 + 9] = 'shop'; // the shop is 5 tiles away: counts as a shop nearby, too far to walk to as a job
 assert.strictEqual(G.happiness(s, 4), 0.5);
@@ -41,7 +44,7 @@ assert.strictEqual(G.act(s, 'A', 'zres', 4), null);
 for (let k = 0; k < 50 && s.grid[4] !== 'res'; k++) G.tick(s);
 assert.strictEqual(s.grid[4], 'res');
 G.tick(s);
-assert.ok(s.players.A.pop >= 3 && s.players.A.pop <= 6,'zone home holds 40..100% of its 6 places');
+assert.ok(A.cap >= 3 && A.cap <= 6, 'a zone home has room for 40..100% of its 6 places');
 // an office zone grows once there are free workers
 assert.strictEqual(G.act(s, 'A', 'zoff', 5), null);
 for (let k = 0; k < 50 && s.grid[5] !== 'off'; k++) G.tick(s);
@@ -184,4 +187,45 @@ assert.deepStrictEqual([sh.res, sh.n, sh.from, sh.to, sh.at - sh.t0], ['food', 8
 for (let k = 0; k < 4; k++) G.tick(d);
 assert.ok(DP.flow.food.some(([what, v]) => what.startsWith('Привезли') && v === 8), 'the load arrived on the 4th tick');
 assert.ok(!d.ships.some(x => x.id === sh.id));
+// demographics: kids grow up with school if there are seats, the university gives degrees, hospitals halve deaths
+const dm = { kids: 30, none: 0, school: 80, higher: 0, old: 50 };
+G.demographics(dm, G.popOf(dm), { school: 1, uni: 1, hospital: 1 }, 1); // homes exactly full: nobody arrives or leaves
+assert.ok(dm.none < 1e-9 && dm.school > 78, 'the grown-up kid went to school');
+assert.ok(dm.higher > 1.4, 'the university turned out graduates');
+const dn = { kids: 30, none: 0, school: 0, higher: 0, old: 50 };
+G.demographics(dn, G.popOf(dn), {}, 1);
+assert.ok(dn.none > 0.99 && dn.school === 0, 'no school: kids grow up without education');
+assert.ok(dn.old < dm.old, 'without a hospital more pensioners die');
+// production chain: a factory makes furniture from wood, trucks take it to the depot, then to the shop, which sells it
+const f = G.newGame(8);
+f.grid.fill('grass');
+G.start(f, ['F']); G.act(f, 'F', 'claim', 0);
+const FP = f.players.F;
+FP.level = 2; FP.res = { money: 1e5, wood: 500, stone: 1e3, food: 500, iron: 0, gold: 0 };
+f.grid[0] = 'lake';
+for (let x = 0; x < 12; x++) G.act(f, 'F', 'road', W + x);
+G.act(f, 'F', 'pump', 1); G.act(f, 'F', 'plant', 2); f.grid[3] = 'ind';
+for (const x of [4, 5, 6, 7]) G.act(f, 'F', 'house', x);
+G.act(f, 'F', 'shop', 8); G.act(f, 'F', 'depot', 10);
+assert.strictEqual(G.setSpec(f, 'F', 3, 'gold-bars'), 'неизвестный товар');
+assert.strictEqual(G.setSpec(f, 'F', 4, 'furniture'), 'выпуск настраивается только у завода');
+assert.strictEqual(G.setSpec(f, 'Z', 3, 'furniture'), 'это не ваш участок');
+assert.strictEqual(G.setSpec(f, 'F', 3, 'furniture'), null);
+let toDepot = false, toShop = false, sale = false;
+for (let k = 0; k < 120 && !sale; k++) {
+  G.tick(f);
+  toDepot = toDepot || FP.flow.furniture.some(([w]) => w.startsWith('Привезли'));
+  toShop = toShop || FP.flow.furniture.some(([w]) => w === 'Отправлено в магазины');
+  sale = FP.flow.money.some(([w]) => w.startsWith('Магазины продали'));
+}
+assert.ok(toDepot && toShop && sale, `furniture reached the depot (${toDepot}), went to the shop (${toShop}) and sold (${sale})`);
+assert.ok(FP.res.wood < 500, 'the factory used wood');
+assert.ok(FP.hist.length > 0 && 'higher' in FP.hist[0], 'population history is kept for the chart');
+// offices only take people with a degree
+const o = { ...FP, demo: { kids: 0, none: 50, school: 50, higher: 0, old: 0 } };
+f.players.F = o; f.grid[9] = 'off'; G.tick(f);
+assert.strictEqual(o.wr.off, 0, 'nobody with a degree, so offices stay empty');
+// pollution fades with distance from the factory
+const pl = G.pollution(f);
+assert.ok(pl[3] >= 1 && pl[3 + 7] < pl[3] && pl[6 * W + 60] === 0);
 console.log('ok');
