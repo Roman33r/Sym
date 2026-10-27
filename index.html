@@ -51,8 +51,9 @@
 <body>
 <header id="top">
   <span class="logo">Город вместе</span>
-  <div id="speed"><button data-v="0" title="Пауза"><img class="ic" src="icons/pause.svg?v=7" alt="Пауза"></button><button data-v="1" title="Скорость ×1"><img class="ic" src="icons/play.svg?v=7" alt="×1"></button><button data-v="2" title="Скорость ×2"><img class="ic" src="icons/fast.svg?v=7" alt="×2"></button><button data-v="4" title="Скорость ×4"><img class="ic" src="icons/faster.svg?v=7" alt="×4"></button></div>
+  <div id="speed"><button data-v="0" title="Пауза"><img class="ic" src="icons/pause.svg?v=8" alt="Пауза"></button><button data-v="1" title="Скорость ×1"><img class="ic" src="icons/play.svg?v=8" alt="×1"></button><button data-v="2" title="Скорость ×2"><img class="ic" src="icons/fast.svg?v=8" alt="×2"></button><button data-v="4" title="Скорость ×4"><img class="ic" src="icons/faster.svg?v=8" alt="×4"></button></div>
   <span id="tickN" class="date"></span>
+  <button id="commBtn" title="Показать ЛЭП, водопровод и куда доходят электричество и вода" style="width:auto"><img class="ic" src="icons/power.svg?v=8" alt=""> Коммуникации</button>
   <div id="res"></div>
   <div id="zoom" title="Масштаб (или Ctrl+колесо)"><button id="zout" aria-label="Уменьшить">−</button><button id="zin" aria-label="Увеличить">+</button></div>
 </header>
@@ -70,12 +71,12 @@
   <div id="invite"></div>
   <h4>Игроки</h4><div id="players"></div>
   <h4>События</h4><div id="log"></div>
-  <button id="restart" style="margin-top:12px;text-align:center"><img class="ic" src="icons/restart.svg?v=7" alt=""> Новый город</button>
+  <button id="restart" style="margin-top:12px;text-align:center"><img class="ic" src="icons/restart.svg?v=8" alt=""> Новый город</button>
 </div>
 </div>
 <div id="netbox"><div class="box" id="netStep"></div></div>
 <!-- ?v= must change with every release: GitHub Pages lets browsers cache files for 10 minutes, and a new page with an old game.js breaks -->
-<script src="game.js?v=7"></script>
+<script src="game.js?v=8"></script>
 <script>
 // W, H, B, NEED_TEXT, POWER, WATER are globals from game.js
 // show script errors instead of a silently frozen game (e.g. a stale cached game.js)
@@ -99,17 +100,20 @@ $('name').onchange = () => {
   if (net) net.rename();
 };
 
-const ic = n => `<img class="ic" src="icons/${n}.svg?v=7" alt="">`; // emoji don't render in every browser, so icons are SVG files
+const ic = n => `<img class="ic" src="icons/${n}.svg?v=8" alt="">`; // emoji don't render in every browser, so icons are SVG files
 const RES = { money: 'money', wood: 'wood', stone: 'stone', food: 'food', iron: 'iron', gold: 'gold' };
 const costText = c => Object.entries(c).map(([k, v]) => v + ic(RES[k])).join(' ');
 const TOOLS = { info: { label: 'Информация', icon: 'info', cost: {} }, buy: { label: 'Купить землю', icon: 'buy', cost: {} }, clear: { label: 'Расчистить', icon: 'clear', cost: {}, note: 'лес 5' + ic('money') + ', камень 10' + ic('money') }, ...B, bulldoze: { label: 'Снести', icon: 'bulldoze', cost: { money: 2 } } };
 const TABS = [['Сети', ['road', 'power', 'pipe', 'stop']], ['Зоны', ['zres', 'zoff', 'zind']], ['Жильё', ['house', 'shop', 'park']],
-  ['Добыча', ['farm', 'sawmill', 'quarry', 'mine']], ['Энергия', ['plant', 'pump']], ['Рынок', 'market']];
+  ['Добыча', ['farm', 'sawmill', 'quarry', 'mine', 'depot']], ['Энергия', ['plant', 'pump']], ['Рынок', 'market']];
 const toolBtn = k => {
   const b = TOOLS[k], el = document.createElement('button');
   el.dataset.tool = k;
   el.innerHTML = `${ic(b.icon || k)} ${b.label} <small>${b.note || costText(b.cost)}</small>`;
-  el.onclick = () => { tool = k; document.querySelectorAll('[data-tool]').forEach(x => x.classList.toggle('sel', x === el)); };
+  el.onclick = () => {
+    tool = k; document.querySelectorAll('[data-tool]').forEach(x => x.classList.toggle('sel', x === el));
+    if (k === 'power' || k === 'pipe') setComm(true); // laying networks: show them
+  };
   if (k === tool) el.classList.add('sel');
   return el;
 };
@@ -354,6 +358,14 @@ const DRAW = {
     bx.fillStyle = 'rgba(255,255,255,.35)'; circle(x + 12, y + 7, 2.5);
     rect('#ddd', x + 4, y + 20, 7, 5);
   },
+  depot(x, y) {
+    shadow(x + 2, y + 6, 24, 18);
+    rect('#b9a27a', x + 2, y + 6, 24, 18);
+    poly('#7a6648', x + 1, y + 8, x + 14, y + 2, x + 27, y + 8);
+    rect('#5d5f66', x + 8, y + 13, 12, 11);
+    for (let k = 0; k < 4; k++) rect('#73767e', x + 8, y + 14 + k * 2.6, 12, 1);
+    rect('#c49a5e', x + 3, y + 19, 4, 4); rect('#a87a3e', x + 21, y + 19, 4, 4);
+  },
   park(x, y, i) {
     rect('#4f9a3c', x + 1, y + 1, U - 2, U - 2);
     rect('#d8c79a', x + 1, y + U / 2 - 2, U - 2, 4); rect('#d8c79a', x + U / 2 - 2, y + 1, 4, U - 2);
@@ -394,11 +406,32 @@ for (const t of ['iron', 'gold']) DRAW[t + 'mine'] = (x, y, i) => {
   bx.fillStyle = '#444'; circle(x + 14, y + 5, 2.5);
 };
 
+// communications mode: power lines, pipes and which buildings get electricity / water; hidden otherwise
+let comm = false, nets = null;
+function setComm(on) {
+  if (comm === on) return;
+  comm = on;
+  $('commBtn').classList.toggle('sel', on);
+  if (st) paint(true);
+}
+$('commBtn').onclick = () => setComm(!comm);
+
 function utils(i) {
   const g = st.grid;
+  if (comm) {
+    rect('rgba(10,15,30,.45)', 0, 0, U, U); // dim the town so the networks stand out
+    const b = B[g[i]];
+    if (b && b.needs) { // two marks: electricity, water; filled = has it, outline = needs it but has none
+      for (const [need, set, color, x] of [['p', nets.powered, '#ffd23f', 3], ['w', nets.watered, '#4fc3f7', 10]]) {
+        if (!b.needs.includes(need)) continue;
+        if (set.has(i)) rect(color, x, U - 9, 6, 6);
+        else { bx.strokeStyle = color; bx.lineWidth = 1.5; bx.strokeRect(x + 0.75, U - 8.25, 4.5, 4.5); }
+      }
+    }
+  }
   // power slightly up-left, water down-right so both stay visible on one tile
   for (const [bit, color, off] of [[POWER, '#ffd23f', -4], [WATER, '#4fc3f7', 4]]) {
-    if (!(st.util[i] & bit)) continue;
+    if (!comm || !(st.util[i] & bit)) continue;
     const cx = U / 2 + off, cy = U / 2 + off;
     bx.strokeStyle = 'rgba(0,0,0,.4)'; bx.lineWidth = 4; bx.beginPath(); seg(); bx.stroke();
     bx.strokeStyle = color; bx.lineWidth = 2; bx.beginPath(); seg(); bx.stroke();
@@ -423,6 +456,7 @@ let painted = null; // per tile: what it was drawn from
 function paint(full = false) {
   const n = st.grid.length, sig = new Array(n);
   for (let i = 0; i < n; i++) sig[i] = st.grid[i] + '|' + st.util[i] + '|' + st.status[i] + '|' + st.owner[i];
+  if (comm) nets = Game.networks(st);
   let dirty;
   if (full || !painted) dirty = sig.map((_, i) => i);
   else {
@@ -534,7 +568,7 @@ function trafficRebuild() {
   traffic.producers = list((t, b) => b.prod && Object.keys(b.prod).some(k => CARGO[k]));
   traffic.stops = list(t => t === 'stop');
   // drop agents whose route lost a road
-  traffic.agents = traffic.agents.filter(a => a.path.every(i => g[i] === 'road'));
+  traffic.agents = traffic.agents.filter(a => a.kind === 'truck' || a.path.every(i => g[i] === 'road'));
 }
 
 // shortest road route between two road tiles, or null
@@ -558,17 +592,13 @@ function spawn(kind) {
   let a = null;
   if (kind === 'bus') {
     const [, s1] = pickR(T.stops), others = sameNet(T.stops, s1);
-    if (others.length) a = { kind, path: route(s1, pickR(others)[1]), speed: 2.2, loop: true, color: '#e8b923' };
-  } else if (kind === 'truck') {
-    const [i, r] = pickR(T.producers), prod = Object.keys(B[st.grid[i]].prod).find(k => CARGO[k]);
-    const dest = sameNet(T.shops.concat(T.homes), r);
-    if (dest.length) a = { kind, path: route(r, pickR(dest)[1]), speed: 2.6, cargo: CARGO[prod] };
+    if (others.length) a = { kind, path: route(s1, pickR(others)[1]), speed: 1.1, loop: true, color: '#e8b923' };
   } else if (kind === 'car') {
     const [, r] = pickR(T.homes), dest = sameNet(T.works, r);
-    if (dest.length) a = { kind, path: route(r, pickR(dest)[1]), speed: 3.2, color: pickR(CAR_COLORS) };
+    if (dest.length) a = { kind, path: route(r, pickR(dest)[1]), speed: 1.4, color: pickR(CAR_COLORS) };
   } else {
     const [, r] = pickR(T.homes), dest = sameNet(T.works.concat(T.shops, T.homes), r).filter(([, d]) => Math.abs(d % W - r % W) + Math.abs((d / W | 0) - (r / W | 0)) < 14);
-    if (dest.length) a = { kind, path: route(r, pickR(dest)[1]), speed: 0.7, side: Math.random() < 0.5 ? 1 : -1, skin: pickR(SKIN), shirt: pickR(SHIRT), ph: Math.random() * 6 };
+    if (dest.length) a = { kind, path: route(r, pickR(dest)[1]), speed: 0.35, side: Math.random() < 0.5 ? 1 : -1, skin: pickR(SKIN), shirt: pickR(SHIRT), ph: Math.random() * 6 };
   }
   if (a && a.path && a.path.length > 1) { a.k = 0; a.f = 0; a.wait = 0; T.agents.push(a); }
 }
@@ -577,19 +607,39 @@ function spawn(kind) {
 function trafficWanted() {
   const ps = Object.values(st.players), pop = ps.reduce((n, p) => n + p.pop, 0), workers = ps.reduce((n, p) => n + (p.workers || 0), 0);
   return {
-    ped: traffic.homes.length ? Math.min(70, Math.round(pop / 6)) : 0,
-    car: traffic.works.length && traffic.homes.length ? Math.min(35, Math.round(workers / 10)) : 0,
-    truck: traffic.producers.length ? Math.min(30, traffic.producers.length * 2) : 0,
+    ped: traffic.homes.length ? Math.min(50, Math.round(pop / 8)) : 0,
+    car: traffic.works.length && traffic.homes.length ? Math.min(12, Math.round(workers / 30)) : 0,
     bus: traffic.stops.length > 1 ? Math.min(20, traffic.stops.length >> 1) : 0,
   };
 }
 
+// Trucks are the server's real shipments (game.js ship()): each one is on the road from t0 to at,
+// in ticks; tickClock is how far the current tick has gone (0..1), so trucks move smoothly between states.
+let tickClock = 0, clockTick = -1;
+function syncTrucks() {
+  const live = new Map((st.ships || []).map(sh => [sh.id, sh]));
+  traffic.agents = traffic.agents.filter(a => a.kind !== 'truck' || live.has(a.ship.id));
+  const have = new Set(traffic.agents.filter(a => a.kind === 'truck').map(a => a.ship.id));
+  for (const sh of live.values()) {
+    if (have.has(sh.id)) continue;
+    const path = route(sh.from, sh.to);
+    if (path) traffic.agents.push({ kind: 'truck', ship: sh, path, k: 0, f: 0, cargo: CARGO[sh.res] });
+  }
+}
+
 function trafficStep(dt) {
-  const T = traffic, want = trafficWanted(), have = { ped: 0, car: 0, truck: 0, bus: 0 };
-  for (const a of T.agents) have[a.kind]++;
-  for (const kind in want) if (have[kind] < want[kind] && Math.random() < 0.15) spawn(kind); // trickle in, no bursts
+  const T = traffic, want = trafficWanted(), have = { ped: 0, car: 0, bus: 0 };
+  for (const a of T.agents) if (a.kind in have) have[a.kind]++;
+  for (const kind in want) if (have[kind] < want[kind] && Math.random() < 0.05) spawn(kind); // trickle in, no bursts
+  if (st.tick !== clockTick) { clockTick = st.tick; tickClock = 0; }
+  tickClock = Math.min(1, tickClock + dt / 2); // a tick is 2 s at speed 1; dt is already scaled by speed
+  for (const a of T.agents) if (a.kind === 'truck') { // the state's tick is already counted when a shipment is sent
+    const p = Math.max(0, Math.min(1, (st.tick - 1 - a.ship.t0 + tickClock) / (a.ship.at - a.ship.t0))) * (a.path.length - 1);
+    a.k = Math.min(a.path.length - 2, Math.floor(p)); a.f = p - a.k;
+  }
   if (!dt) return;
   T.agents = T.agents.filter(a => {
+    if (a.kind === 'truck') return true;
     if (a.kind === 'ped') a.ph += dt * 9;
     if (a.wait > 0) { a.wait -= dt; return true; }
     a.f += a.speed * dt;
@@ -770,6 +820,11 @@ function card(i) {
   if (POLLUTES.includes(t)) rows.push(ic('noise') + ' Шумит: жителям в 3 клетках неуютно');
   if (t === 'park') rows.push(ic('park') + ' Радует жителей в радиусе 4 клеток');
   if (t === 'shop') rows.push(ic('shop') + ' Нужен жителям в радиусе 5 клеток');
+  if (t === 'depot') rows.push(ic('depot') + ' Сюда грузовики привозят товары с ферм, лесопилок, каменоломен и рудников той же дороги');
+  if (b && b.prod && Object.keys(b.prod).some(k => CARGO[k])) {
+    rows.push(`${ic('prod')} Запас: ${Math.floor((st.stock || {})[i] || 0)} из ${Game.LOAD} — полный кузов уезжает на склад`);
+    if ((st.undelivered || []).includes(i)) rows.push(ic('warn') + ' Нет склада на той же дороге — товары не вывозятся');
+  }
   if (t === 'iron' || t === 'gold') rows.push(ic('mine') + ` Постройте здесь рудник (с уровня «${LEVELS[B.mine.lvl].name}»)`);
   if (t === 'stop') rows.push(ic('bus') + ' Возит на работу жителей в 3 клетках от неё, если на той же дороге есть остановка в 3 клетках от работы');
   const u = [st.util[i] & POWER && ic('power') + ' ЛЭП', st.util[i] & WATER && ic('pipe') + ' водопровод'].filter(Boolean);
@@ -826,7 +881,7 @@ let reach = new Set(); // homes that can get to work, computed once per state fo
 let frame = 0;
 const onState = x => {
   st = x;
-  if (!frame) frame = requestAnimationFrame(() => { frame = 0; reach = Game.commute(st); render(); });
+  if (!frame) frame = requestAnimationFrame(() => { frame = 0; reach = Game.commute(st); render(); syncTrucks(); });
 };
 
 // Played from our Node server: state comes over SSE, commands go to /msg.

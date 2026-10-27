@@ -21,6 +21,7 @@ const B = {
   shop:    { cost: { money: 100, wood: 10, stone: 10 }, needs: 'rpw', lvl: 1, jobs: 6, prod: { money: 6 }, label: 'Магазин (деньги)', icon: 'shop' },
   park:    { cost: { money: 30 }, label: 'Парк (радует жителей)', icon: 'park' },
   stop:    { cost: { money: 40 }, needs: 'r', upkeep: 1, label: 'Остановка (автобус до работы)', icon: 'stop' },
+  depot:   { cost: { money: 80, wood: 10 }, needs: 'r', label: 'Склад (сюда грузовики везут товары)', icon: 'depot' },
   // a mine is built on an ore deposit and turns into the matching mine; demolishing it leaves the deposit
   mine:    { cost: { money: 150, wood: 20 }, lvl: 1, label: 'Рудник (на месторождение)', icon: 'mine' },
   ironmine: { cost: { money: 150, wood: 20 }, needs: 'rp', grown: true, ore: 'iron', jobs: 5, prod: { iron: 1 }, label: 'Железный рудник', icon: 'mine' },
@@ -157,11 +158,18 @@ function flood(s, sources, bit) {
   return seen;
 }
 
-// Returns per-tile string of unmet needs ('' = working or not a building).
-function compute(s) {
+// Tiles reached by electricity and by water.
+function networks(s) {
   const g = s.grid, road = i => nb(i).some(j => g[j] === 'road'), lake = i => nb(i).some(j => g[j] === 'lake');
   const powered = flood(s, g.flatMap((t, i) => t === 'plant' && road(i) ? [i] : []), POWER);
   const watered = flood(s, g.flatMap((t, i) => t === 'pump' && road(i) && powered.has(i) && lake(i) ? [i] : []), WATER);
+  return { powered, watered };
+}
+
+// Returns per-tile string of unmet needs ('' = working or not a building).
+function compute(s) {
+  const g = s.grid, road = i => nb(i).some(j => g[j] === 'road'), lake = i => nb(i).some(j => g[j] === 'lake');
+  const { powered, watered } = networks(s);
   // zone lots only need a road within 3 tiles, so a big district fills in, not just its edge
   const ok = { r: i => B[g[i]].zone || B[g[i]].grown ? near(g, i, 'road', 3) : road(i), p: i => powered.has(i), w: i => watered.has(i), t: i => near(g, i, 'tree', 2), k: i => near(g, i, 'rock', 2), l: lake };
   return g.map((t, i) => isBuilding(t) ? [...B[t].needs].filter(c => !ok[c](i)).join('') : '');
@@ -169,15 +177,21 @@ function compute(s) {
 
 // Which working homes can get to a job of their owner: on foot within 4 tiles, or by bus between
 // stops (one within 3 tiles of the home, one within 3 tiles of a workplace) that stand on the same road network.
-function commute(s, st = s.status || compute(s)) {
-  const g = s.grid, comp = new Array(g.length).fill(-1);
+// id of the connected road network for every road tile, -1 elsewhere
+function roadNets(g) {
+  const comp = new Array(g.length).fill(-1);
   let c = 0;
-  g.forEach((t, i) => { // label connected road networks
+  g.forEach((t, i) => {
     if (t !== 'road' || comp[i] >= 0) return;
     const q = [i]; comp[i] = c;
     while (q.length) { const k = q.pop(); for (const j of nb(k)) if (g[j] === 'road' && comp[j] < 0) { comp[j] = c; q.push(j); } }
     c++;
   });
+  return comp;
+}
+
+function commute(s, st = s.status || compute(s)) {
+  const g = s.grid, comp = roadNets(g);
   const around = (i, rad, f) => {
     const x = i % W, y = i / W | 0;
     for (let dy = -rad; dy <= rad; dy++) for (let dx = -rad; dx <= rad; dx++) {
@@ -223,10 +237,31 @@ const fill = (s, i, h) => s.status && s.status[i] ? 0 : Math.round(B[s.grid[i]].
 const residents = (s, i, reach) => fill(s, i, happiness(s, i, reach));
 const short = t => B[t].label.replace(/ \(.*\)/, '');
 
+// Goods don't go straight to the treasury: a producer fills its own stock, a full load leaves by truck for the
+// owner's nearest depot on the same road network and counts when it arrives (2 tiles per tick).
+const CARGO_RES = ['food', 'wood', 'stone', 'iron', 'gold'];
+const LOAD = 8, STORE = 3 * LOAD; // a truck load; a producer with nowhere to send goods stops at STORE
+function ship(s, comp, who, i, res) {
+  let best = null;
+  for (const r of nb(i).filter(k => comp[k] >= 0))
+    s.grid.forEach((t, d) => {
+      if (t !== 'depot' || s.status[d] || ownerOf(s, d) !== who) return;
+      for (const rd of nb(d)) if (comp[rd] === comp[r]) {
+        const dist = Math.abs(rd % W - r % W) + Math.abs((rd / W | 0) - (r / W | 0));
+        if (!best || dist < best.dist) best = { from: r, to: rd, dist };
+      }
+    });
+  if (!best) return false;
+  s.ships.push({ id: ++s.shipSeq, who, res, n: LOAD, from: best.from, to: best.to, t0: s.tick, at: s.tick + Math.max(1, Math.ceil(best.dist / 2)) });
+  return true;
+}
+
 function tick(s) {
   const st = compute(s), own = s.grid.map((_, i) => ownerOf(s, i));
   s.status = st;
-  const reach = commute(s, st);
+  const reach = commute(s, st), comp = roadNets(s.grid);
+  s.ships = s.ships || []; s.stock = s.stock || {}; s.shipSeq = s.shipSeq || 0;
+  const undelivered = [];
   for (const [who, p] of Object.entries(s.players)) {
     const cnt = {}, needs = Object.fromEntries(Object.keys(WANT_TEXT).map(k => [k, 0]));
     let pop = 0, workers = 0, places = 0, happy = 0;
@@ -244,9 +279,25 @@ function tick(s) {
     const before = { ...R }, flow = Object.fromEntries(Object.keys(R).map(k => [k, []]));
     const add = (k, what, v) => { if (v) { R[k] += v; flow[k].push([what, v]); } };
     for (const [t, n] of Object.entries(cnt)) {
-      for (const [k, v] of Object.entries(B[t].prod || {})) add(k, `${short(t)} ×${n}`, n * v * wr);
+      for (const [k, v] of Object.entries(B[t].prod || {})) if (!CARGO_RES.includes(k)) add(k, `${short(t)} ×${n}`, n * v * wr);
       if (B[t].upkeep) add('money', `Содержание: ${short(t)} ×${n}`, -n * B[t].upkeep);
     }
+    // goods: fill each producer's stock, send full loads, take in the trucks that arrived
+    s.grid.forEach((t, i) => {
+      if (own[i] !== who || st[i] || !B[t] || !B[t].prod) return;
+      for (const [k, v] of Object.entries(B[t].prod)) {
+        if (!CARGO_RES.includes(k)) continue;
+        s.stock[i] = Math.min(STORE, (s.stock[i] || 0) + v * wr);
+        if (s.stock[i] >= LOAD) { if (ship(s, comp, who, i, k)) s.stock[i] -= LOAD; else undelivered.push(i); }
+      }
+    });
+    const came = {};
+    s.ships = s.ships.filter(sh => {
+      if (sh.who !== who || sh.at > s.tick) return true;
+      came[sh.res] = (came[sh.res] || 0) + 1;
+      return false;
+    });
+    for (const [k, c] of Object.entries(came)) add(k, `Привезли грузовики ×${c}`, c * LOAD);
     add('food', `Жители едят (${pop})`, -pop * 0.2);
     const fed = R.food > 0; if (!fed) R.food = 0;
     add('money', `Налоги (${pop} жит.)${fed ? '' : ' — голод, ×0.3'}`, pop * 0.5 * (fed ? 1 : 0.3));
@@ -260,6 +311,9 @@ function tick(s) {
     for (const k in needs) needs[k] = places ? needs[k] / places : 0;
     Object.assign(p, { pop, jobs, workers, fed, flow, needs, happy: places ? happy / places : 0 });
   }
+  for (const i in s.stock) if (!B[s.grid[i]] || !B[s.grid[i]].prod) delete s.stock[i]; // building gone
+  s.ships = s.ships.filter(sh => s.grid[sh.from] === 'road' && s.grid[sh.to] === 'road'); // a removed road loses the load
+  s.undelivered = undelivered;
   s.status = compute(s); s.tick++;
 }
 
@@ -398,5 +452,5 @@ function room(s) {
   return r;
 }
 
-const api = { W, H, B, NEED_TEXT, WANT_TEXT, POWER, WATER, START, LEVELS, levelOf, upgradeBlock, PRICES, SELL, RES_TEXT, trade, CLEAR, startCorner, landOf, landPrice, newGame, start, nextTurn, compute, tick, act, actArea, wants, happiness, residents, commute, ownerOf, room, SPEEDS };
+const api = { W, H, B, NEED_TEXT, WANT_TEXT, POWER, WATER, START, LEVELS, levelOf, upgradeBlock, PRICES, SELL, RES_TEXT, trade, CLEAR, startCorner, landOf, landPrice, newGame, start, nextTurn, compute, tick, act, actArea, wants, happiness, residents, commute, ownerOf, room, SPEEDS, LOAD, roadNets, networks };
 if (typeof module !== 'undefined') module.exports = api; else window.Game = api;

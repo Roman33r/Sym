@@ -164,4 +164,24 @@ assert.strictEqual(r.s.turn, 1, 'the player who left was skipped');
 assert.strictEqual(r.handle('x', { type: 'nope' }), 'неизвестная команда');
 assert.strictEqual(r.handle('Аня', { type: 'restart' }), null);
 assert.strictEqual(r.s.phase, 'lobby'); assert.strictEqual(r.log[0], 'Аня: новый город');
+// goods travel by truck: a farm fills its stock, without a depot nothing leaves, with one the load arrives later
+const d = G.newGame(6);
+d.grid.fill('grass');
+G.start(d, ['D']); G.act(d, 'D', 'claim', 0);
+const DP = d.players.D;
+DP.res = { money: 1e5, wood: 1e3, stone: 1e3, food: 100, iron: 0, gold: 0 };
+d.grid[0] = 'lake';
+for (let x = 0; x < 12; x++) G.act(d, 'D', 'road', W + x);
+G.act(d, 'D', 'pump', 1); G.act(d, 'D', 'plant', 2); G.act(d, 'D', 'farm', 3); G.act(d, 'D', 'house', 4);
+for (let k = 0; k < 4; k++) G.tick(d);
+assert.ok(d.undelivered.includes(3) && !d.ships.length, 'no depot: the farm keeps its goods');
+assert.ok(d.stock[3] >= G.LOAD);
+assert.strictEqual(G.act(d, 'D', 'depot', 10), null);
+G.tick(d);
+assert.strictEqual(d.ships.length, 1);
+const sh = d.ships[0];
+assert.deepStrictEqual([sh.res, sh.n, sh.from, sh.to, sh.at - sh.t0], ['food', 8, W + 3, W + 10, 4]); // 7 tiles at 2 per tick
+for (let k = 0; k < 4; k++) G.tick(d);
+assert.ok(DP.flow.food.some(([what, v]) => what.startsWith('Привезли') && v === 8), 'the load arrived on the 4th tick');
+assert.ok(!d.ships.some(x => x.id === sh.id));
 console.log('ok');
