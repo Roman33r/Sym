@@ -1,0 +1,26 @@
+{
+  "name": "gorod-vmeste",
+  "version": "1.0.0",
+  "description": "Город вместе — градостроительный симулятор на несколько человек",
+  "main": "electron/main.js",
+  "scripts": {
+    "start": "electron .",
+    "server": "node server.js",
+    "test": "node game.test.js",
+    "dist": "electron-builder"
+  },
+  "build": {
+    "appId": "com.roman33r.gorodvmeste",
+    "productName": "Город вместе",
+    "files": ["electron/**", "server.js", "game.js", "index.html", "icons/**"],
+    "directories": { "output": "dist" },
+    "win": { "target": "nsis" },
+    "mac": { "target": "dmg" },
+    "linux": { "target": "AppImage" },
+    "nsis": { "oneClick": false, "allowToChangeInstallationDirectory": true }
+  },
+  "devDependencies": {
+    "electron": "44.7.0",
+    "electron-builder": "26.17.0"
+  }
+}

@@ -1,7 +1,8 @@
-// Run: node server.js  → open http://localhost:3000 (others on the LAN use the printed address)
+// Run: node server.js  → open http://localhost:3000 (others on the LAN use the printed address).
+// The desktop app (electron/main.js) requires this file and calls start() itself.
 const http = require('http'), fs = require('fs'), path = require('path'), os = require('os');
 const G = require('./game');
-const PORT = process.env.PORT || 3000, SAVE = path.join(__dirname, 'city.json');
+const PORT = +process.env.PORT || 3000, SAVE = process.env.CITY_SAVE || path.join(__dirname, 'city.json'); // the app keeps saves in its user data folder
 
 let s;
 try { s = JSON.parse(fs.readFileSync(SAVE, 'utf8')); } catch {}
@@ -15,12 +16,13 @@ function broadcast() {
   for (const r of clients.keys()) r.write(msg);
 }
 const save = () => fs.writeFile(SAVE, JSON.stringify(R.s), () => {});
+const saveNow = () => fs.writeFileSync(SAVE, JSON.stringify(R.s));
 
 setInterval(() => { if (R.step()) { broadcast(); if (R.s.tick % 5 === 0) save(); } }, 500);
 
 const send = (res, type, file) => { res.writeHead(200, { 'Content-Type': type }); fs.createReadStream(path.join(__dirname, file)).pipe(res); };
 
-http.createServer((req, res) => {
+const server = http.createServer((req, res) => {
   const u = new URL(req.url, 'http://x');
   if (u.pathname === '/') return send(res, 'text/html; charset=utf-8', 'index.html');
   if (u.pathname === '/game.js') return send(res, 'text/javascript; charset=utf-8', 'game.js');
@@ -50,9 +52,31 @@ http.createServer((req, res) => {
     return;
   }
   res.writeHead(404).end();
-}).listen(PORT, () => {
-  console.log(`http://localhost:${PORT}`);
-  for (const n of Object.values(os.networkInterfaces()).flat())
-    if (n.family === 'IPv4' && !n.internal) console.log(`http://${n.address}:${PORT}  (для других игроков в сети)`);
 });
-process.on('SIGINT', () => { fs.writeFileSync(SAVE, JSON.stringify(R.s)); process.exit(); });
+
+// is something already answering on this port? (Windows may let a second server bind it without an error)
+const busy = port => new Promise(ok => {
+  const c = require('net').connect(port, '127.0.0.1', () => { c.destroy(); ok(true); });
+  c.on('error', () => ok(false));
+});
+
+// Listens on port, or the next free one if it is taken; resolves with the port and addresses for players on the LAN.
+async function start(port = PORT, tries = 10) {
+  while (tries-- > 1 && await busy(port)) port++;
+  return new Promise((ok, fail) => {
+    server.once('error', fail);
+    server.listen(port, () => {
+      const lan = Object.values(os.networkInterfaces()).flat().filter(n => n.family === 'IPv4' && !n.internal).map(n => `http://${n.address}:${port}`);
+      ok({ port, lan });
+    });
+  });
+}
+module.exports = { start, saveNow };
+
+if (require.main === module) {
+  start().then(({ port, lan }) => {
+    console.log(`http://localhost:${port}`);
+    for (const u of lan) console.log(`${u}  (для других игроков в сети)`);
+  });
+  process.on('SIGINT', () => { saveNow(); process.exit(); });
+}

@@ -1,2 +1,4 @@
 city.json
 .claude/
+node_modules/
+dist/
