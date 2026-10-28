@@ -15,7 +15,7 @@ PICK = {  # way: column (0-based) on this sheet
     'firestation': {'sw': 0, 'se': 1, 'ne': 2, 'nw': '~2'},
     'healer': {'sw': 0, 'se': 1, 'ne': 2, 'nw': 3},
 }
-FOOT = {'firewell': 0.62, 'firestation': 0.86, 'healer': 0.74}
+FOOT = {'firewell': 0.38, 'firestation': 0.66, 'healer': 0.54}  # share of the tile; matched by eye to the older buildings
 im = np.asarray(Image.open(sys.argv[1]).convert('RGB')).astype(int)
 H, W = im.shape[:2]
 cw, ch = W / 4, H / len(ROWS)
