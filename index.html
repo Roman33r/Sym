@@ -59,7 +59,8 @@
   /* ---- city viewport and the floating error line */
   #main { flex: 1; display: flex; min-height: 0; }
   #mapcol { flex: 1; display: flex; flex-direction: column; min-width: 0; position: relative; background: var(--bg0); }
-  #map { flex: 1; overflow: auto; background: #142; }
+  #map { flex: 1; overflow: hidden; background: #142; min-height: 0; position: relative; }
+  #map canvas { position: absolute; left: 0; top: 0; }
   canvas { display: block; cursor: crosshair; }
   #err { position: absolute; left: 50%; bottom: 96px; transform: translateX(-50%); z-index: 7; max-width: min(560px, 90%); padding: 7px 14px; border-radius: var(--r2); background: rgba(40, 18, 16, .94); border: 1px solid rgba(232, 115, 95, .6); color: #ffd2c8; box-shadow: var(--sh2); pointer-events: none; animation: rise .18s ease; }
   #err:empty { display: none; }
@@ -203,14 +204,14 @@
   <div class="hrow">
     <span class="logo">Город вместе</span>
     <span id="tickN" class="date"></span>
-    <div id="speed" class="hgroup" aria-label="Скорость игры"><button data-v="0" title="Пауза (пробел)"><img class="ic" src="icons/pause.png?v=27" alt="Пауза"></button><button data-v="1" title="Скорость ×1"><img class="ic" src="icons/play.png?v=27" alt="×1"></button><button data-v="2" title="Скорость ×2"><img class="ic" src="icons/fast.png?v=27" alt="×2"></button><button data-v="4" title="Скорость ×4"><img class="ic" src="icons/faster.png?v=27" alt="×4"></button></div>
+    <div id="speed" class="hgroup" aria-label="Скорость игры"><button data-v="0" title="Пауза (пробел)"><img class="ic" src="icons/pause.png?v=28" alt="Пауза"></button><button data-v="1" title="Скорость ×1"><img class="ic" src="icons/play.png?v=28" alt="×1"></button><button data-v="2" title="Скорость ×2"><img class="ic" src="icons/fast.png?v=28" alt="×2"></button><button data-v="4" title="Скорость ×4"><img class="ic" src="icons/faster.png?v=28" alt="×4"></button></div>
     <div class="spacer"></div>
     <div class="hgroup acts" aria-label="Управление городом">
-      <button id="commBtn" title="Показать ЛЭП, водопровод и куда доходят электричество и вода"><img class="ic" src="icons/power.png?v=27" alt=""><span>Коммуникации</span></button>
-      <button id="polBtn" title="Показать загрязнение от заводов, станций, карьеров и рудников"><img class="ic" src="icons/pollution.png?v=27" alt=""><span>Загрязнение</span></button>
-      <button id="resBtn" title="Дерево исследований: открывает постройки и следующие эпохи"><img class="ic" src="icons/research.png?v=27" alt=""><span>Исследования</span></button>
-      <button id="mktBtn" title="Рынок: купить и продать ресурсы, цены зависят от спроса"><img class="ic" src="icons/market.png?v=27" alt=""><span>Рынок</span></button>
-      <button id="eduBtn" title="График состава населения по образованию"><img class="ic" src="icons/edu.png?v=27" alt=""><span>Образование</span></button>
+      <button id="commBtn" title="Показать ЛЭП, водопровод и куда доходят электричество и вода"><img class="ic" src="icons/power.png?v=28" alt=""><span>Коммуникации</span></button>
+      <button id="polBtn" title="Показать загрязнение от заводов, станций, карьеров и рудников"><img class="ic" src="icons/pollution.png?v=28" alt=""><span>Загрязнение</span></button>
+      <button id="resBtn" title="Дерево исследований: открывает постройки и следующие эпохи"><img class="ic" src="icons/research.png?v=28" alt=""><span>Исследования</span></button>
+      <button id="mktBtn" title="Рынок: купить и продать ресурсы, цены зависят от спроса"><img class="ic" src="icons/market.png?v=28" alt=""><span>Рынок</span></button>
+      <button id="eduBtn" title="График состава населения по образованию"><img class="ic" src="icons/edu.png?v=28" alt=""><span>Образование</span></button>
     </div>
     <div id="zoom" class="hgroup" title="Масштаб (или Ctrl+колесо)"><button id="zout" aria-label="Уменьшить">−</button><button id="zin" aria-label="Увеличить">+</button></div>
   </div>
@@ -228,26 +229,25 @@
   <div id="invite" class="sec"></div>
   <div class="sec"><h4>Игроки</h4><div id="players"></div></div>
   <div class="sec"><h4>События</h4><div id="log" aria-live="polite"></div></div>
-  <div class="sec"><h4>Управление</h4><div id="info">ЛКМ — строить (дороги и линии можно тянуть, зоны — выделять прямоугольником), ПКМ — выйти из строительства в «Информацию», а в «Информации» — снести. Колесо / Shift+колесо — прокрутка, Ctrl+колесо — масштаб.</div></div>
-  <button id="restart"><img class="ic" src="icons/restart.png?v=27" alt=""> Новый город</button>
+  <div class="sec"><h4>Управление</h4><div id="info">ЛКМ — строить (дороги и линии можно тянуть, зоны — выделять прямоугольником), ПКМ — выйти из строительства в «Информацию», а в «Информации» — снести. Стрелки или WASD (с Shift быстрее), колесо и Shift+колесо — перемещение, Ctrl+колесо — масштаб к курсору, пробел — пауза.</div></div>
+  <button id="restart"><img class="ic" src="icons/restart.png?v=28" alt=""> Новый город</button>
 </div>
 </div>
-<div id="resModal" class="modal" hidden><div class="mwin" role="dialog" aria-label="Дерево исследований"><div class="mhead"><b><img class="ic" src="icons/research.png?v=27" alt=""> Дерево исследований</b><span id="resRate"></span><button id="resClose" aria-label="Закрыть">×</button></div><div class="mbody"><div id="research" class="tree"></div></div></div></div>
-<div id="eduModal" class="modal" hidden><div class="mwin" role="dialog" aria-label="Образование"><div class="mhead"><b><img class="ic" src="icons/edu.png?v=27" alt=""> Состав населения по образованию</b><button id="eduClose" aria-label="Закрыть">×</button></div><div class="mbody" style="display:flex;gap:18px;flex-wrap:wrap;align-items:center"><canvas id="eduChart" class="chart" width="560" height="260"></canvas><div id="eduLegend"></div></div></div></div>
-<div id="mktModal" class="modal" hidden><div class="mwin" role="dialog" aria-label="Рынок"><div class="mhead"><b><img class="ic" src="icons/market.png?v=27" alt=""> Рынок</b><span>цены растут от покупок и падают от продаж, потом возвращаются</span><button id="mktClose" aria-label="Закрыть">×</button></div><div class="mbody"><div id="mkt"></div></div></div></div>
+<div id="resModal" class="modal" hidden><div class="mwin" role="dialog" aria-label="Дерево исследований"><div class="mhead"><b><img class="ic" src="icons/research.png?v=28" alt=""> Дерево исследований</b><span id="resRate"></span><button id="resClose" aria-label="Закрыть">×</button></div><div class="mbody"><div id="research" class="tree"></div></div></div></div>
+<div id="eduModal" class="modal" hidden><div class="mwin" role="dialog" aria-label="Образование"><div class="mhead"><b><img class="ic" src="icons/edu.png?v=28" alt=""> Состав населения по образованию</b><button id="eduClose" aria-label="Закрыть">×</button></div><div class="mbody" style="display:flex;gap:18px;flex-wrap:wrap;align-items:center"><canvas id="eduChart" class="chart" width="560" height="260"></canvas><div id="eduLegend"></div></div></div></div>
+<div id="mktModal" class="modal" hidden><div class="mwin" role="dialog" aria-label="Рынок"><div class="mhead"><b><img class="ic" src="icons/market.png?v=28" alt=""> Рынок</b><span>цены растут от покупок и падают от продаж, потом возвращаются</span><button id="mktClose" aria-label="Закрыть">×</button></div><div class="mbody"><div id="mkt"></div></div></div></div>
 <div id="chartModal" class="modal" hidden><div class="mwin" role="dialog" aria-label="График ресурса"><div class="mhead"><b id="chartTitle" style="font-size:16px"></b><button id="chartClose" aria-label="Закрыть">×</button></div><div class="mbody"><canvas id="resChart" class="chart" width="600" height="260"></canvas><div id="chartNote"></div></div></div></div>
 <div id="toast" role="status" hidden></div>
 <div id="netbox"><div class="box" id="netStep"></div></div>
 <!-- ?v= must change with every release: GitHub Pages lets browsers cache files for 10 minutes, and a new page with an old game.js breaks -->
-<script src="game.js?v=27"></script>
+<script src="game.js?v=28"></script>
 <script>
 // W, H, B, NEED_TEXT, POWER, WATER are globals from game.js
 // show script errors instead of a silently frozen game (e.g. a stale cached game.js)
 window.onerror = m => { const e = document.getElementById('err'); if (e) e.textContent = 'Ошибка: ' + m + ' — обновите страницу (Ctrl+F5)'; };
 let S = 20; // zoom: half the width of a tile diamond, in pixels
 const c = document.getElementById('c'), ctx = c.getContext('2d');
-// the map is painted to an offscreen canvas on each state update; mouse moves only redraw the overlay
-const base = document.createElement('canvas'), bx = base.getContext('2d');
+// the screen canvas is the size of the view; the map itself is drawn in chunks (see paint)
 const $ = id => document.getElementById(id);
 let st = null, tool = 'info', hover = -1, drag = false, last = -1, sel = -1, mx = 0, my = 0;
 
@@ -262,7 +262,7 @@ $('name').onchange = () => {
   if (net) net.rename();
 };
 
-const ic = n => `<img class="ic" src="icons/${n}.png?v=27" alt="">`; // emoji don't render in every browser, so icons are SVG files
+const ic = n => `<img class="ic" src="icons/${n}.png?v=28" alt="">`; // emoji don't render in every browser, so icons are SVG files
 const RES = { money: 'money', wood: 'wood', stone: 'stone', food: 'food', iron: 'iron', gold: 'gold', oil: 'oil', asphalt: 'asphalt', horses: 'horses' };
 const costText = c => Object.entries(c).map(([k, v]) => v + ic(RES[k])).join(' ');
 const TOOLS = { info: { label: 'Информация', icon: 'info', cost: {} }, buy: { label: 'Купить землю', icon: 'buy', cost: {}, tech: 'explore' }, clear: { label: 'Расчистить', icon: 'clear', cost: {}, note: 'лес 5' + ic('money') + ', камень 10' + ic('money') }, ...B, bulldoze: { label: 'Снести', icon: 'bulldoze', cost: { money: 2 } } };
@@ -402,9 +402,9 @@ const nbr = (i, dx, dy) => { const x = i % W + dx, y = ((i / W) | 0) + dy; retur
 // bottom vertex, the diamond is 256 px wide). Whatever has no texture is drawn by code as before.
 const TEX = {}, texCache = new Map();
 let SPR = {}, texReady = false;
-fetch('textures/sprites.json?v=27').then(r => r.json()).then(m => {
+fetch('textures/sprites.json?v=28').then(r => r.json()).then(m => {
   SPR = m;
-  return Promise.all(Object.keys(m).map(n => new Promise(ok => { const im = new Image(); im.onload = () => { TEX[n] = im; ok(); }; im.onerror = ok; im.src = `textures/${n}.png?v=27`; })));
+  return Promise.all(Object.keys(m).map(n => new Promise(ok => { const im = new Image(); im.onload = () => { TEX[n] = im; ok(); }; im.onerror = ok; im.src = `textures/${n}.png?v=28`; })));
 }).then(() => {
   if (TEX.road_b && TEX.road_one && TEX.path_x) buildRoads();
   texReady = true; texCache.clear();
@@ -444,8 +444,8 @@ function buildRoads() {
   }
 }
 const VEH = {}, VSZ = {};
-fetch('textures/vehicles.json?v=27').then(r => r.json()).then(m => Object.keys(m).forEach(n => {
-  const im = new Image(); im.onload = () => { VEH[n] = im; VSZ[n] = m[n]; }; im.src = `textures/veh_${n}.png?v=27`;
+fetch('textures/vehicles.json?v=28').then(r => r.json()).then(m => Object.keys(m).forEach(n => {
+  const im = new Image(); im.onload = () => { VEH[n] = im; VSZ[n] = m[n]; }; im.src = `textures/veh_${n}.png?v=28`;
 })).catch(() => {});
 const MIRROR = { se: 'sw', sw: 'se', nw: 'ne', ne: 'nw', e: 'w', w: 'e' }, BACK = { se: 'nw', nw: 'se', sw: 'ne', ne: 'sw' };
 // draws vehicle `base` at screen point (x, y) heading (dx, dy), `wid` tiles wide on screen; false when it has no picture.
@@ -973,8 +973,42 @@ function drawTile(i) {
 const tileBox = i => { const x = i % W, y = (i / W) | 0; return [OX + (x - y - 1) * S, OY + (x + y) * S / 2 - MAXH * S, 2 * S, MAXH * S + S]; };
 const BG = '#16201a';
 
-// Redraws only tiles whose look changed since the last paint. In isometry a tile's drawing overlaps the tiles
-// around and behind it, so each changed spot is cleared and every tile reaching into it is drawn again, back to front.
+// The map is drawn in chunks: CH-pixel squares of the world picture at the current zoom, made when they come into
+// view and kept until something on them changes or the zoom does. A small overview of the whole map at S0 stands in
+// for chunks not drawn yet, so zooming and panning never wait for the whole map: only a few chunks are drawn per frame.
+// In isometry a tile's drawing overlaps the tiles around and behind it, so a region is drawn from every tile reaching
+// into it, back to front.
+const CH = 512, S0 = 8, MAX_CHUNKS = 90, OVB = 96;
+const chunks = new Map(); // "cx,cy" → canvas, least recently used first
+const ov = document.createElement('canvas'), ovx = ov.getContext('2d'), ovBands = new Set(); // overview and its stale bands
+ov.width = (W + H) * S0; ov.height = (W + H) * S0 / 2 + MT * S0;
+const cam = { x: 0, y: 0 }; // world pixels at the current S shown at the top left of the screen
+function atScale(s, f) { const a = S, b = OX, d = OY; S = s; OX = H * s; OY = MT * s; try { f(); } finally { S = a; OX = b; OY = d; } }
+// draws the world rectangle (rx, ry, rw, rh) at the current S into g, whose (0, 0) is the rectangle's corner
+function region(g, rx, ry, rw, rh) {
+  g.save(); g.setTransform(1, 0, 0, 1, -rx, -ry); g.beginPath(); g.rect(rx, ry, rw, rh); g.clip();
+  g.fillStyle = BG; g.fillRect(rx, ry, rw, rh);
+  gx = g;
+  const u0 = Math.floor((rx - OX) / S) - 1, u1 = Math.ceil((rx + rw - OX) / S) + 1; // u = x - y, v = x + y
+  const v0 = Math.max(0, Math.floor((ry - OY) / (S / 2)) - 2), v1 = Math.min(W + H - 2, Math.ceil((ry + rh - OY + MAXH * S) / (S / 2)) + 1);
+  for (let v = v0; v <= v1; v++)
+    for (let x = Math.max(0, v - H + 1, Math.ceil((u0 + v) / 2)), xb = Math.min(W - 1, v, Math.floor((u1 + v) / 2)); x <= xb; x++) drawTile((v - x) * W + x);
+  g.restore();
+}
+function makeChunk(cx, cy) {
+  const cv = document.createElement('canvas'); cv.width = cv.height = CH;
+  region(cv.getContext('2d'), cx * CH, cy * CH, CH, CH);
+  chunks.set(cx + ',' + cy, cv);
+  if (chunks.size > MAX_CHUNKS) chunks.delete(chunks.keys().next().value); // the one unused longest
+  return cv;
+}
+// a tile changed: drop the chunks and overview bands its drawing reaches
+function forget(i) {
+  const [x0, y0, w, h] = tileBox(i);
+  for (let cy = Math.floor(y0 / CH); cy <= Math.floor((y0 + h) / CH); cy++) for (let cx = Math.floor(x0 / CH); cx <= Math.floor((x0 + w) / CH); cx++) chunks.delete(cx + ',' + cy);
+  const k = S0 / S;
+  for (let b = Math.floor(y0 * k / OVB); b <= Math.floor((y0 + h) * k / OVB); b++) ovBands.add(b);
+}
 let painted = null; // per tile: what it was drawn from
 const order = []; // tiles back to front
 for (let s2 = 0; s2 < W + H - 1; s2++) for (let x = Math.max(0, s2 - H + 1); x <= Math.min(W - 1, s2); x++) order.push((s2 - x) * W + x);
@@ -996,23 +1030,8 @@ function paint(full = false) {
   if (full || !painted) { depth = lakeDepth(); full = true; }
   painted = sig;
   if (full || dirty.length) trafficRebuild();
-  gx = bx;
-  if (full) {
-    bx.fillStyle = BG; bx.fillRect(0, 0, base.width, base.height);
-    for (const i of order) drawTile(i);
-  } else if (dirty.length > 400) return paint(true);
-  else for (const d of dirty) {
-    const [bx0, by0, bw, bh] = tileBox(d), dx0 = d % W, dy0 = (d / W) | 0, hit = [];
-    for (let y = Math.max(0, dy0 - 10); y <= Math.min(H - 1, dy0 + 10); y++) for (let x = Math.max(0, dx0 - 10); x <= Math.min(W - 1, dx0 + 10); x++) {
-      const [ax, ay, aw, ah] = tileBox(y * W + x);
-      if (ax < bx0 + bw && ax + aw > bx0 && ay < by0 + bh && ay + ah > by0) hit.push(y * W + x);
-    }
-    hit.sort((a, b) => ((a % W) + (a / W | 0)) - ((b % W) + (b / W | 0)) || (a % W) - (b % W));
-    bx.save(); bx.beginPath(); bx.rect(bx0, by0, bw, bh); bx.clip();
-    bx.fillStyle = BG; bx.fillRect(bx0, by0, bw, bh);
-    for (const i of hit) drawTile(i);
-    bx.restore();
-  }
+  if (full || dirty.length > 400) { chunks.clear(); for (let k = 0; k * OVB < ov.height; k++) ovBands.add(k); }
+  else for (const d of dirty) forget(d);
   draw();
 }
 
@@ -1032,8 +1051,22 @@ function outline(x0, y0, x1, y1, stroke, fillCol, w = 2) {
 function draw() {
   if (!st) return;
   // only the visible part of the map: this runs every frame
-  const m = $('map'), vx = m.scrollLeft / Z, vy = m.scrollTop / Z, vw = Math.min(m.clientWidth / Z, c.width - vx), vh = Math.min(m.clientHeight / Z, c.height - vy);
-  if (vw > 0 && vh > 0) ctx.drawImage(base, vx, vy, vw, vh, vx, vy, vw, vh);
+  const vx = Math.round(cam.x), vy = Math.round(cam.y), vw = c.width, vh = c.height, t0 = performance.now(), k = S0 / S;
+  ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.fillStyle = BG; ctx.fillRect(0, 0, vw, vh);
+  let made = 0;
+  for (let cy = Math.floor(vy / CH); cy <= Math.floor((vy + vh - 1) / CH); cy++) for (let cx = Math.floor(vx / CH); cx <= Math.floor((vx + vw - 1) / CH); cx++) {
+    const key = cx + ',' + cy;
+    let cv = chunks.get(key);
+    if (cv) { chunks.delete(key); chunks.set(key, cv); } // most recently used
+    else if (!zoomAnim && (!made || performance.now() - t0 < 10)) { cv = makeChunk(cx, cy); made++; } // a few per frame
+    if (cv) ctx.drawImage(cv, cx * CH - vx, cy * CH - vy);
+    else ctx.drawImage(ov, cx * CH * k, cy * CH * k, CH * k, CH * k, cx * CH - vx, cy * CH - vy, CH, CH);
+  }
+  for (const b of ovBands) { // the overview catches up in the time left
+    if (performance.now() - t0 > 12) break;
+    ovBands.delete(b); atScale(S0, () => region(ovx, 0, b * OVB, ov.width, OVB));
+  }
+  ctx.setTransform(1, 0, 0, 1, -vx, -vy); // overlays below are drawn in world coordinates
   drawTraffic(vx, vy, vw, vh);
   drawDepositFx(vx, vy, vw, vh, performance.now());
   if (sel >= 0) {
@@ -1256,39 +1289,55 @@ function panStep(dt) {
   const sp = (fast ? 1800 : 900) * (tx && ty ? Math.SQRT1_2 : 1), k = Math.min(1, dt * 9); // eases towards the target speed
   pan.x += (tx * sp - pan.x) * k; pan.y += (ty * sp - pan.y) * k;
   if (Math.abs(pan.x) < 1 && Math.abs(pan.y) < 1) { pan.x = pan.y = 0; return; }
-  const m = $('map'); m.scrollLeft += pan.x * dt; m.scrollTop += pan.y * dt;
+  cam.x += pan.x * dt; cam.y += pan.y * dt; clampView();
 }
 function frameLoop(t) {
   const dt = Math.min(0.1, (t - lastFrame) / 1000 || 0);
   lastFrame = t;
-  panStep(dt);
+  panStep(dt); zoomStep(dt);
   if (st) { trafficStep(dt * (st.speed ?? 1)); draw(); }
   requestAnimationFrame(frameLoop);
 }
 requestAnimationFrame(frameLoop);
 
-// keeps the point under the middle of the view in place; the map canvas is (W + H) diamonds wide.
-// S stays at 32 or below: the two map-sized canvases grow with the square of it; closer than that the canvas is shown scaled up (Z).
-let zoomed = false, Z = 1; // Z: extra display scale above S = 32, up to ×2
-function setZoom(n) {
-  const m = $('map');
-  const u = zoomed ? ((m.scrollLeft + m.clientWidth / 2) / Z - OX) / S : (W - H) / 2; // u = x - y, v = x + y of the middle
-  const v = zoomed ? ((m.scrollTop + m.clientHeight / 2) / Z - OY) / (S / 2) : (W + H) / 2;
-  n = Math.max(10, Math.min(64, n));
-  const S2 = Math.min(32, n), resize = S2 !== S || !zoomed; // the first call sizes the canvases
-  Z = n / S2; zoomed = true;
-  if (resize) {
-    S = S2; OX = H * S; OY = MT * S;
-    c.width = base.width = (W + H) * S; c.height = base.height = (W + H) * S / 2 + MT * S;
-    if (st) paint(true);
-  }
-  c.style.width = c.width * Z + 'px'; c.style.height = c.height * Z + 'px';
-  m.scrollLeft = (OX + u * S) * Z - m.clientWidth / 2; m.scrollTop = (OY + v * S / 2) * Z - m.clientHeight / 2;
+// Zoom eases towards its target and keeps the anchored point (under the cursor, or the middle) where it is on the screen.
+// While it moves the overview stands in; the chunks are drawn sharp once it settles.
+let zoomT = S, zoomAnim = false, anchor = null;
+function fitCanvas() { const m = $('map'); c.width = Math.max(1, m.clientWidth); c.height = Math.max(1, m.clientHeight); clampView(); }
+function clampView() {
+  const ww = (W + H) * S, wh = (W + H) * S / 2 + MT * S;
+  cam.x = Math.max(-c.width / 2, Math.min(ww - c.width / 2, cam.x)); cam.y = Math.max(-c.height / 2, Math.min(wh - c.height / 2, cam.y));
 }
-$('zin').onclick = () => setZoom(S * Z + 4);
-$('zout').onclick = () => setZoom(S * Z - 4);
-$('map').addEventListener('wheel', e => { if (!e.ctrlKey) return; e.preventDefault(); setZoom(S * Z + (e.deltaY < 0 ? 2 : -2)); }, { passive: false });
-setZoom(S);
+function setZoom(n, sx = c.width / 2, sy = c.height / 2) {
+  zoomT = Math.max(10, Math.min(80, Math.round(n / 2) * 2)); // even, so half a tile is whole pixels
+  anchor = [sx, sy, (cam.x + sx - OX) / S, (cam.y + sy - OY) / (S / 2)];
+  zoomAnim = zoomT !== S;
+}
+function applyZoom(s) {
+  S = s; OX = H * S; OY = MT * S; chunks.clear();
+  const [sx, sy, u, v] = anchor; cam.x = OX + u * S - sx; cam.y = OY + v * S / 2 - sy; clampView();
+}
+function zoomStep(dt) {
+  if (!zoomAnim) return;
+  let s2 = S + (zoomT - S) * Math.min(1, dt * 14);
+  if (Math.abs(zoomT - s2) < 0.08) { s2 = zoomT; zoomAnim = false; }
+  applyZoom(s2);
+}
+const zoomBy = (f, sx, sy) => setZoom(Math.max(zoomT + 2 * Math.sign(f - 1), zoomT * f), sx, sy); // at least one step
+$('zin').onclick = () => zoomBy(1.25);
+$('zout').onclick = () => zoomBy(0.8);
+// Ctrl+wheel zooms to the cursor; the wheel alone (and Shift+wheel, or a touchpad) moves the map
+$('map').addEventListener('wheel', e => {
+  e.preventDefault();
+  const r = c.getBoundingClientRect();
+  if (e.ctrlKey) return zoomBy(e.deltaY < 0 ? 1.15 : 1 / 1.15, e.clientX - r.left, e.clientY - r.top);
+  const f = e.deltaMode === 1 ? 32 : 1; // lines or pixels
+  cam.x += (e.shiftKey && !e.deltaX ? e.deltaY : e.deltaX) * f; cam.y += (e.shiftKey && !e.deltaX ? 0 : e.deltaY) * f; clampView();
+}, { passive: false });
+new ResizeObserver(fitCanvas).observe($('map'));
+fitCanvas();
+OX = H * S; OY = MT * S;
+cam.x = OX + (W - H) / 2 * S - c.width / 2; cam.y = OY + (W + H) / 2 * S / 2 - c.height / 2; // the middle of the map
 
 // hover window over a resource: what adds to it and takes from it this tick
 let tipKey = '';
@@ -1566,7 +1615,7 @@ function techToast(me) {
   knownTech = new Set(now);
   if (!fresh.length) return;
   const t = Game.techOf(fresh[fresh.length - 1]);
-  $('toast').innerHTML = `<img class="ic big" src="icons/${TECH_ICON[t.id]}.png?v=27" alt="" style="width:30px;height:30px"><div><b>Исследование завершено: ${t.name}</b><br><small>${t.desc}</small></div><button data-next>${ic('research')} Выбрать следующее</button>`;
+  $('toast').innerHTML = `<img class="ic big" src="icons/${TECH_ICON[t.id]}.png?v=28" alt="" style="width:30px;height:30px"><div><b>Исследование завершено: ${t.name}</b><br><small>${t.desc}</small></div><button data-next>${ic('research')} Выбрать следующее</button>`;
   $('toast').hidden = false;
   clearTimeout(toastTimer); toastTimer = setTimeout(() => { $('toast').hidden = true; }, 8000);
 }
@@ -1587,7 +1636,7 @@ function researchPanel(me) {
     if (before) { const [bx0, by0] = pos(before); lines += `<line x1="${bx0 + 168}" y1="${by0 + 44}" x2="${x}" y2="${y + 44}" stroke="${Game.hasTech(me, before.id) ? (done ? '#5bb06c' : '#78a6df') : '#39425a'}" stroke-width="3"${Game.hasTech(me, before.id) ? '' : ' stroke-dasharray="6 5"'}/>`; }
     const why = done ? 'Изучено' : cur ? 'Изучается' : open ? 'Нажмите, чтобы изучать' : t.era > (me.level || 0) ? `Откроется в эпоху «${LEVELS[t.era].name}»` : `Сначала изучите «${before.name}»`;
     nodes += `<div class="node ${done ? 'done' : cur ? 'cur' : open ? 'open' : 'off'}" style="left:${x}px;top:${y}px" title="${why}"${open ? ` data-tech="${t.id}"` : ''}>` +
-      `<img class="big" src="icons/${TECH_ICON[t.id]}.png?v=27" alt=""><div><b>${done ? ic('ok') + ' ' : ''}${t.name}</b><br><span style="color:#aab">${t.desc}</span></div>` +
+      `<img class="big" src="icons/${TECH_ICON[t.id]}.png?v=28" alt=""><div><b>${done ? ic('ok') + ' ' : ''}${t.name}</b><br><span style="color:#aab">${t.desc}</span></div>` +
       (cur || (pts && !done) ? `<div class="bar"><i style="width:${Math.min(100, pts / Game.TECH_COST[t.era] * 100)}%"></i></div>` : '') + '</div>';
   }
   const html = `<div style="position:relative;width:${Wt}px;height:${Ht}px"><svg width="${Wt}" height="${Ht}">${lines}</svg>${nodes}</div>`;
@@ -1648,7 +1697,7 @@ addEventListener('keydown', e => {
 });
 // screen point → tile on the ground: invert P() with u = x - y and v = x + y
 const tileAt = e => {
-  const r = c.getBoundingClientRect(), u = ((e.clientX - r.left) / Z - OX) / S, v = ((e.clientY - r.top) / Z - OY) / (S / 2);
+  const r = c.getBoundingClientRect(), u = (e.clientX - r.left + cam.x - OX) / S, v = (e.clientY - r.top + cam.y - OY) / (S / 2);
   const x = Math.floor((u + v) / 2), y = Math.floor((v - u) / 2);
   return x >= 0 && y >= 0 && x < W && y < H ? y * W + x : -1;
 };
