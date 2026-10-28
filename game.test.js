@@ -438,7 +438,8 @@ assert.strictEqual(G.act(ev, 'E', 'firewell', 9), null);
 ev.events = []; G.startFire(ev, 11); G.tick(ev); G.tick(ev);
 assert.ok(ev.grid[11] === 'sawmill' && !(11 in ev.fire), 'the well put it out in two ticks');
 assert.strictEqual(G.act(ev, 'E', 'firestation', 1), null); // next to the path
-assert.ok(G.covered(ev, 7 * W + 7) && !G.covered(ev, 11 * W + 11), 'a fire station reaches 7 tiles');
+assert.ok(G.covered(ev, 11 * W + 11), 'a fire station reaches 12 tiles'); // the station stands at (1, 0)
+assert.ok(!G.covered(ev, 13 * W + 13), 'and no further');
 // epidemics: healers and hospitals save a share of the sick
 assert.strictEqual(G.cureOf({}, 100), 0);
 assert.strictEqual(G.cureOf({ healer: 1 }, 40), 0.5, 'a healer saves half of his 40');

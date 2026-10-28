@@ -26,9 +26,9 @@ const B = {
   stop:    { cost: { money: 40 }, needs: 'r', tech: 'post', upkeep: 1, label: 'Остановка (автобус до работы)', icon: 'stop' },
   market:  { cost: { money: 120, wood: 30, stone: 10 }, needs: 'r', tech: 'trade', jobs: 4, label: 'Рынок (покупка и продажа ресурсов)', icon: 'market' },
   depot:   { cost: { money: 80, wood: 10 }, needs: 'r', label: 'Склад (сюда грузовики везут товары)', icon: 'depot' },
-  // against fires: a well puts out fires within 3 tiles, a fire station within 7 (see FIRE_COVER)
-  firewell: { cost: { money: 25, stone: 5 }, label: 'Колодец (тушит пожары в 3 клетках)', icon: 'firewell' },
-  firestation: { cost: { money: 220, stone: 30, iron: 5 }, needs: 'r', tech: 'firefighting', jobs: 4, upkeep: 3, label: 'Пожарная станция (тушит в 7 клетках)', icon: 'firestation' },
+  // against fires: a well puts out fires within 5 tiles, a fire station within 12 (see FIRE_COVER)
+  firewell: { cost: { money: 25, stone: 5 }, label: 'Колодец (тушит пожары в 5 клетках)', icon: 'firewell' },
+  firestation: { cost: { money: 220, stone: 30, iron: 5 }, needs: 'r', tech: 'firefighting', jobs: 4, upkeep: 3, label: 'Пожарная станция (тушит в 12 клетках)', icon: 'firestation' },
   healer:  { cost: { money: 60, wood: 15 }, needs: 'r', tech: 'herbalism', jobs: 1, upkeep: 1, label: 'Дом знахаря (лечит 40 жителей)', icon: 'healer' },
   // services: see SEATS for how many each serves
   kinder:  { cost: { money: 120, wood: 20 }, needs: 'rpw', tech: 'schools', jobs: 3, upkeep: 2, label: 'Детский сад (30 детей)', icon: 'kinder' },
@@ -126,7 +126,7 @@ const TECH = [
   { id: 'ecology', era: 4, branch: 'social', name: 'Экология', desc: 'ваши заводы и станции загрязняют вдвое меньше' },
   // side branches (lane 1, 2 under the main line): not needed for the next era, each gives a bonus
   { id: 'herbalism', era: 0, branch: 'social', lane: 1, side: true, req: [], name: 'Травничество', desc: 'дом знахаря: лечит болезни' },
-  { id: 'firefighting', era: 2, branch: 'social', lane: 2, side: true, req: ['post'], name: 'Пожарное дело', desc: 'пожарная станция: тушит в 7 клетках' },
+  { id: 'firefighting', era: 2, branch: 'social', lane: 2, side: true, req: ['post'], name: 'Пожарное дело', desc: 'пожарная станция: тушит в 12 клетках' },
   { id: 'quarantine', era: 3, branch: 'edu', lane: 1, side: true, req: ['medicine', 'printing'], name: 'Карантин', desc: 'эпидемии вдвое короче' },
   { id: 'seismic', era: 3, branch: 'art', lane: 1, side: true, req: ['industry', 'masonry'], name: 'Прочные постройки', desc: 'стихийные бедствия рушат вдвое меньше' },
   { id: 'forestry', era: 1, branch: 'world', lane: 1, side: true, req: ['explore'], name: 'Лесное хозяйство', desc: 'лесопилки дают на 30% больше дерева' },
@@ -450,7 +450,7 @@ function ship(s, comp, who, i, res, vehicle) {
 // nearby puts it out in two ticks. An epidemic kills a share of the residents each tick unless healers and hospitals
 // treat them; a drought halves the farms' food; a disaster destroys one or two buildings.
 const EVENT_P = { fire: 0.001, sick: 0.0006, drought: 0.0006, disaster: 0.0003 }, EVENT_CALM = 120, FIRE_T = 8;
-const FIRE_COVER = { firewell: 3, firestation: 7 };
+const FIRE_COVER = { firewell: 5, firestation: 12 };
 let eventsOn = true; // tests switch the random part off
 const setEvents = on => { eventsOn = on; };
 const flammable = t => !!B[t] && !isRoad(t) && !B[t].zone && !FIRE_COVER[t] && t !== 'park' && t !== 'power' && t !== 'pipe';
