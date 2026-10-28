@@ -23,6 +23,7 @@ const B = {
   shop:    { cost: { money: 100, wood: 10, stone: 10 }, needs: 'rpw', tech: 'architecture', jobs: 6, prod: { money: 1 }, label: 'Магазин (продаёт товары)', icon: 'shop' },
   park:    { cost: { money: 30 }, tech: 'community', label: 'Парк (радует жителей)', icon: 'park' },
   stop:    { cost: { money: 40 }, needs: 'r', tech: 'post', upkeep: 1, label: 'Остановка (автобус до работы)', icon: 'stop' },
+  market:  { cost: { money: 120, wood: 30, stone: 10 }, needs: 'r', tech: 'trade', jobs: 4, label: 'Рынок (покупка и продажа ресурсов)', icon: 'market' },
   depot:   { cost: { money: 80, wood: 10 }, needs: 'r', label: 'Склад (сюда грузовики везут товары)', icon: 'depot' },
   // services: see SEATS for how many each serves
   kinder:  { cost: { money: 120, wood: 20 }, needs: 'rpw', tech: 'schools', jobs: 3, upkeep: 2, label: 'Детский сад (30 детей)', icon: 'kinder' },
@@ -80,7 +81,7 @@ const TECH = [
   { id: 'writing', era: 0, branch: 'edu', name: 'Письменность', desc: 'исследования идут в 1,5 раза быстрее' },
   { id: 'crafts', era: 0, branch: 'art', name: 'Ремёсла', desc: 'дом' },
   { id: 'community', era: 0, branch: 'social', name: 'Община', desc: 'парк' },
-  { id: 'trade', era: 1, branch: 'world', name: 'Торговые пути', desc: 'рынок: покупка и продажа ресурсов' },
+  { id: 'trade', era: 1, branch: 'world', name: 'Торговые пути', desc: 'здание рынка: покупка и продажа ресурсов' },
   { id: 'mechanics', era: 1, branch: 'science', name: 'Механика', desc: 'рудник' },
   { id: 'schools', era: 1, branch: 'edu', name: 'Школы', desc: 'школа и детский сад' },
   { id: 'architecture', era: 1, branch: 'art', name: 'Зодчество', desc: 'магазин' },
@@ -130,21 +131,32 @@ function setResearch(s, who, id) {
   return null;
 }
 
-// Market: fixed money price per unit to buy (PRICES) or sell (SELL); rare resources can only be sold.
+// Market: base money price per unit to buy (PRICES) or sell (SELL); rare resources can only be sold.
+// Prices follow demand, shared by all players: buying pushes a resource's price up, selling pushes it down,
+// and every tick it drifts back towards the base (s.mk holds the factor per resource).
+const HIST_RES = ['money', 'wood', 'stone', 'food', 'iron', 'gold', 'oil', 'asphalt', 'horses'];
 const PRICES = { wood: 4, stone: 6, food: 3 };
 const SELL = { wood: 2, stone: 3, food: 1, iron: 15, gold: 40, oil: 8 };
+const DEMAND = 0.004, MK_MIN = 0.3, MK_MAX = 3; // 50 units bought → +20%
+const mkOf = (s, res) => (s.mk || {})[res] ?? 1;
+const priceOf = (s, p, res, sell) => { const b = (sell ? SELL : PRICES)[res]; return b ? Math.round(b * mkOf(s, res) * (sell && hasTech(p, 'globaltrade') ? 1.5 : 1) * 10) / 10 : 0; };
+const hasMarket = (s, who) => s.grid.some((t, i) => t === 'market' && ownerOf(s, i) === who && !(s.status && s.status[i]));
 function trade(s, who, res, n, sell = false) {
-  const p = s.players[who], price = (sell ? SELL : PRICES)[res] * (sell && hasTech(p, 'globaltrade') ? 1.5 : 1);
+  const p = s.players[who];
   if (!p) return 'сначала выберите стартовый участок';
+  const price = priceOf(s, p, res, sell);
   if (!price || !Number.isInteger(n) || n < 1 || n > 1000) return 'неверная сделка';
   const lock = techLock(p, 'trade'); if (lock) return lock;
+  if (!hasMarket(s, who)) return 'сначала постройте работающий рынок';
+  const sum = Math.round(price * n * 10) / 10;
   if (sell) {
     if ((p.res[res] || 0) < n) return 'не хватает ' + RES_TEXT[res];
-    p.res[res] -= n; p.res.money += price * n;
-    return null;
+    p.res[res] -= n; p.res.money += sum;
+  } else {
+    if (p.res.money < sum) return `не хватает денег: нужно ${sum}`;
+    p.res.money -= sum; p.res[res] += n;
   }
-  if (p.res.money < price * n) return `не хватает денег: нужно ${price * n}`;
-  p.res.money -= price * n; p.res[res] += n;
+  (s.mk = s.mk || {})[res] = Math.min(MK_MAX, Math.max(MK_MIN, mkOf(s, res) * (1 + (sell ? -n : n) * DEMAND)));
   return null;
 }
 // Clearing forest or rock from a tile costs money and yields a little of the material.
@@ -455,6 +467,7 @@ function tick(s) {
   s.ships = s.ships || []; s.stock = s.stock || {}; s.shipSeq = s.shipSeq || 0; s.spec = s.spec || {}; s.shopStock = s.shopStock || {};
   const undelivered = [], starved = [], noHorse = [];
   s.breed = s.breed || {}; s.events = [];
+  for (const k in s.mk || {}) s.mk[k] += (1 - s.mk[k]) * 0.02; // prices drift back to the base
   if (!s.hl) { // saves from before home tiers: houses were half-timbered, zone homes take the owner's era
     s.hl = {};
     s.grid.forEach((t, i) => { const o = s.players[ownerOf(s, i)]; if (t === 'house') s.hl[i] = 1; if (t === 'res') s.hl[i] = o ? maxTier(o) : 0; });
@@ -580,7 +593,10 @@ function tick(s) {
     });
     for (const k in needs) needs[k] = places ? needs[k] / places : 0;
     p.hist = p.hist || [];
-    if (s.tick % 5 === 0) { p.hist.push({ t: s.tick, ...Object.fromEntries(Object.keys(GROUPS).map(g => [g, Math.round(d[g] * 10) / 10])) }); if (p.hist.length > 120) p.hist.shift(); }
+    if (s.tick % 5 === 0) { // population groups and resources (r) for the charts
+      p.hist.push({ t: s.tick, ...Object.fromEntries(Object.keys(GROUPS).map(g => [g, Math.round(d[g] * 10) / 10])), r: Object.fromEntries(HIST_RES.map(k => [k, Math.round((R[k] || 0) * 10) / 10])) });
+      if (p.hist.length > 120) p.hist.shift();
+    }
     Object.assign(p, { pop, cap, growth: popOf(d) - before0, jobs, workers: Math.round(fo + Math.max(0, fOther)), wr: { off: wrOff, other: wrOther }, cov, fed, flow, needs, happy: hap });
   }
   for (const i in s.stock) if (!B[s.grid[i]] || !(B[s.grid[i]].prod || s.grid[i] === 'ind' || s.grid[i] === 'refinery')) delete s.stock[i]; // building gone
@@ -753,5 +769,5 @@ function room(s) {
   return r;
 }
 
-const api = { W, H, B, NEED_TEXT, WANT_TEXT, POWER, WATER, START, LEVELS, levelOf, upgradeBlock, PRICES, SELL, RES_TEXT, trade, CLEAR, startCorner, landOf, landPrice, newGame, start, nextTurn, compute, tick, act, actArea, wants, happiness, residents, commute, ownerOf, room, SPEEDS, LOAD, roadNets, networks, PRODUCTS, GROUPS, SEATS, pollution, setSpec, popOf, demographics, TECH, TECH_COST, BRANCHES, techOf, hasTech, setResearch, allTech, FARM, HORSES_PER_FARM, UTIL_ERA, isRoad, horseUse, HOME_TIERS, tierOf, homeCap, maxTier };
+const api = { W, H, B, NEED_TEXT, WANT_TEXT, POWER, WATER, START, LEVELS, levelOf, upgradeBlock, PRICES, SELL, RES_TEXT, trade, priceOf, mkOf, hasMarket, HIST_RES, CLEAR, startCorner, landOf, landPrice, newGame, start, nextTurn, compute, tick, act, actArea, wants, happiness, residents, commute, ownerOf, room, SPEEDS, LOAD, roadNets, networks, PRODUCTS, GROUPS, SEATS, pollution, setSpec, popOf, demographics, TECH, TECH_COST, BRANCHES, techOf, hasTech, setResearch, allTech, FARM, HORSES_PER_FARM, UTIL_ERA, isRoad, horseUse, HOME_TIERS, tierOf, homeCap, maxTier };
 if (typeof module !== 'undefined') module.exports = api; else window.Game = api;

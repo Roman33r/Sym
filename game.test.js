@@ -120,12 +120,19 @@ assert.strictEqual(V.level, 1); assert.strictEqual(V.res.money, 700);
 assert.strictEqual(G.act(v, 'V', 'shop', 5), null);
 assert.strictEqual(G.act(v, 'V', 'buy', 12), null);
 assert.strictEqual(G.act(v, 'V', 'upgrade', 0), 'для эпохи «Индустриальная эпоха» нужно 120 жителей');
-// market and clearing
+// market and clearing: trading needs a working market building
+assert.strictEqual(G.trade(v, 'V', 'wood', 10), 'сначала постройте работающий рынок');
+assert.strictEqual(G.act(v, 'V', 'path', 9), null); assert.strictEqual(G.act(v, 'V', 'market', 8), null);
+V.res.money += 120; V.res.wood += 30; V.res.stone += 10; // the market's cost, so the sums below stay as they were
+v.status = G.compute(v);
 assert.strictEqual(G.trade(v, 'V', 'wood', 10), null);
-assert.strictEqual(V.res.wood, 40 - 10 + 10); assert.strictEqual(V.res.money, 700 - 100 - 3 - 40); // shop 100 (+10 wood), 1 tile of land 3, then 10 wood at 4
+assert.ok(G.mkOf(v, 'wood') > 1.03 && G.priceOf(v, V, 'wood') > 4, 'buying makes wood dearer');
+const k0 = G.mkOf(v, 'wood'); G.tick(v); v.status = G.compute(v);
+assert.ok(G.mkOf(v, 'wood') < k0, 'and the price drifts back'); v.mk = {};
+assert.strictEqual(V.res.wood, 40 - 10 + 10); assert.strictEqual(Math.round(V.res.money), Math.round(700 - 100 - 3 - 1 - 40 + (V.delta.money || 0))); // shop 100 (+10 wood), 1 tile of land 3, then 10 wood at 4
 assert.strictEqual(G.trade(v, 'V', 'gold', 1), 'неверная сделка');
 assert.strictEqual(G.trade(v, 'V', 'food', 1.5), 'неверная сделка');
-assert.strictEqual(G.trade(v, 'V', 'stone', 1000), 'не хватает денег: нужно 6000');
+assert.strictEqual(G.trade(v, 'V', 'stone', 1000), 'не хватает денег: нужно 6000'); v.mk = {};
 assert.strictEqual(G.trade(v, 'nobody', 'wood', 1), 'сначала выберите стартовый участок');
 v.grid[2 * W + 1] = 'tree'; v.grid[2 * W + 2] = 'tree'; v.grid[2 * W + 3] = 'rock';
 assert.strictEqual(G.act(v, 'V', 'bulldoze', 2 * W + 1), 'лес и камни убирает «Расчистить»');
@@ -146,7 +153,7 @@ assert.strictEqual(v.grid[5 * W + 5], 'iron');
 V.res.iron = 5; const m1 = V.res.money; V.tech.globaltrade = false;
 assert.strictEqual(G.trade(v, 'V', 'iron', 5, true), null);
 assert.strictEqual(V.res.money, m1 + 75); assert.strictEqual(V.res.iron, 0);
-V.res.iron = 2; V.tech.globaltrade = true; // global trade sells 1.5 times dearer
+V.res.iron = 2; V.tech.globaltrade = true; v.mk = {}; // global trade sells 1.5 times dearer
 assert.strictEqual(G.trade(v, 'V', 'iron', 2, true), null);
 assert.strictEqual(V.res.money, m1 + 75 + 45);
 assert.strictEqual(G.trade(v, 'V', 'iron', 1, true), 'не хватает железа');

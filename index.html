@@ -11,6 +11,22 @@
   #main { flex: 1; display: flex; gap: 12px; padding: 12px; min-height: 0; }
   .ic { width: 16px; height: 16px; vertical-align: -3px; }
   button .ic { width: 18px; height: 18px; }
+  #mapcol { flex: 1; display: flex; flex-direction: column; min-width: 0; gap: 8px; }
+  #build { position: relative; }
+  #bbar { display: flex; gap: 6px; background: #161b26; border: 1px solid #445; border-radius: 8px; padding: 6px; overflow-x: auto; }
+  #bbar button { width: auto; flex: none; margin: 0; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 4px 8px; min-width: 66px; font-size: 11px; text-align: center; }
+  #bbar button .ic { width: 26px; height: 26px; }
+  #bbar button small { display: none; }
+  #bbar button.on { background: #3a4660; border-color: #8ab; }
+  #bbar .sep { width: 1px; flex: none; background: #445; margin: 0 4px; }
+  #items { position: absolute; bottom: 100%; left: 0; right: 0; margin-bottom: 6px; display: flex; gap: 8px; overflow-x: auto; background: #161b26f0; border: 1px solid #556; border-radius: 8px; padding: 8px; z-index: 5; }
+  #items[hidden] { display: none; }
+  #items button { width: 124px; flex: none; margin: 0; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 6px; font-size: 12px; text-align: center; }
+  #items button .ic { width: 40px; height: 40px; }
+  #items button small .ic { width: 14px; height: 14px; }
+  .mkt { border-collapse: collapse; font-size: 14px; }
+  .mkt td, .mkt th { padding: 4px 8px; border-bottom: 1px solid #334; text-align: left; }
+  .mkt button { display: inline-block; width: auto; margin: 0 2px; padding: 3px 8px; }
   #map { flex: 1; overflow: auto; border: 1px solid #445; border-radius: 6px; background: #142; }
   #side { width: 270px; flex: none; overflow-y: auto; }
   button { display: block; width: 100%; margin: 2px 0; padding: 5px 8px; text-align: left; background: #2c3446; color: #eee; border: 1px solid #445; border-radius: 4px; cursor: pointer; }
@@ -55,7 +71,7 @@
   #level button { margin-top: 6px; text-align: center; background: #3d6a7a; }
   #level button:disabled { opacity: .5; cursor: default; }
   .locked { opacity: .45; }
-  #res [data-res] { white-space: nowrap; cursor: help; }
+  #res [data-res] { white-space: nowrap; cursor: pointer; }
   .pop { position: fixed; display: none; z-index: 10; width: 260px; background: #11161f; border: 1px solid #556; border-radius: 6px; padding: 8px; font-size: 12px; line-height: 1.5; box-shadow: 0 4px 16px #0008; pointer-events: none; }
   .pop hr { border: 0; border-top: 1px solid #445; margin: 4px 0; }
   .pop b { font-size: 13px; }
@@ -76,23 +92,23 @@
 <body>
 <header id="top">
   <span class="logo">Город вместе</span>
-  <div id="speed"><button data-v="0" title="Пауза"><img class="ic" src="icons/pause.svg?v=16" alt="Пауза"></button><button data-v="1" title="Скорость ×1"><img class="ic" src="icons/play.svg?v=16" alt="×1"></button><button data-v="2" title="Скорость ×2"><img class="ic" src="icons/fast.svg?v=16" alt="×2"></button><button data-v="4" title="Скорость ×4"><img class="ic" src="icons/faster.svg?v=16" alt="×4"></button></div>
+  <div id="speed"><button data-v="0" title="Пауза"><img class="ic" src="icons/pause.svg?v=17" alt="Пауза"></button><button data-v="1" title="Скорость ×1"><img class="ic" src="icons/play.svg?v=17" alt="×1"></button><button data-v="2" title="Скорость ×2"><img class="ic" src="icons/fast.svg?v=17" alt="×2"></button><button data-v="4" title="Скорость ×4"><img class="ic" src="icons/faster.svg?v=17" alt="×4"></button></div>
   <span id="tickN" class="date"></span>
-  <button id="commBtn" title="Показать ЛЭП, водопровод и куда доходят электричество и вода" style="width:auto"><img class="ic" src="icons/power.svg?v=16" alt=""> Коммуникации</button>
-  <button id="polBtn" title="Показать загрязнение от заводов, станций, карьеров и рудников" style="width:auto"><img class="ic" src="icons/pollution.svg?v=16" alt=""> Загрязнение</button>
-  <button id="resBtn" title="Дерево исследований: открывает постройки и следующие эпохи" style="width:auto"><img class="ic" src="icons/research.svg?v=16" alt=""> Исследования</button>
-  <button id="eduBtn" title="График состава населения по образованию" style="width:auto"><img class="ic" src="icons/edu.svg?v=16" alt=""> Образование</button>
+  <button id="commBtn" title="Показать ЛЭП, водопровод и куда доходят электричество и вода" style="width:auto"><img class="ic" src="icons/power.svg?v=17" alt=""> Коммуникации</button>
+  <button id="polBtn" title="Показать загрязнение от заводов, станций, карьеров и рудников" style="width:auto"><img class="ic" src="icons/pollution.svg?v=17" alt=""> Загрязнение</button>
+  <button id="resBtn" title="Дерево исследований: открывает постройки и следующие эпохи" style="width:auto"><img class="ic" src="icons/research.svg?v=17" alt=""> Исследования</button>
+  <button id="mktBtn" title="Рынок: купить и продать ресурсы, цены зависят от спроса" style="width:auto"><img class="ic" src="icons/market.svg?v=17" alt=""> Рынок</button>
+  <button id="eduBtn" title="График состава населения по образованию" style="width:auto"><img class="ic" src="icons/edu.svg?v=17" alt=""> Образование</button>
   <div id="res"></div>
   <div id="zoom" title="Масштаб (или Ctrl+колесо)"><button id="zout" aria-label="Уменьшить">−</button><button id="zin" aria-label="Увеличить">+</button></div>
 </header>
 <div id="main">
-<div id="map"><canvas id="c"></canvas></div>
+<div id="mapcol"><div id="map"><canvas id="c"></canvas></div><div id="build"><div id="items" hidden></div><div id="bbar"></div></div></div>
 <div id="side">
   <label>Имя: <input id="name" maxlength="20" style="width:150px"></label>
   <div id="phase"></div>
   <div id="factory" class="panel" hidden></div>
   <div id="level"></div>
-  <div id="tools"></div>
   <div id="err"></div>
   <div id="tip" class="pop" role="tooltip"></div>
   <div id="hc" class="pop" role="tooltip"></div>
@@ -100,15 +116,17 @@
   <div id="invite"></div>
   <h4>Игроки</h4><div id="players"></div>
   <h4>События</h4><div id="log"></div>
-  <button id="restart" style="margin-top:12px;text-align:center"><img class="ic" src="icons/restart.svg?v=16" alt=""> Новый город</button>
+  <button id="restart" style="margin-top:12px;text-align:center"><img class="ic" src="icons/restart.svg?v=17" alt=""> Новый город</button>
 </div>
 </div>
-<div id="resModal" class="modal" hidden><div class="mwin" role="dialog" aria-label="Дерево исследований"><div class="mhead"><b style="font-size:16px"><img class="ic" src="icons/research.svg?v=16" alt=""> Дерево исследований</b><span id="resRate" style="color:#bbc;font-size:13px"></span><button id="resClose" aria-label="Закрыть">×</button></div><div id="research" class="tree"></div></div></div>
-<div id="eduModal" class="modal" hidden><div class="mwin" role="dialog" aria-label="Образование"><div class="mhead"><b style="font-size:16px"><img class="ic" src="icons/edu.svg?v=16" alt=""> Состав населения по образованию</b><button id="eduClose" aria-label="Закрыть">×</button></div><div style="display:flex;gap:16px;flex-wrap:wrap;align-items:center"><canvas id="eduChart" width="560" height="260" style="max-width:100%;background:#161b26;border-radius:6px"></canvas><div id="eduLegend" style="font-size:14px;line-height:1.8"></div></div></div></div>
+<div id="resModal" class="modal" hidden><div class="mwin" role="dialog" aria-label="Дерево исследований"><div class="mhead"><b style="font-size:16px"><img class="ic" src="icons/research.svg?v=17" alt=""> Дерево исследований</b><span id="resRate" style="color:#bbc;font-size:13px"></span><button id="resClose" aria-label="Закрыть">×</button></div><div id="research" class="tree"></div></div></div>
+<div id="eduModal" class="modal" hidden><div class="mwin" role="dialog" aria-label="Образование"><div class="mhead"><b style="font-size:16px"><img class="ic" src="icons/edu.svg?v=17" alt=""> Состав населения по образованию</b><button id="eduClose" aria-label="Закрыть">×</button></div><div style="display:flex;gap:16px;flex-wrap:wrap;align-items:center"><canvas id="eduChart" width="560" height="260" style="max-width:100%;background:#161b26;border-radius:6px"></canvas><div id="eduLegend" style="font-size:14px;line-height:1.8"></div></div></div></div>
+<div id="mktModal" class="modal" hidden><div class="mwin" role="dialog" aria-label="Рынок"><div class="mhead"><b style="font-size:16px"><img class="ic" src="icons/market.svg?v=17" alt=""> Рынок</b><span style="color:#bbc;font-size:13px">цены растут от покупок и падают от продаж, потом возвращаются</span><button id="mktClose" aria-label="Закрыть">×</button></div><div id="mkt"></div></div></div>
+<div id="chartModal" class="modal" hidden><div class="mwin" role="dialog" aria-label="График ресурса"><div class="mhead"><b id="chartTitle" style="font-size:16px"></b><button id="chartClose" aria-label="Закрыть">×</button></div><canvas id="resChart" width="600" height="260" style="max-width:100%;background:#161b26;border-radius:6px"></canvas><div id="chartNote" style="font-size:13px;color:#bbc;margin-top:6px"></div></div></div>
 <div id="toast" role="status" hidden></div>
 <div id="netbox"><div class="box" id="netStep"></div></div>
 <!-- ?v= must change with every release: GitHub Pages lets browsers cache files for 10 minutes, and a new page with an old game.js breaks -->
-<script src="game.js?v=16"></script>
+<script src="game.js?v=17"></script>
 <script>
 // W, H, B, NEED_TEXT, POWER, WATER are globals from game.js
 // show script errors instead of a silently frozen game (e.g. a stale cached game.js)
@@ -131,52 +149,86 @@ $('name').onchange = () => {
   if (net) net.rename();
 };
 
-const ic = n => `<img class="ic" src="icons/${n}.svg?v=16" alt="">`; // emoji don't render in every browser, so icons are SVG files
+const ic = n => `<img class="ic" src="icons/${n}.svg?v=17" alt="">`; // emoji don't render in every browser, so icons are SVG files
 const RES = { money: 'money', wood: 'wood', stone: 'stone', food: 'food', iron: 'iron', gold: 'gold', oil: 'oil', asphalt: 'asphalt', horses: 'horses' };
 const costText = c => Object.entries(c).map(([k, v]) => v + ic(RES[k])).join(' ');
 const TOOLS = { info: { label: 'Информация', icon: 'info', cost: {} }, buy: { label: 'Купить землю', icon: 'buy', cost: {}, tech: 'explore' }, clear: { label: 'Расчистить', icon: 'clear', cost: {}, note: 'лес 5' + ic('money') + ', камень 10' + ic('money') }, ...B, bulldoze: { label: 'Снести', icon: 'bulldoze', cost: { money: 2 } } };
-const TABS = [['Сети', ['path', 'road', 'power', 'pipe', 'stop']], ['Зоны', ['zres', 'zoff', 'zind']], ['Жильё', ['house', 'improve', 'shop', 'park']],
-  ['Добыча', ['farm', 'sawmill', 'quarry', 'mine', 'well', 'depot']], ['Соцсфера', ['kinder', 'school', 'hospital', 'uni']], ['Энергия', ['plant', 'pump', 'refinery']], ['Рынок', 'market']];
+const TABS = [['Сети', 'road', ['path', 'road', 'power', 'pipe', 'stop']], ['Зоны', 'zres', ['zres', 'zoff', 'zind']], ['Жильё', 'house', ['house', 'improve', 'park']],
+  ['Добыча', 'farm', ['farm', 'sawmill', 'quarry', 'mine', 'well']], ['Торговля', 'market', ['market', 'depot', 'shop']], ['Соцсфера', 'school', ['kinder', 'school', 'hospital', 'uni']], ['Энергия', 'plant', ['plant', 'pump', 'refinery']]];
+const cardName = l => l.replace(/ \(.*\)$/, ''); // card titles without the explanation in brackets; the full text is in the tooltip
 const toolBtn = k => {
   const b = TOOLS[k], el = document.createElement('button');
   el.dataset.tool = k;
-  el.innerHTML = `${ic(b.icon || k)} ${b.label} <small>${b.note || costText(b.cost)}</small>`;
+  el.innerHTML = `${ic(b.icon || k)} ${cardName(b.label)} <small>${b.note || costText(b.cost)}</small>`;
   el.onclick = () => {
     tool = k; document.querySelectorAll('[data-tool]').forEach(x => x.classList.toggle('sel', x === el));
     if (k === 'power' || k === 'pipe') setComm(true); // laying networks: show them
+    if (k === 'info' && cat >= 0) openCat(cat);
   };
   if (k === tool) el.classList.add('sel');
   return el;
 };
-$('tools').append(toolBtn('info'), toolBtn('buy'), toolBtn('clear'), toolBtn('bulldoze'));
-function marketPanel() {
-  const d = document.createElement('div'), me = st && st.players[name];
-  if (me && !Game.hasTech(me, 'trade')) { d.innerHTML = `${ic('lock')} Рынок откроется после исследования «Торговые пути» (Средневековье)`; return d; }
-  const row = (k, v, sell) => `<div class="mrow">${ic(RES[k])} ${v}${ic('money')} за шт.` +
-    [10, 50].map(n => `<button data-trade="${k}:${n}:${sell ? 1 : 0}">${sell ? '−' : '+'}${n} <small>${n * v}</small></button>`).join('') + '</div>';
-  d.innerHTML = '<b>Купить</b>' + Object.entries(PRICES).map(([k, v]) => row(k, v, false)).join('') +
-    '<b>Продать</b>' + Object.entries(SELL).map(([k, v]) => row(k, v, true)).join('');
-  d.onclick = e => {
-    const b = e.target.closest('[data-trade]'); if (!b) return;
-    const [res, n, sell] = b.dataset.trade.split(':');
-    msg({ type: 'trade', res, n: +n, sell: sell === '1' });
-  };
-  return d;
+const sep = () => Object.assign(document.createElement('div'), { className: 'sep' });
+let cat = -1;
+function openCat(n) { // shows category n's buildings above the bar; the same one again hides them
+  cat = n === cat ? -1 : n;
+  $('bbar').querySelectorAll('[data-cat]').forEach(x => x.classList.toggle('on', +x.dataset.cat === cat));
+  $('items').hidden = cat < 0;
+  if (cat >= 0) { $('items').replaceChildren(...TABS[cat][2].map(toolBtn)); locks(); }
 }
-const tabBar = document.createElement('div'), panel = document.createElement('div');
-tabBar.id = 'tabs';
-TABS.forEach(([title, keys], n) => {
+$('bbar').append(toolBtn('info'), toolBtn('buy'), toolBtn('clear'), toolBtn('bulldoze'), sep(), ...TABS.map(([title, icon], n) => {
   const tb = document.createElement('button');
-  tb.textContent = title;
-  tb.onclick = () => {
-    tabBar.querySelectorAll('button').forEach(x => x.classList.toggle('on', x === tb));
-    panel.replaceChildren(...(keys === 'market' ? [marketPanel()] : keys.map(toolBtn)));
-    locks();
-  };
-  tabBar.appendChild(tb);
-  if (!n) tb.onclick();
-});
-$('tools').append(tabBar, panel);
+  tb.dataset.cat = n; tb.innerHTML = `${ic(icon)} ${title}`;
+  tb.onclick = () => openCat(n);
+  return tb;
+}));
+
+// ---- market window: prices follow demand, shared by everyone
+const openMkt = on => { $('mktModal').hidden = !on; $('mktBtn').classList.toggle('sel', on); lastMkt = ''; if (on && st) mktPanel(st.players[name]); };
+$('mktBtn').onclick = () => openMkt($('mktModal').hidden);
+$('mktClose').onclick = () => openMkt(false);
+$('mktModal').onclick = e => { if (e.target === $('mktModal')) openMkt(false); };
+let lastMkt = '';
+function mktPanel(me) {
+  if ($('mktModal').hidden || !me) return;
+  const trend = k => { const v = Math.round((Game.mkOf(st, k) - 1) * 100); return v ? ` <small class="${v > 0 ? 'up' : 'down'}">${v > 0 ? '▲' : '▼'}${Math.abs(v)}%</small>` : ''; };
+  const btns = (k, sell) => [10, 50].map(n => `<button data-trade="${k}:${n}:${sell ? 1 : 0}">${sell ? '−' : '+'}${n} <small>${Math.round(Game.priceOf(st, me, k, sell) * n)}</small></button>`).join('');
+  const html = !Game.hasTech(me, 'trade') ? `${ic('lock')} Рынок откроется после исследования «Торговые пути» (Средневековье)` :
+    (Game.hasMarket(st, name) ? '' : `<div class="down" style="margin-bottom:6px">${ic('warn')} Постройте здание «Рынок» у дороги (вкладка «Торговля»), чтобы торговать</div>`) +
+    '<table class="mkt"><tr><th>Ресурс</th><th>Есть</th><th>Купить</th><th></th><th>Продать</th><th></th></tr>' +
+    Object.keys(SELL).map(k => `<tr><td>${ic(RES[k])} ${RES_NAME[k]}</td><td>${Math.floor(me.res[k] || 0)}</td>` +
+      (PRICES[k] ? `<td>${Game.priceOf(st, me, k, false)}${ic('money')}${trend(k)}</td><td>${btns(k, false)}</td>` : '<td colspan="2"><small>только продажа</small></td>') +
+      `<td>${Game.priceOf(st, me, k, true)}${ic('money')}${trend(k)}</td><td>${btns(k, true)}</td></tr>`).join('') + '</table>';
+  if (html !== lastMkt) $('mkt').innerHTML = lastMkt = html; // rebuild only on change so a click isn't lost
+}
+$('mkt').onclick = e => {
+  const b = e.target.closest('[data-trade]'); if (!b) return;
+  const [res, n, sell] = b.dataset.trade.split(':');
+  msg({ type: 'trade', res, n: +n, sell: sell === '1' });
+};
+
+// ---- a resource's stock over time, opened by clicking it in the top bar
+let chartRes = '';
+const openChart = k => { chartRes = k; $('chartModal').hidden = !k; if (k && st) resChart(st.players[name]); };
+$('chartClose').onclick = () => openChart('');
+$('chartModal').onclick = e => { if (e.target === $('chartModal')) openChart(''); };
+addEventListener('keydown', e => { if (e.key === 'Escape') { openChart(''); openMkt(false); } });
+function resChart(me) {
+  if (!chartRes || !me) return;
+  const k = chartRes, cv = $('resChart'), g = cv.getContext('2d'), Wc = cv.width, Hc = cv.height, L = 48, B0 = 22;
+  const h = (me.hist || []).filter(e => e.r), v = h.map(e => e.r[k] || 0);
+  $('chartTitle').innerHTML = `${ic(RES[k])} ${RES_NAME[k]}: ${Math.floor(me.res[k] || 0)} <small class="${(me.delta[k] || 0) >= 0 ? 'up' : 'down'}">(${num(me.delta[k] || 0)} за тик)</small>`;
+  g.clearRect(0, 0, Wc, Hc); g.font = '12px sans-serif';
+  if (v.length < 2) { g.fillStyle = '#aab'; g.font = '14px sans-serif'; g.fillText('Данные появятся через несколько тиков', 20, Hc / 2); $('chartNote').textContent = ''; return; }
+  const lo = Math.min(0, ...v), hi = Math.max(1, ...v), X = n => L + n / (v.length - 1) * (Wc - L - 10), Y = y => Hc - B0 - (y - lo) / (hi - lo) * (Hc - B0 - 10);
+  g.strokeStyle = '#334'; g.fillStyle = '#99a'; g.lineWidth = 1;
+  for (let q = 0; q <= 4; q++) { const y = lo + (hi - lo) * q / 4; g.beginPath(); g.moveTo(L, Y(y)); g.lineTo(Wc - 10, Y(y)); g.stroke(); g.fillText(Math.round(y), 4, Y(y) + 4); }
+  g.fillText('тик ' + h[0].t, L, Hc - 6); g.fillText('тик ' + h[h.length - 1].t, Wc - 70, Hc - 6);
+  g.beginPath(); v.forEach((y, n) => (n ? g.lineTo(X(n), Y(y)) : g.moveTo(X(n), Y(y))));
+  g.strokeStyle = '#f0a830'; g.lineWidth = 2; g.stroke();
+  g.lineTo(X(v.length - 1), Y(lo)); g.lineTo(X(0), Y(lo)); g.closePath(); g.fillStyle = '#f0a83022'; g.fill();
+  $('chartNote').textContent = `Запас каждые 5 тиков, последние ${h.length} точек. Мин. ${Math.floor(Math.min(...v))}, макс. ${Math.floor(Math.max(...v))}.`;
+}
 
 // ---- Isometric map. A tile is a diamond 2S wide and S tall; heights are in units of S.
 // P(x, y, z) turns tile coordinates (fractions allowed) and a height into a canvas point.
@@ -524,6 +576,13 @@ const OBJ = {
     const c0 = P(x + 0.6, y + 0.43, 1.1);
     gx.fillStyle = '#2f6fa8'; gx.fillRect(c0[0] - S * 0.32, c0[1] - S * 0.5, S * 0.64, S * 0.5);
     oval('#3b86c6', [c0[0], c0[1]], S * 0.32, S * 0.15); oval('#5aa0dc', [c0[0], c0[1] - S * 0.5], S * 0.32, S * 0.15);
+  },
+  market(x, y) { // stalls with coloured awnings around a square
+    flat(x + 0.08, y + 0.08, x + 0.92, y + 0.92, 0.02, '#c9b48a');
+    for (const [a, b, col] of [[0.12, 0.14, '#2f8f5b'], [0.56, 0.14, '#d33'], [0.12, 0.56, '#e8b04a'], [0.56, 0.56, '#3a7fc4']]) {
+      block(x + a, y + b, x + a + 0.32, y + b + 0.3, 0.28, '#b98d6a');
+      roof(x + a - 0.03, y + b - 0.03, x + a + 0.35, y + b + 0.33, 0.28, 0.18, col);
+    }
   },
   shop(x, y) {
     block(x + 0.12, y + 0.15, x + 0.88, y + 0.85, 0.6, '#efe6d6');
@@ -974,13 +1033,16 @@ function tipHtml(k) {
     return `<b>${ic('happy')} Довольство жителей</b><br>` + Object.entries(WANT_TEXT).map(([w, t]) => `${Math.round(((me.needs || {})[w] || 0) * 100)}% — ${t}`).join('<br>') +
       '<hr><small>Доля мест в домах, где потребность выполнена. Чем выше довольство, тем больше людей живёт в домах.</small>';
   const rows = ((me.flow || {})[k] || []).map(([what, v]) => `<div class="${v > 0 ? 'up' : 'down'}">${num(v)} ${esc(what)}</div>`);
-  return `<b>${ic(RES[k])} ${RES_NAME[k]} за тик</b>` + (rows.join('') || '<div>ничего не приходит и не уходит</div>') + `<hr>Итого: ${num(me.delta[k] || 0)}` +
-    (k === 'food' && !me.fed ? '<div class="down">Склад пуст — жители голодают, налоги ×0.3</div>' : '');
+  const way = (st.ships || []).filter(sh => sh.who === name && sh.kind === 'depot' && sh.res === k).reduce((n, sh) => n + sh.n, 0);
+  const head = k === 'horses' ? horseText(name) + '<hr>' : way ? `На складах ${Math.floor(me.res[k] || 0)}, везут ещё ${way}<hr>` : '';
+  return head + `<b>${ic(RES[k])} ${RES_NAME[k]} за тик</b>` + (rows.join('') || '<div>ничего не приходит и не уходит</div>') + `<hr>Итого: ${num(me.delta[k] || 0)}` +
+    (k === 'food' && !me.fed ? '<div class="down">Склад пуст — жители голодают, налоги ×0.3</div>' : '') + (Game.HIST_RES.includes(k) ? '<div><small>Кликните, чтобы открыть график</small></div>' : '');
 }
 function showTip() { $('tip').innerHTML = tipHtml(tipKey); $('tip').style.display = tipKey ? 'block' : 'none'; }
 $('res').onmouseover = e => { const el = e.target.closest('[data-res]'); tipKey = el ? el.dataset.res : ''; showTip(); };
 $('res').onmousemove = e => { $('tip').style.left = Math.max(8, Math.min(innerWidth - 280, e.clientX - 130)) + 'px'; $('tip').style.top = e.clientY + 18 + 'px'; };
 $('res').onmouseleave = () => { tipKey = ''; showTip(); };
+$('res').onclick = e => { const el = e.target.closest('[data-res]'); if (!el) return; const k = el.dataset.res; if (Game.HIST_RES.includes(k)) openChart(k); else if (k === 'pop') openEdu(true); };
 
 // short description of a building or tool, shown when hovering it in the build menu
 const DESC = {
@@ -1006,6 +1068,7 @@ const DESC = {
   sawmill: 'Заготавливает дерево. Ставится рядом с лесом.',
   quarry: 'Добывает камень. Ставится рядом с камнями, шумит.',
   mine: 'Добывает железо или золото. Ставится прямо на месторождение.',
+  market: 'Здесь вы торгуете ресурсами: окно «Рынок» вверху. Цены общие для всех и зависят от спроса.',
   depot: 'Сюда везут сырьё и товары, отсюда товары едут в магазины. До двигателя возят телеги: каждой нужна лошадь.',
   kinder: 'Места для 30 детей. Повышает рождаемость.',
   school: 'Места для 40 детей: они вырастают со школьным образованием.',
@@ -1025,15 +1088,15 @@ function toolTip(k) {
   const lock = me && !Game.hasTech(me, b.tech) ? `<div class="down">${ic('lock')} Нужно исследование «${Game.techOf(b.tech).name}» (${LEVELS[Game.techOf(b.tech).era].name})</div>` : '';
   return `<b>${ic(b.icon || k)} ${b.label}</b><br>${DESC[k] || ''}` + (rows.length ? '<hr>' + rows.join('<br>') : '') + lock;
 }
-$('tools').onmouseover = e => {
+$('build').onmouseover = e => {
   const el = e.target.closest('[data-tool]'), tip = $('tip');
   if (!el) { if (!tipKey) tip.style.display = 'none'; return; }
   tip.innerHTML = toolTip(el.dataset.tool); tip.style.display = 'block';
-  const r = el.getBoundingClientRect(); // to the left of the menu, level with the button
-  tip.style.left = Math.max(4, r.left - tip.offsetWidth - 8) + 'px';
-  tip.style.top = Math.max(4, Math.min(innerHeight - tip.offsetHeight - 4, r.top)) + 'px';
+  const r = el.getBoundingClientRect(); // above the button, kept on screen
+  tip.style.left = Math.max(4, Math.min(innerWidth - tip.offsetWidth - 4, r.left)) + 'px';
+  tip.style.top = Math.max(4, r.top - tip.offsetHeight - 8) + 'px';
 };
-$('tools').onmouseleave = () => { if (!tipKey) $('tip').style.display = 'none'; };
+$('build').onmouseleave = () => { if (!tipKey) $('tip').style.display = 'none'; };
 
 function phaseText(me) {
   if (st.phase === 'lobby')
@@ -1089,12 +1152,15 @@ function render() {
   const r = me.res;
   const d2 = v => { const t = Math.abs(v) < 0.05 ? '0' : (v > 0 ? '+' : '−') + Math.abs(v).toFixed(1); return ` <small class="${v > 0.05 ? 'up' : v < -0.05 ? 'down' : ''}">(${t})</small>`; };
   const d = k => d2(me.delta[k] || 0);
-  $('res').innerHTML = Object.keys(RES).map(k => `<span data-res="${k}" title="${RES_NAME[k]}">${ic(RES[k])} ${f(r[k] || 0)}${d(k)}</span>`).join('') +
+  const way = {}; // loads on their way to a depot, by horse cart or truck
+  for (const sh of st.ships || []) if (sh.who === name && sh.kind === 'depot') way[sh.res] = (way[sh.res] || 0) + sh.n;
+  const hu = Game.horseUse(st, name);
+  $('res').innerHTML = Object.keys(RES).map(k => `<span data-res="${k}">${ic(RES[k])} ${k === 'horses' ? `${hu.free}/${hu.total}` : f((r[k] || 0) + (way[k] || 0))}${way[k] ? ` <small title="везут на склад">↗${way[k]}</small>` : ''}${d(k)}</span>`).join('') +
     `<span data-res="happy">${ic('happy')} ${Math.round((me.happy || 0) * 100)}%</span>` +
     `<span data-res="pop">${ic('pop')} ${me.pop}${d2(me.growth || 0)}</span><span data-res="goods">${ic('depot')} ${f(Object.keys(PRODUCTS).reduce((n, g) => n + (r[g] || 0), 0))}</span><span title="Рабочие места">${ic('jobs')} ${me.jobs}</span><span title="Земля, клеток">${ic('land')} ${Game.landOf(st, name)}</span>` +
     (me.fed ? '' : '<span style="color:#f77">Голод! Налоги падают</span>');
   if (tipKey) showTip();
-  eduChart(me); factoryPanel(); researchPanel(me); techToast(me);
+  eduChart(me); factoryPanel(); researchPanel(me); techToast(me); mktPanel(me); resChart(me);
 }
 const esc = s => s.replace(/[&<>"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[ch]);
 const TERR = { grass: 'Трава', tree: 'Лес', rock: 'Камень', lake: 'Озеро', iron: 'Месторождение железа', gold: 'Месторождение золота', oil: 'Месторождение нефти' };
@@ -1206,7 +1272,7 @@ function techToast(me) {
   knownTech = new Set(now);
   if (!fresh.length) return;
   const t = Game.techOf(fresh[fresh.length - 1]);
-  $('toast').innerHTML = `<img class="ic big" src="icons/${TECH_ICON[t.id]}.svg?v=16" alt="" style="width:30px;height:30px"><div><b>Исследование завершено: ${t.name}</b><br><small>${t.desc}</small></div><button data-next>${ic('research')} Выбрать следующее</button>`;
+  $('toast').innerHTML = `<img class="ic big" src="icons/${TECH_ICON[t.id]}.svg?v=17" alt="" style="width:30px;height:30px"><div><b>Исследование завершено: ${t.name}</b><br><small>${t.desc}</small></div><button data-next>${ic('research')} Выбрать следующее</button>`;
   $('toast').hidden = false;
   clearTimeout(toastTimer); toastTimer = setTimeout(() => { $('toast').hidden = true; }, 8000);
 }
@@ -1227,7 +1293,7 @@ function researchPanel(me) {
     if (before) { const [bx0, by0] = pos(before); lines += `<line x1="${bx0 + 168}" y1="${by0 + 40}" x2="${x}" y2="${y + 40}" stroke="${Game.hasTech(me, before.id) ? (done ? '#3d9a5f' : '#6a7fa8') : '#3a4256'}" stroke-width="3"${Game.hasTech(me, before.id) ? '' : ' stroke-dasharray="6 5"'}/>`; }
     const why = done ? 'Изучено' : cur ? 'Изучается' : open ? 'Нажмите, чтобы изучать' : t.era > (me.level || 0) ? `Откроется в эпоху «${LEVELS[t.era].name}»` : `Сначала изучите «${before.name}»`;
     nodes += `<div class="node ${done ? 'done' : cur ? 'cur' : open ? 'open' : 'off'}" style="left:${x}px;top:${y}px" title="${why}"${open ? ` data-tech="${t.id}"` : ''}>` +
-      `<img class="big" src="icons/${TECH_ICON[t.id]}.svg?v=16" alt=""><div><b>${done ? ic('ok') + ' ' : ''}${t.name}</b><br><span style="color:#aab">${t.desc}</span></div>` +
+      `<img class="big" src="icons/${TECH_ICON[t.id]}.svg?v=17" alt=""><div><b>${done ? ic('ok') + ' ' : ''}${t.name}</b><br><span style="color:#aab">${t.desc}</span></div>` +
       (cur || (pts && !done) ? `<div class="bar"><i style="width:${Math.min(100, pts / Game.TECH_COST[t.era] * 100)}%"></i></div>` : '') + '</div>';
   }
   const html = `<div style="position:relative;width:${Wt}px;height:${Ht}px"><svg width="${Wt}" height="${Ht}">${lines}</svg>${nodes}</div>`;
