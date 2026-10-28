@@ -92,6 +92,12 @@ G.act(t, 'A', 'road', W + 10); G.act(t, 'A', 'plant', 10); G.act(t, 'A', 'power'
 G.act(t, 'B', 'road', W + 13); G.act(t, 'B', 'house', 13); // A's line at x 11 and B's at x 12 touch across the border
 G.act(t, 'B', 'power', 12);
 assert.ok(G.compute(t)[13].includes('p'), 'power must not cross into B');
+t.players.B.res.iron = 50; t.hl[13] = 2; // a brick house is not modern: it lives without power and water in any era
+assert.ok(!/[pw]/.test(G.compute(t)[13]), 'old homes need no utilities');
+assert.strictEqual(G.act(t, 'B', 'improve', 13), null);
+assert.ok(/p/.test(G.compute(t)[13]) && /w/.test(G.compute(t)[13]), 'the block of flats needs power and water');
+G.act(t, 'B', 'farm', 14 + W * 2); G.act(t, 'B', 'road', 14 + W);
+assert.ok(!/[pw]/.test(G.compute(t)[14 + W * 2]), 'other buildings never need them');
 // levels: a village owns only its start square and has no shops; upgrading needs residents and money
 const v = G.newGame(3);
 v.grid.fill('grass');
@@ -209,6 +215,11 @@ const dn = { kids: 30, none: 0, school: 0, higher: 0, old: 50 };
 G.demographics(dn, G.popOf(dn), {}, 1);
 assert.ok(dn.none > 0.99 && dn.school === 0, 'no school: kids grow up without education');
 assert.ok(dn.old < dm.old, 'without a hospital more pensioners die');
+const de = { kids: 0, none: 10, school: 0, higher: 0, old: 0 };
+G.demographics(de, 100, {}, 1);
+assert.ok(de.none > 10 && de.school === 0 && de.higher === 0, 'newcomers have no education without schools');
+G.demographics(de, 200, { school: 1 }, 1);
+assert.ok(de.school > 0 && de.higher === 0, 'with a school some come schooled, without a university nobody has a degree');
 // production chain: a factory makes furniture from wood, trucks take it to the depot, then to the shop, which sells it
 const f = G.newGame(8);
 f.grid.fill('grass');

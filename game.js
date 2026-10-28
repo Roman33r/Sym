@@ -50,7 +50,7 @@ const ownerOf = (s, i) => s.owner[i];
 const landOf = (s, who) => s.owner.reduce((n, o) => n + (o === who), 0);
 const landPrice = (s, who) => 3 + Math.floor(landOf(s, who) / 300); // per tile, grows as the city spreads
 // Eras: reaching the population, paying the cost and finishing the era's research moves a player on,
-// allowing more land. Buildings open through research (B[t].tech). Power and water become hard needs from UTIL_ERA.
+// allowing more land. Buildings open through research (B[t].tech). Power and water are needed only by homes of tier UTIL_ERA and up (blocks of flats, towers).
 // area: most tiles of land an era may own; rare: rare resources the step costs on top of money
 const LEVELS = [
   { name: 'Древность', icon: 'village', area: START * START },
@@ -246,11 +246,12 @@ function networks(s) {
 // Returns per-tile string of unmet needs ('' = working or not a building).
 function compute(s) {
   const g = s.grid, road = i => nb(i).some(j => isRoad(g[j])), lake = i => nb(i).some(j => g[j] === 'lake');
-  const { powered, watered } = networks(s), era = i => (s.players[ownerOf(s, i)] || {}).level || 0;
+  const { powered, watered } = networks(s), modern = i => B[g[i]].home && tierOf(s, i) >= UTIL_ERA;
   // zone lots only need a road within 3 tiles, so a big district fills in, not just its edge
   const ok = {
     r: i => B[g[i]].zone || B[g[i]].grown ? near(g, i, 'road', 3) || near(g, i, 'path', 3) : road(i),
-    p: i => powered.has(i) || era(i) < UTIL_ERA, w: i => watered.has(i) || era(i) < UTIL_ERA, // before that era towns live without them
+    // only modern homes need power and water, so a new era or a power plant never switches the town off
+    p: i => powered.has(i) || !modern(i), w: i => watered.has(i) || !modern(i),
     t: i => near(g, i, 'tree', 2), k: i => near(g, i, 'rock', 2), l: lake,
   };
   const st = g.map((t, i) => isBuilding(t) ? [...B[t].needs].filter(c => !ok[c](i)).join('') : '');
@@ -394,6 +395,7 @@ const SEATS = { kinder: 30, school: 40, hospital: 150, uni: 1.5 }; // kids / pup
 const popOf = d => d.kids + d.none + d.school + d.higher + d.old;
 const newDemo = () => ({ kids: 0, none: 0, school: 0, higher: 0, old: 0 });
 // one tick of births, newcomers, growing up, studying, ageing and deaths; cap is how many the homes can hold
+// nobody arrives with schooling the town can't give: school graduates need a school, specialists a university
 function demographics(d, cap, cnt, hap, uniK = 1) { // uniK: online education doubles graduates
   const now = popOf(d), adults = d.none + d.school + d.higher, room = cap - now;
   const kinderCov = Math.min(1, (cnt.kinder || 0) * SEATS.kinder / Math.max(1, d.kids));
@@ -402,7 +404,8 @@ function demographics(d, cap, cnt, hap, uniK = 1) { // uniK: online education do
   if (room > 0) {
     d.kids += Math.min(room, adults * 0.004 * (0.5 + hap) * (1 + kinderCov)); // births, more with kindergartens
     const inn = Math.min(room, 1 + room * 0.15) * (0.3 + 0.7 * hap); // newcomers, mostly without a degree
-    d.none += inn * 0.5; d.school += inn * 0.4; d.higher += inn * 0.1;
+    const sch = cnt.school ? 0.4 : 0, hi = cnt.uni ? 0.1 : 0;
+    d.none += inn * (1 - sch - hi); d.school += inn * sch; d.higher += inn * hi;
   } else if (room < 0) { // too many people for the homes: some leave
     const k = Math.min(1, -room * 0.2 / now);
     for (const g in d) d[g] -= d[g] * k;
@@ -473,6 +476,11 @@ function tick(s) {
     const hap = places ? happy / places : 0;
     // saves from before demographics: everyone counts as an adult without a degree
     const d = p.demo || (p.demo = { ...newDemo(), none: p.pop || 0 });
+    if (!p.eduFix) { // saves from before: newcomers came educated even without schools
+      p.eduFix = true;
+      if (!cnt.uni) { (cnt.school ? (d.school += d.higher) : (d.none += d.higher)); d.higher = 0; }
+      if (!cnt.school) { d.none += d.school; d.school = 0; }
+    }
     const before0 = popOf(d), cov = demographics(d, cap, cnt, hap, hasTech(p, 'elearning') ? 2 : 1), pop = Math.round(popOf(d));
     // who can work where: offices need a degree, every other job takes anyone; only people who can get to work count
     const r = cap ? reachCap / cap : 0, jobs = Object.entries(cnt).reduce((n, [t, c]) => n + c * (B[t].jobs || 0), 0);

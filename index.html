@@ -76,12 +76,12 @@
 <body>
 <header id="top">
   <span class="logo">Город вместе</span>
-  <div id="speed"><button data-v="0" title="Пауза"><img class="ic" src="icons/pause.svg?v=15" alt="Пауза"></button><button data-v="1" title="Скорость ×1"><img class="ic" src="icons/play.svg?v=15" alt="×1"></button><button data-v="2" title="Скорость ×2"><img class="ic" src="icons/fast.svg?v=15" alt="×2"></button><button data-v="4" title="Скорость ×4"><img class="ic" src="icons/faster.svg?v=15" alt="×4"></button></div>
+  <div id="speed"><button data-v="0" title="Пауза"><img class="ic" src="icons/pause.svg?v=16" alt="Пауза"></button><button data-v="1" title="Скорость ×1"><img class="ic" src="icons/play.svg?v=16" alt="×1"></button><button data-v="2" title="Скорость ×2"><img class="ic" src="icons/fast.svg?v=16" alt="×2"></button><button data-v="4" title="Скорость ×4"><img class="ic" src="icons/faster.svg?v=16" alt="×4"></button></div>
   <span id="tickN" class="date"></span>
-  <button id="commBtn" title="Показать ЛЭП, водопровод и куда доходят электричество и вода" style="width:auto"><img class="ic" src="icons/power.svg?v=15" alt=""> Коммуникации</button>
-  <button id="polBtn" title="Показать загрязнение от заводов, станций, карьеров и рудников" style="width:auto"><img class="ic" src="icons/pollution.svg?v=15" alt=""> Загрязнение</button>
-  <button id="resBtn" title="Дерево исследований: открывает постройки и следующие эпохи" style="width:auto"><img class="ic" src="icons/research.svg?v=15" alt=""> Исследования</button>
-  <button id="eduBtn" title="График состава населения по образованию" style="width:auto"><img class="ic" src="icons/edu.svg?v=15" alt=""> Образование</button>
+  <button id="commBtn" title="Показать ЛЭП, водопровод и куда доходят электричество и вода" style="width:auto"><img class="ic" src="icons/power.svg?v=16" alt=""> Коммуникации</button>
+  <button id="polBtn" title="Показать загрязнение от заводов, станций, карьеров и рудников" style="width:auto"><img class="ic" src="icons/pollution.svg?v=16" alt=""> Загрязнение</button>
+  <button id="resBtn" title="Дерево исследований: открывает постройки и следующие эпохи" style="width:auto"><img class="ic" src="icons/research.svg?v=16" alt=""> Исследования</button>
+  <button id="eduBtn" title="График состава населения по образованию" style="width:auto"><img class="ic" src="icons/edu.svg?v=16" alt=""> Образование</button>
   <div id="res"></div>
   <div id="zoom" title="Масштаб (или Ctrl+колесо)"><button id="zout" aria-label="Уменьшить">−</button><button id="zin" aria-label="Увеличить">+</button></div>
 </header>
@@ -100,15 +100,15 @@
   <div id="invite"></div>
   <h4>Игроки</h4><div id="players"></div>
   <h4>События</h4><div id="log"></div>
-  <button id="restart" style="margin-top:12px;text-align:center"><img class="ic" src="icons/restart.svg?v=15" alt=""> Новый город</button>
+  <button id="restart" style="margin-top:12px;text-align:center"><img class="ic" src="icons/restart.svg?v=16" alt=""> Новый город</button>
 </div>
 </div>
-<div id="resModal" class="modal" hidden><div class="mwin" role="dialog" aria-label="Дерево исследований"><div class="mhead"><b style="font-size:16px"><img class="ic" src="icons/research.svg?v=15" alt=""> Дерево исследований</b><span id="resRate" style="color:#bbc;font-size:13px"></span><button id="resClose" aria-label="Закрыть">×</button></div><div id="research" class="tree"></div></div></div>
-<div id="eduModal" class="modal" hidden><div class="mwin" role="dialog" aria-label="Образование"><div class="mhead"><b style="font-size:16px"><img class="ic" src="icons/edu.svg?v=15" alt=""> Состав населения по образованию</b><button id="eduClose" aria-label="Закрыть">×</button></div><div style="display:flex;gap:16px;flex-wrap:wrap;align-items:center"><canvas id="eduChart" width="560" height="260" style="max-width:100%;background:#161b26;border-radius:6px"></canvas><div id="eduLegend" style="font-size:14px;line-height:1.8"></div></div></div></div>
+<div id="resModal" class="modal" hidden><div class="mwin" role="dialog" aria-label="Дерево исследований"><div class="mhead"><b style="font-size:16px"><img class="ic" src="icons/research.svg?v=16" alt=""> Дерево исследований</b><span id="resRate" style="color:#bbc;font-size:13px"></span><button id="resClose" aria-label="Закрыть">×</button></div><div id="research" class="tree"></div></div></div>
+<div id="eduModal" class="modal" hidden><div class="mwin" role="dialog" aria-label="Образование"><div class="mhead"><b style="font-size:16px"><img class="ic" src="icons/edu.svg?v=16" alt=""> Состав населения по образованию</b><button id="eduClose" aria-label="Закрыть">×</button></div><div style="display:flex;gap:16px;flex-wrap:wrap;align-items:center"><canvas id="eduChart" width="560" height="260" style="max-width:100%;background:#161b26;border-radius:6px"></canvas><div id="eduLegend" style="font-size:14px;line-height:1.8"></div></div></div></div>
 <div id="toast" role="status" hidden></div>
 <div id="netbox"><div class="box" id="netStep"></div></div>
 <!-- ?v= must change with every release: GitHub Pages lets browsers cache files for 10 minutes, and a new page with an old game.js breaks -->
-<script src="game.js?v=15"></script>
+<script src="game.js?v=16"></script>
 <script>
 // W, H, B, NEED_TEXT, POWER, WATER are globals from game.js
 // show script errors instead of a silently frozen game (e.g. a stale cached game.js)
@@ -131,7 +131,7 @@ $('name').onchange = () => {
   if (net) net.rename();
 };
 
-const ic = n => `<img class="ic" src="icons/${n}.svg?v=15" alt="">`; // emoji don't render in every browser, so icons are SVG files
+const ic = n => `<img class="ic" src="icons/${n}.svg?v=16" alt="">`; // emoji don't render in every browser, so icons are SVG files
 const RES = { money: 'money', wood: 'wood', stone: 'stone', food: 'food', iron: 'iron', gold: 'gold', oil: 'oil', asphalt: 'asphalt', horses: 'horses' };
 const costText = c => Object.entries(c).map(([k, v]) => v + ic(RES[k])).join(' ');
 const TOOLS = { info: { label: 'Информация', icon: 'info', cost: {} }, buy: { label: 'Купить землю', icon: 'buy', cost: {}, tech: 'explore' }, clear: { label: 'Расчистить', icon: 'clear', cost: {}, note: 'лес 5' + ic('money') + ', камень 10' + ic('money') }, ...B, bulldoze: { label: 'Снести', icon: 'bulldoze', cost: { money: 2 } } };
@@ -992,7 +992,7 @@ const DESC = {
   road: 'Асфальтовая дорога: вдвое быстрее тропинки. Стоит асфальт с НПЗ; кладётся и поверх тропинки.',
   well: 'Добывает нефть. Ставится прямо на месторождение нефти.',
   refinery: 'Перерабатывает нефть в асфальт для дорог. Шумит и загрязняет.',
-  power: 'Несёт электричество от электростанции. Здания тоже передают его соседям.',
+  power: 'Несёт электричество от электростанции. Здания тоже передают его соседям. Нужно только многоэтажкам и башням.',
   pipe: 'Несёт воду от водокачки. Здания тоже передают её соседям.',
   stop: 'Возит жителей на работу между остановками одной дороги. До автобусов это конка: нужна лошадь со склада.',
   zres: 'Участок под жильё: дома вырастают сами, когда в городе есть работа. Выделяется прямоугольником.',
@@ -1018,7 +1018,7 @@ const NEED_LABEL = { r: 'дорога рядом', p: 'электричеств�
 function toolTip(k) {
   const b = TOOLS[k], me = st && st.players[name], rows = [];
   if (b.note || Object.keys(b.cost).length) rows.push('Цена: ' + (b.note || costText(b.cost)));
-  if (b.needs) rows.push('Нужно: ' + [...b.needs].map(n => NEED_LABEL[n]).join(', '));
+  if (b.needs) rows.push('Нужно: ' + [...b.needs].filter(n => b.home || (n !== 'p' && n !== 'w')).map(n => NEED_LABEL[n] + (b.home && (n === 'p' || n === 'w') ? ` (с «${Game.HOME_TIERS[Game.UTIL_ERA].name}»)` : '')).join(', '));
   if (b.upkeep) rows.push(`Содержание: ${b.upkeep}${ic('money')} за тик`);
   if (b.jobs) rows.push(`Рабочих мест: ${b.jobs}`);
   if (b.home && me) { const tr = Game.HOME_TIERS[Game.maxTier(me)]; rows.push(`Сейчас строится: ${tr.name}, до ${tr.cap} жителей`); }
@@ -1206,7 +1206,7 @@ function techToast(me) {
   knownTech = new Set(now);
   if (!fresh.length) return;
   const t = Game.techOf(fresh[fresh.length - 1]);
-  $('toast').innerHTML = `<img class="ic big" src="icons/${TECH_ICON[t.id]}.svg?v=15" alt="" style="width:30px;height:30px"><div><b>Исследование завершено: ${t.name}</b><br><small>${t.desc}</small></div><button data-next>${ic('research')} Выбрать следующее</button>`;
+  $('toast').innerHTML = `<img class="ic big" src="icons/${TECH_ICON[t.id]}.svg?v=16" alt="" style="width:30px;height:30px"><div><b>Исследование завершено: ${t.name}</b><br><small>${t.desc}</small></div><button data-next>${ic('research')} Выбрать следующее</button>`;
   $('toast').hidden = false;
   clearTimeout(toastTimer); toastTimer = setTimeout(() => { $('toast').hidden = true; }, 8000);
 }
@@ -1227,7 +1227,7 @@ function researchPanel(me) {
     if (before) { const [bx0, by0] = pos(before); lines += `<line x1="${bx0 + 168}" y1="${by0 + 40}" x2="${x}" y2="${y + 40}" stroke="${Game.hasTech(me, before.id) ? (done ? '#3d9a5f' : '#6a7fa8') : '#3a4256'}" stroke-width="3"${Game.hasTech(me, before.id) ? '' : ' stroke-dasharray="6 5"'}/>`; }
     const why = done ? 'Изучено' : cur ? 'Изучается' : open ? 'Нажмите, чтобы изучать' : t.era > (me.level || 0) ? `Откроется в эпоху «${LEVELS[t.era].name}»` : `Сначала изучите «${before.name}»`;
     nodes += `<div class="node ${done ? 'done' : cur ? 'cur' : open ? 'open' : 'off'}" style="left:${x}px;top:${y}px" title="${why}"${open ? ` data-tech="${t.id}"` : ''}>` +
-      `<img class="big" src="icons/${TECH_ICON[t.id]}.svg?v=15" alt=""><div><b>${done ? ic('ok') + ' ' : ''}${t.name}</b><br><span style="color:#aab">${t.desc}</span></div>` +
+      `<img class="big" src="icons/${TECH_ICON[t.id]}.svg?v=16" alt=""><div><b>${done ? ic('ok') + ' ' : ''}${t.name}</b><br><span style="color:#aab">${t.desc}</span></div>` +
       (cur || (pts && !done) ? `<div class="bar"><i style="width:${Math.min(100, pts / Game.TECH_COST[t.era] * 100)}%"></i></div>` : '') + '</div>';
   }
   const html = `<div style="position:relative;width:${Wt}px;height:${Ht}px"><svg width="${Wt}" height="${Ht}">${lines}</svg>${nodes}</div>`;
