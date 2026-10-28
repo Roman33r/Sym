@@ -189,8 +189,6 @@
   #toast { position: fixed; top: 92px; left: 50%; transform: translateX(-50%); z-index: 20; background: var(--bg2); border: 1px solid var(--gold-line); border-left: 4px solid var(--gold); border-radius: var(--r2); padding: 10px 14px; box-shadow: var(--sh2); display: flex; gap: 12px; align-items: center; animation: drop .22s ease; }
   #toast[hidden] { display: none; }
   #toast b { color: var(--gold2); }
-  #toast.bad { border-color: rgba(232, 115, 95, .6); border-left-color: var(--red); }
-  #toast.bad b { color: #ffd2c8; }
   #toast button { width: auto; margin: 0; white-space: nowrap; }
   #netbox { position: fixed; inset: 0; background: rgba(6, 8, 12, .85); display: none; align-items: center; justify-content: center; z-index: 25; }
   #netbox .box { width: min(460px, calc(100vw - 32px)); padding: 18px 20px; line-height: 1.55; background: var(--bg1); border: 1px solid var(--line2); border-radius: var(--r3); box-shadow: var(--sh2); animation: pop .18s ease; }
@@ -201,7 +199,23 @@
   #map, #bbar, #items, #side, #log, .mwin { scrollbar-width: none; }
   #map::-webkit-scrollbar, #bbar::-webkit-scrollbar, #items::-webkit-scrollbar, #side::-webkit-scrollbar, #log::-webkit-scrollbar, .mwin::-webkit-scrollbar { width: 0; height: 0; }
   /* tutorial: a card over the map's corner, the control it talks about glows */
-  #tut { position: absolute; top: 12px; left: 12px; width: min(340px, calc(100% - 24px)); z-index: 8; background: var(--bg1); border: 1px solid var(--gold-line); border-left: 4px solid var(--gold); border-radius: var(--r3); padding: 12px 14px; box-shadow: var(--sh2); animation: rise .2s ease; }
+  #notes { position: absolute; top: 12px; left: 12px; width: min(340px, calc(100% - 24px)); z-index: 8; display: flex; flex-direction: column; gap: 8px; pointer-events: none; max-height: calc(100% - 120px); overflow: hidden; }
+  #notes > * { pointer-events: auto; }
+  #evs { display: flex; flex-direction: column; gap: 8px; }
+  .ev { display: flex; gap: 10px; align-items: flex-start; background: var(--bg1); border: 1px solid rgba(232, 115, 95, .5); border-left: 4px solid var(--red); border-radius: var(--r3); padding: 10px 12px; box-shadow: var(--sh2); animation: rise .2s ease; }
+  .ev.good { border-color: rgba(108, 194, 122, .5); border-left-color: var(--green); }
+  .ev > img { width: 34px; height: 34px; flex: none; }
+  .ev .body { flex: 1; min-width: 0; }
+  .ev b { display: block; font-size: 14px; color: #ffd2c8; margin-bottom: 2px; }
+  .ev.good b { color: #c6ecc9; }
+  .ev p { margin: 0; font-size: 12px; color: var(--text2); line-height: 1.45; }
+  .ev .acts { display: flex; gap: 6px; margin-top: 8px; }
+  .ev .acts button { width: auto; margin: 0; padding: 3px 10px; font-size: 12px; }
+  .ev [data-x] { background: transparent; border-color: transparent; color: var(--text3); padding: 0 4px; font-size: 16px; line-height: 1; width: auto; margin: -4px -4px 0 0; }
+  .ev [data-x]:hover { color: var(--text); background: var(--bg3); }
+  .ev .bar { height: 3px; background: var(--bg0); border-radius: 2px; margin-top: 8px; overflow: hidden; }
+  .ev .bar i { display: block; height: 100%; background: var(--red); }
+  #tut { position: relative; width: 100%; background: var(--bg1); border: 1px solid var(--gold-line); border-left: 4px solid var(--gold); border-radius: var(--r3); padding: 12px 14px; box-shadow: var(--sh2); animation: rise .2s ease; }
   #tut[hidden] { display: none; }
   #tut .step { font-size: 11px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase; color: var(--text3); }
   #tut h3 { margin: 2px 0 6px; font-size: 15px; color: var(--gold2); }
@@ -232,21 +246,21 @@
   <div class="hrow">
     <span class="logo">Город вместе</span>
     <span id="tickN" class="date"></span>
-    <div id="speed" class="hgroup" aria-label="Скорость игры"><button data-v="0" title="Пауза (пробел)"><img class="ic" src="icons/pause.png?v=35" alt="Пауза"></button><button data-v="1" title="Скорость ×1"><img class="ic" src="icons/play.png?v=35" alt="×1"></button><button data-v="2" title="Скорость ×2"><img class="ic" src="icons/fast.png?v=35" alt="×2"></button><button data-v="4" title="Скорость ×4"><img class="ic" src="icons/faster.png?v=35" alt="×4"></button></div>
+    <div id="speed" class="hgroup" aria-label="Скорость игры"><button data-v="0" title="Пауза (пробел)"><img class="ic" src="icons/pause.png?v=36" alt="Пауза"></button><button data-v="1" title="Скорость ×1"><img class="ic" src="icons/play.png?v=36" alt="×1"></button><button data-v="2" title="Скорость ×2"><img class="ic" src="icons/fast.png?v=36" alt="×2"></button><button data-v="4" title="Скорость ×4"><img class="ic" src="icons/faster.png?v=36" alt="×4"></button></div>
     <div class="spacer"></div>
     <div class="hgroup acts" aria-label="Управление городом">
-      <button id="commBtn" title="Показать ЛЭП, водопровод и куда доходят электричество и вода"><img class="ic" src="icons/power.png?v=35" alt=""><span>Коммуникации</span></button>
-      <button id="polBtn" title="Показать загрязнение от заводов, станций, карьеров и рудников"><img class="ic" src="icons/pollution.png?v=35" alt=""><span>Загрязнение</span></button>
-      <button id="resBtn" title="Дерево исследований: открывает постройки и следующие эпохи"><img class="ic" src="icons/research.png?v=35" alt=""><span>Исследования</span></button>
-      <button id="mktBtn" title="Рынок: купить и продать ресурсы, цены зависят от спроса"><img class="ic" src="icons/market.png?v=35" alt=""><span>Рынок</span></button>
-      <button id="eduBtn" title="График состава населения по образованию"><img class="ic" src="icons/edu.png?v=35" alt=""><span>Образование</span></button>
+      <button id="commBtn" title="Показать ЛЭП, водопровод и куда доходят электричество и вода"><img class="ic" src="icons/power.png?v=36" alt=""><span>Коммуникации</span></button>
+      <button id="polBtn" title="Показать загрязнение от заводов, станций, карьеров и рудников"><img class="ic" src="icons/pollution.png?v=36" alt=""><span>Загрязнение</span></button>
+      <button id="resBtn" title="Дерево исследований: открывает постройки и следующие эпохи"><img class="ic" src="icons/research.png?v=36" alt=""><span>Исследования</span></button>
+      <button id="mktBtn" title="Рынок: купить и продать ресурсы, цены зависят от спроса"><img class="ic" src="icons/market.png?v=36" alt=""><span>Рынок</span></button>
+      <button id="eduBtn" title="График состава населения по образованию"><img class="ic" src="icons/edu.png?v=36" alt=""><span>Образование</span></button>
     </div>
     <div id="zoom" class="hgroup" title="Масштаб (или Ctrl+колесо)"><button id="zout" aria-label="Уменьшить">−</button><button id="zin" aria-label="Увеличить">+</button></div>
   </div>
   <div class="hrow"><div id="res" aria-label="Ресурсы"></div></div>
 </header>
 <div id="main">
-<div id="mapcol"><div id="map"><canvas id="c"></canvas></div><div id="err" role="alert"></div><div id="tut" role="dialog" aria-label="Обучение" hidden></div><div id="build"><div id="items" hidden></div><div id="bbar" role="toolbar" aria-label="Строительство"></div></div></div>
+<div id="mapcol"><div id="map"><canvas id="c"></canvas></div><div id="err" role="alert"></div><div id="notes"><div id="tut" role="dialog" aria-label="Обучение" hidden></div><div id="evs" aria-live="polite"></div></div><div id="build"><div id="items" hidden></div><div id="bbar" role="toolbar" aria-label="Строительство"></div></div></div>
 <div id="side">
   <div class="sec who"><label for="name">Мэр</label><input id="name" maxlength="20"></div>
   <div id="phase"></div>
@@ -258,18 +272,18 @@
   <div class="sec"><h4>Игроки</h4><div id="players"></div></div>
   <div class="sec"><h4>События</h4><div id="log" aria-live="polite"></div></div>
   <div class="sec"><h4>Управление</h4><div id="info">ЛКМ — строить (дороги и линии можно тянуть, зоны — выделять прямоугольником), ПКМ — выйти из строительства в «Информацию», а в «Информации» — снести. Стрелки или WASD (с Shift быстрее), колесо и Shift+колесо — перемещение, Ctrl+колесо — масштаб к курсору, пробел — пауза.</div></div>
-  <button id="tutBtn" class="ghost"><img class="ic" src="icons/info.png?v=35" alt=""> Пройти обучение заново</button>
-  <button id="restart"><img class="ic" src="icons/restart.png?v=35" alt=""> Новый город</button>
+  <button id="tutBtn" class="ghost"><img class="ic" src="icons/info.png?v=36" alt=""> Пройти обучение заново</button>
+  <button id="restart"><img class="ic" src="icons/restart.png?v=36" alt=""> Новый город</button>
 </div>
 </div>
-<div id="resModal" class="modal" hidden><div class="mwin" role="dialog" aria-label="Дерево исследований"><div class="mhead"><b><img class="ic" src="icons/research.png?v=35" alt=""> Дерево исследований</b><span id="resRate"></span><button id="resClose" aria-label="Закрыть">×</button></div><div class="mbody"><div id="research" class="tree"></div></div></div></div>
-<div id="eduModal" class="modal" hidden><div class="mwin" role="dialog" aria-label="Образование"><div class="mhead"><b><img class="ic" src="icons/edu.png?v=35" alt=""> Состав населения по образованию</b><button id="eduClose" aria-label="Закрыть">×</button></div><div class="mbody" style="display:flex;gap:18px;flex-wrap:wrap;align-items:center"><canvas id="eduChart" class="chart" width="560" height="260"></canvas><div id="eduLegend"></div></div></div></div>
-<div id="mktModal" class="modal" hidden><div class="mwin" role="dialog" aria-label="Рынок"><div class="mhead"><b><img class="ic" src="icons/market.png?v=35" alt=""> Рынок</b><span>цены растут от покупок и падают от продаж, потом возвращаются</span><button id="mktClose" aria-label="Закрыть">×</button></div><div class="mbody"><div id="mkt"></div></div></div></div>
+<div id="resModal" class="modal" hidden><div class="mwin" role="dialog" aria-label="Дерево исследований"><div class="mhead"><b><img class="ic" src="icons/research.png?v=36" alt=""> Дерево исследований</b><span id="resRate"></span><button id="resClose" aria-label="Закрыть">×</button></div><div class="mbody"><div id="research" class="tree"></div></div></div></div>
+<div id="eduModal" class="modal" hidden><div class="mwin" role="dialog" aria-label="Образование"><div class="mhead"><b><img class="ic" src="icons/edu.png?v=36" alt=""> Состав населения по образованию</b><button id="eduClose" aria-label="Закрыть">×</button></div><div class="mbody" style="display:flex;gap:18px;flex-wrap:wrap;align-items:center"><canvas id="eduChart" class="chart" width="560" height="260"></canvas><div id="eduLegend"></div></div></div></div>
+<div id="mktModal" class="modal" hidden><div class="mwin" role="dialog" aria-label="Рынок"><div class="mhead"><b><img class="ic" src="icons/market.png?v=36" alt=""> Рынок</b><span>цены растут от покупок и падают от продаж, потом возвращаются</span><button id="mktClose" aria-label="Закрыть">×</button></div><div class="mbody"><div id="mkt"></div></div></div></div>
 <div id="chartModal" class="modal" hidden><div class="mwin" role="dialog" aria-label="График ресурса"><div class="mhead"><b id="chartTitle" style="font-size:16px"></b><button id="chartClose" aria-label="Закрыть">×</button></div><div class="mbody"><canvas id="resChart" class="chart" width="600" height="260"></canvas><div id="chartNote"></div></div></div></div>
 <div id="toast" role="status" hidden></div>
 <div id="netbox"><div class="box" id="netStep"></div></div>
 <!-- ?v= must change with every release: GitHub Pages lets browsers cache files for 10 minutes, and a new page with an old game.js breaks -->
-<script src="game.js?v=35"></script>
+<script src="game.js?v=36"></script>
 <script>
 // W, H, B, NEED_TEXT, POWER, WATER are globals from game.js
 // show script errors instead of a silently frozen game (e.g. a stale cached game.js)
@@ -291,7 +305,7 @@ $('name').onchange = () => {
   if (net) net.rename();
 };
 
-const ic = n => `<img class="ic" src="icons/${n}.png?v=35" alt="">`; // emoji don't render in every browser, so icons are SVG files
+const ic = n => `<img class="ic" src="icons/${n}.png?v=36" alt="">`; // emoji don't render in every browser, so icons are SVG files
 const RES = { money: 'money', wood: 'wood', stone: 'stone', food: 'food', iron: 'iron', gold: 'gold', oil: 'oil', asphalt: 'asphalt', horses: 'horses' };
 const costText = c => Object.entries(c).map(([k, v]) => v + ic(RES[k])).join(' ');
 const TOOLS = { info: { label: 'Информация', icon: 'info', cost: {} }, buy: { label: 'Купить землю', icon: 'buy', cost: {}, tech: 'explore' }, clear: { label: 'Расчистить', icon: 'clear', cost: {}, note: 'лес 5' + ic('money') + ', камень 10' + ic('money') }, ...B, bulldoze: { label: 'Снести', icon: 'bulldoze', cost: { money: 2 } } };
@@ -475,9 +489,9 @@ const nbr = (i, dx, dy) => { const x = i % W + dx, y = ((i / W) | 0) + dy; retur
 // bottom vertex, the diamond is 256 px wide). Whatever has no texture is drawn by code as before.
 const TEX = {}, texCache = new Map();
 let SPR = {}, texReady = false;
-fetch('textures/sprites.json?v=35').then(r => r.json()).then(m => {
+fetch('textures/sprites.json?v=36').then(r => r.json()).then(m => {
   SPR = m;
-  return Promise.all(Object.keys(m).map(n => new Promise(ok => { const im = new Image(); im.onload = () => { TEX[n] = im; ok(); }; im.onerror = ok; im.src = `textures/${n}.png?v=35`; })));
+  return Promise.all(Object.keys(m).map(n => new Promise(ok => { const im = new Image(); im.onload = () => { TEX[n] = im; ok(); }; im.onerror = ok; im.src = `textures/${n}.png?v=36`; })));
 }).then(() => {
   if (TEX.road_b && TEX.road_one && TEX.path_x) buildRoads();
   texReady = true; texCache.clear();
@@ -517,8 +531,8 @@ function buildRoads() {
   }
 }
 const VEH = {}, VSZ = {};
-fetch('textures/vehicles.json?v=35').then(r => r.json()).then(m => Object.keys(m).forEach(n => {
-  const im = new Image(); im.onload = () => { VEH[n] = im; VSZ[n] = m[n]; }; im.src = `textures/veh_${n}.png?v=35`;
+fetch('textures/vehicles.json?v=36').then(r => r.json()).then(m => Object.keys(m).forEach(n => {
+  const im = new Image(); im.onload = () => { VEH[n] = im; VSZ[n] = m[n]; }; im.src = `textures/veh_${n}.png?v=36`;
 })).catch(() => {});
 const MIRROR = { se: 'sw', sw: 'se', nw: 'ne', ne: 'nw', e: 'w', w: 'e' }, BACK = { se: 'nw', nw: 'se', sw: 'ne', ne: 'sw' };
 // draws vehicle `base` at screen point (x, y) heading (dx, dy), `wid` tiles wide on screen; false when it has no picture.
@@ -1745,30 +1759,52 @@ function techToast(me) {
   knownTech = new Set(now);
   if (!fresh.length) return;
   const t = Game.techOf(fresh[fresh.length - 1]);
-  $('toast').innerHTML = `<img class="ic big" src="icons/${TECH_ICON[t.id]}.png?v=35" alt="" style="width:30px;height:30px"><div><b>Исследование завершено: ${t.name}</b><br><small>${t.desc}</small></div><button data-next>${ic('research')} Выбрать следующее</button>`;
-  $('toast').classList.remove('bad'); $('toast').hidden = false;
+  $('toast').innerHTML = `<img class="ic big" src="icons/${TECH_ICON[t.id]}.png?v=36" alt="" style="width:30px;height:30px"><div><b>Исследование завершено: ${t.name}</b><br><small>${t.desc}</small></div><button data-next>${ic('research')} Выбрать следующее</button>`;
+  $('toast').hidden = false;
   clearTimeout(toastTimer); toastTimer = setTimeout(() => { $('toast').hidden = true; }, 8000);
 }
-$('toast').onclick = e => {
-  $('toast').hidden = true;
-  if (e.target.closest('[data-next]')) openRes(true);
-  const go = e.target.closest('[data-goto]');
-  if (go) { const i = +go.dataset.goto, [wx, wy] = P(i % W + 0.5, (i / W | 0) + 0.5); cam.x = wx - c.width / 2; cam.y = wy - c.height / 2; clampView(); }
-};
-// my fires, epidemics, droughts and disasters, from the log: each new line about me shows once
-let seenLog = null;
+$('toast').onclick = e => { $('toast').hidden = true; if (e.target.closest('[data-next]')) openRes(true); };
+// My events as cards in the map's corner, under the tutorial: each new log line about me becomes one card, with what
+// it means and what helps. Cards go after EV_LIFE ms or by ×; an epidemic or a drought card stays while it lasts.
+const EV_KIND = [
+  [/пожар!/, 'fire', 'Пожар', 'Здание не работает и сгорит через несколько тиков. Колодец в 3 клетках или пожарная станция в 7 тушат пожар за два тика.'],
+  [/сгорело/, 'fire', 'Здание сгорело', 'Рядом не было колодца или пожарной станции. Огонь может перекинуться на соседние здания.'],
+  [/пожар потушен/, 'firewell', 'Пожар потушен', 'Колодец или пожарная станция справились.', 'good'],
+  [/эпидеми/, 'sick', 'Эпидемия', 'Каждый тик умирает часть жителей, больше всего старики. Знахари спасают половину своих 40 жителей, больницы — 90% из 150.', 'sick'],
+  [/засуха/, 'drought', 'Засуха', 'Фермы дают вдвое меньше еды. С «Орошением» потери только четверть.', 'drought'],
+  [/разрушило|без разрушений/, 'storm', 'Стихийное бедствие', ''],
+];
+const EV_LIFE = 15000;
+let seenLog = null, evCards = [], evShown = '', evId = 0;
 function eventToast() {
-  const mine = st.log.filter(l => l.startsWith(name + ': ') && /пожар!|эпидеми|засуха|разрушило|сгорело/.test(l));
+  const me = st.players[name];
+  const mine = st.log.filter(l => l.startsWith(name + ': ') && EV_KIND.some(([re]) => re.test(l)));
   const fresh = seenLog ? mine.filter(l => !seenLog.has(l)) : [];
   seenLog = new Set(mine);
-  if (!fresh.length) return;
-  const text = fresh[0].slice(name.length + 2), fire = Object.keys(st.fire || {}).find(i => Game.ownerOf(st, +i) === name);
-  const pic = /пожар|сгорело/.test(text) ? 'fire' : /эпидеми/.test(text) ? 'sick' : /засуха/.test(text) ? 'drought' : 'storm';
-  $('toast').innerHTML = `<img class="ic" src="icons/${pic}.png?v=35" alt="" style="width:30px;height:30px"><div><b>${esc(text[0].toUpperCase() + text.slice(1))}</b></div>` +
-    (/пожар!/.test(text) && fire !== undefined ? `<button data-goto="${fire}">Показать</button>` : '');
-  $('toast').classList.add('bad'); $('toast').hidden = false;
-  clearTimeout(toastTimer); toastTimer = setTimeout(() => { $('toast').hidden = true; $('toast').classList.remove('bad'); }, 7000);
+  for (const l of fresh.reverse()) { // oldest first, newest ends on top
+    const text = l.slice(name.length + 2), [, pic, title, help, kind] = EV_KIND.find(([re]) => re.test(text));
+    const xy = text.match(/\((\d+), (\d+)\)/);
+    evCards.unshift({ id: ++evId, pic, title, kind, text: text[0].toUpperCase() + text.slice(1), help, tile: xy ? +xy[2] * W + +xy[1] : -1, t: performance.now() });
+  }
+  const now = performance.now();
+  evCards = evCards.filter(e => (e.kind === 'sick' ? me.sick > 0 : e.kind === 'drought' ? me.drought > 0 : true) && (e.kind === 'sick' || e.kind === 'drought' || now - e.t < EV_LIFE)).slice(0, 4);
+  const html = evCards.map((e, n) => { // only the newest card explains what helps, so a few fit under the tutorial
+    const left = e.kind === 'sick' ? `Ещё ${me.sick} тиков · спасают ${Math.round((me.cure || 0) * 100)}% больных` : e.kind === 'drought' ? `Ещё ${me.drought} тиков` : '';
+    const full = e.kind === 'sick' ? 25 : e.kind === 'drought' ? 30 : 0, rest = e.kind === 'sick' ? me.sick : me.drought;
+    return `<div class="ev${e.kind === 'good' ? ' good' : ''}" data-ev="${e.id}"><img src="icons/${e.pic}.png?v=36" alt=""><div class="body"><b>${e.title}</b><p>${esc(e.text)}</p>` +
+      (e.help && !n ? `<p>${e.help}</p>` : '') + (left ? `<p><small>${left}</small></p><div class="bar"><i style="width:${Math.min(100, rest / full * 100)}%"></i></div>` : '') +
+      (e.tile >= 0 ? `<div class="acts"><button data-goto="${e.tile}">Показать на карте</button></div>` : '') + `</div><button data-x aria-label="Закрыть">×</button></div>`;
+  }).join('');
+  if (html !== evShown) $('evs').innerHTML = evShown = html; // rebuild only on change so a click isn't lost
 }
+$('evs').onclick = e => {
+  const card = e.target.closest('[data-ev]'); if (!card) return;
+  const go = e.target.closest('[data-goto]');
+  if (go) { const i = +go.dataset.goto, [wx, wy] = P(i % W + 0.5, (i / W | 0) + 0.5); cam.x = wx - c.width / 2; cam.y = wy - c.height / 2; clampView(); }
+  if (e.target.closest('[data-x]') || go) { evCards = evCards.filter(x => x.id !== +card.dataset.ev); eventToast(); }
+};
+setInterval(() => { if (st && st.players[name]) eventToast(); }, 1000); // cards go away on time even while the game is paused
+
 // Each branch is a band of rows: lane 0 is its main line, lanes below it are side branches. A line runs from every
 // study a node needs to the node, so branches can split and meet.
 function researchPanel(me) {
@@ -1797,7 +1833,7 @@ function researchPanel(me) {
     }
     const why = done ? 'Изучено' : cur ? 'Изучается' : open ? 'Нажмите, чтобы изучать' : t.era > (me.level || 0) ? `Откроется в эпоху «${LEVELS[t.era].name}»` : `Сначала изучите ${miss.map(r => `«${r.name}»`).join(' и ')}`;
     nodes += `<div class="node ${done ? 'done' : cur ? 'cur' : open ? 'open' : 'off'}${t.side ? ' side' : ''}" style="left:${x}px;top:${y}px" title="${why}${t.side ? ' · необязательное: для новой эпохи не нужно' : ''}"${open ? ` data-tech="${t.id}"` : ''}>` +
-      `<img class="big" src="icons/${TECH_ICON[t.id]}.png?v=35" alt=""><div><b>${done ? ic('ok') + ' ' : ''}${t.name}</b><span>${t.desc}</span></div>` +
+      `<img class="big" src="icons/${TECH_ICON[t.id]}.png?v=36" alt=""><div><b>${done ? ic('ok') + ' ' : ''}${t.name}</b><span>${t.desc}</span></div>` +
       (cur || (pts && !done) ? `<div class="bar"><i style="width:${Math.min(100, pts / Game.TECH_COST[t.era] * 100)}%"></i></div>` : '') + '</div>';
   }
   const legend = `<div class="tlegend"><span><i class="lg main"></i>основная ветка — нужна для новой эпохи</span><span><i class="lg side"></i>ответвление — бонус, по желанию</span><span><i class="lg ln"></i>линия — что нужно изучить раньше</span></div>`;
