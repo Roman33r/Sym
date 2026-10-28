@@ -26,9 +26,9 @@ const server = http.createServer((req, res) => {
   const u = new URL(req.url, 'http://x');
   if (u.pathname === '/') return send(res, 'text/html; charset=utf-8', 'index.html');
   if (u.pathname === '/game.js') return send(res, 'text/javascript; charset=utf-8', 'game.js');
-  if (/^\/icons\/[a-z]+\.svg$/.test(u.pathname)) { // name pattern keeps requests inside icons/
+  if (/^\/icons\/[a-z]+\.(svg|png)$/.test(u.pathname)) { // name pattern keeps requests inside icons/
     if (!fs.existsSync(path.join(__dirname, u.pathname))) return res.writeHead(404).end();
-    return send(res, 'image/svg+xml', u.pathname);
+    return send(res, u.pathname.endsWith('.png') ? 'image/png' : 'image/svg+xml', u.pathname);
   }
   if (/^\/textures\/[a-z0-9_]+\.(png|json)$/.test(u.pathname)) { // same for the map textures and their anchors
     if (!fs.existsSync(path.join(__dirname, u.pathname))) return res.writeHead(404).end();
