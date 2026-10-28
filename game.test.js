@@ -216,6 +216,12 @@ assert.ok(DP.flow.food.some(([what, v]) => what.startsWith('Привезли') &
 assert.ok(!d.ships.some(x => x.id === sh.id));
 DP.tech.logistics = true; d.stock[3] = G.LOAD; G.tick(d); // logistics: 3 cost units a tick
 assert.strictEqual(d.ships[d.ships.length - 1].at - d.ships[d.ships.length - 1].t0, 3, '7 tiles at 3 per tick');
+// depots: the town holds BASE_CAP of each resource, every depot DEPOT_CAP more; a load that doesn't fit waits
+assert.strictEqual(G.capOf(d, 'D'), G.BASE_CAP + G.DEPOT_CAP);
+d.ships = []; DP.res.food = G.capOf(d, 'D') - 4; d.stock[3] = G.LOAD; G.tick(d);
+assert.ok(d.full.includes(3) && !d.ships.length, 'full depots: the farm keeps its load');
+DP.res.food = 0; d.stock[3] = G.LOAD; G.tick(d);
+assert.ok(!d.full.includes(3) && d.ships.length === 1, 'room again: it goes');
 // demographics: kids grow up with school if there are seats, the university gives degrees, hospitals halve deaths
 const dm = { kids: 30, none: 0, school: 80, higher: 0, old: 50 };
 G.demographics(dm, G.popOf(dm), { school: 1, uni: 1, hospital: 1 }, 1); // homes exactly full: nobody arrives or leaves
@@ -320,6 +326,13 @@ G.tick(h);
 assert.ok(h.ships.length === 1 && h.ships[0].horse && h.ships[0].own && !h.noHorse.includes(2), 'own cart, no waiting');
 HP.res.horses = 2;
 assert.deepStrictEqual(G.horseUse(h, 'H'), { total: 2, trams: 0, assigned: 0, busy: 0, carts: 0, free: 2, cap: 2 }, 'own carts keep the pool free');
+// horses eat; hungry horses carry only food
+HP.res.food = 50; G.tick(h);
+assert.ok(HP.flow.food.some(([what, v]) => what.startsWith('Лошади едят') && Math.abs(v + 2 * G.HORSE_FOOD) < 1e-9), 'two horses eat');
+h.grid[7] = 'tree'; G.act(h, 'H', 'sawmill', 5); h.status = G.compute(h);
+HP.fed = false; HP.res.wood = 0; h.ships = []; G.setHorses(h, 'H', 5, 1); h.stock[5] = G.LOAD; G.tick(h);
+assert.ok(h.noHorse.includes(5) && !h.ships.some(x => x.res === 'wood'), 'a hungry horse leaves the wood');
+HP.res.wood = 1e3; h.grid[5] = h.grid[7] = 'grass';
 // a horse-tram stop needs one of those horses
 h.grid[8] = 'stop';
 HP.res.horses = 0;
