@@ -292,12 +292,25 @@ G.tick(h);
 assert.ok(h.noHorse.includes(2) && !h.ships.length, 'no horse: the load waits');
 HP.res.horses = 1; h.stock[2] = G.LOAD;
 G.tick(h);
+assert.ok(h.noHorse.includes(2) && !h.ships.length, 'a horse nobody assigned stays in the stable');
+assert.strictEqual(G.setHorses(h, 'H', 2, 2), 'свободных лошадей только 1');
+assert.strictEqual(G.setHorses(h, 'H', 10, 1), 'этому зданию лошади не нужны'); // the depot
+assert.strictEqual(G.setHorses(h, 'H', 2, 1), null);
+assert.deepStrictEqual([G.horseUse(h, 'H').busy, G.horseUse(h, 'H').free], [1, 0]);
+h.stock[2] = G.LOAD;
+G.tick(h);
 assert.strictEqual(h.ships.length, 1);
+assert.strictEqual(h.ships[0].src, 2, 'the cart belongs to the farm');
+h.stock[2] = G.LOAD; G.tick(h);
+assert.ok(h.ships.length === 1 && h.noHorse.includes(2), 'its only horse is on the road: the next load waits');
 assert.ok(h.ships[0].horse && h.ships[0].at - h.ships[0].t0 === 8, 'a cart over 8 path tiles takes 8 ticks'); // 16 cost units at 2 per tick
 // livestock farms raise horses, two per farm at most
 assert.strictEqual(G.setSpec(h, 'H', 2, 'livestock'), 'нужно исследование «Земледелие»');
 HP.tech.agriculture = true;
 assert.strictEqual(G.setSpec(h, 'H', 2, 'livestock'), null);
+h.ships = []; G.tick(h);
+assert.ok(!(h.hrs || {})[2], 'a livestock farm needs no assigned horses');
+assert.strictEqual(G.setHorses(h, 'H', 2, 1), 'животноводческая ферма возит еду своими телегами');
 HP.demo = { kids: 0, none: 40, school: 0, higher: 0, old: 0 }; // enough farm hands
 for (let k = 0; k < 200; k++) G.tick(h);
 assert.strictEqual(HP.res.horses, G.HORSES_PER_FARM, 'the herd stops at two');
@@ -306,7 +319,7 @@ HP.res.horses = 0; h.ships = []; h.stock[2] = G.LOAD;
 G.tick(h);
 assert.ok(h.ships.length === 1 && h.ships[0].horse && h.ships[0].own && !h.noHorse.includes(2), 'own cart, no waiting');
 HP.res.horses = 2;
-assert.deepStrictEqual(G.horseUse(h, 'H'), { total: 2, trams: 0, carts: 0, free: 2, cap: 2 }, 'own carts keep the pool free');
+assert.deepStrictEqual(G.horseUse(h, 'H'), { total: 2, trams: 0, assigned: 0, busy: 0, carts: 0, free: 2, cap: 2 }, 'own carts keep the pool free');
 // a horse-tram stop needs one of those horses
 h.grid[8] = 'stop';
 HP.res.horses = 0;
