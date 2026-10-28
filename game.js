@@ -10,10 +10,11 @@ const B = {
   zres:    { cost: { money: 10 }, needs: 'rpw', zone: 'res', label: 'Жилая зона', icon: 'zres' },
   zoff:    { cost: { money: 10 }, needs: 'rpw', zone: 'off', tech: 'business', label: 'Офисная зона', icon: 'zoff' },
   zind:    { cost: { money: 10 }, needs: 'rp', zone: 'ind', tech: 'industry', label: 'Промзона', icon: 'zind' },
-  res:     { cost: { money: 10 }, needs: 'rpw', grown: true, home: 6, label: 'Жилой дом', icon: '' },
+  res:     { cost: { money: 10 }, needs: 'rpw', grown: true, home: true, label: 'Жилой дом', icon: '' }, // capacity: HOME_TIERS
   off:     { cost: { money: 10 }, needs: 'rpw', grown: true, jobs: 6, prod: { money: 4 }, label: 'Офис', icon: '' },
   ind:     { cost: { money: 10 }, needs: 'rp', grown: true, jobs: 8, label: 'Завод', icon: '' }, // makes a product, see PRODUCTS
-  house:   { cost: { money: 50, wood: 10 }, needs: 'rpw', tech: 'crafts', home: 8, label: 'Дом (до 8 жителей)', icon: 'house' },
+  house:   { cost: { money: 50, wood: 10 }, needs: 'rpw', tech: 'crafts', home: true, label: 'Дом (ступени по эпохам)', icon: 'house' },
+  improve: { cost: {}, label: 'Улучшить дома', icon: 'upgrade' }, // tool: raises homes to the era's tier
   farm:    { cost: { money: 40, wood: 5 }, needs: 'rw', jobs: 4, prod: { food: 5 }, label: 'Ферма (еда)', icon: 'farm' },
   sawmill: { cost: { money: 60 }, needs: 'rpt', jobs: 4, prod: { wood: 2 }, label: 'Лесопилка (дерево)', icon: 'sawmill' },
   quarry:  { cost: { money: 80, wood: 10 }, needs: 'rpk', jobs: 4, prod: { stone: 1.5 }, label: 'Каменоломня (камень)', icon: 'quarry' },
@@ -59,6 +60,17 @@ const LEVELS = [
   { name: 'Современность', icon: 'metro', pop: 600, cost: 6000, rare: { iron: 100, gold: 20 }, area: 4000 },
 ];
 const UTIL_ERA = 3;
+// homes by era: built at the owner's current tier, older ones can be raised to it; the tower also needs skyscrapers
+const HOME_TIERS = [
+  { name: 'Хижина', cap: 4 },
+  { name: 'Фахверковый дом', cap: 8, cost: { money: 40, wood: 15 } },
+  { name: 'Кирпичный дом', cap: 14, cost: { money: 120, stone: 30 } },
+  { name: 'Многоэтажка', cap: 24, cost: { money: 300, stone: 40, iron: 10 } },
+  { name: 'Жилая башня', cap: 40, cost: { money: 800, stone: 60, iron: 20 }, tech: 'skyscrapers' },
+];
+const tierOf = (s, i) => (s.hl || {})[i] ?? 0;
+const homeCap = (s, i) => HOME_TIERS[tierOf(s, i)].cap;
+const maxTier = p => Math.min(p.level || 0, hasTech(p, 'skyscrapers') ? 4 : 3);
 const levelOf = p => LEVELS[p.level || 0];
 const BRANCHES = { world: 'Мир', science: 'Наука', edu: 'Образование', art: 'Искусство', social: 'Социальное' };
 // one study per branch in each era; it needs the same branch's study of the era before
@@ -83,8 +95,13 @@ const TECH = [
   { id: 'universities', era: 3, branch: 'edu', name: 'Университеты', desc: 'университет: высшее образование' },
   { id: 'business', era: 3, branch: 'art', name: 'Деловой центр', desc: 'офисная зона' },
   { id: 'transit', era: 3, branch: 'social', name: 'Общественный транспорт', desc: 'автобусы: остановкам не нужны лошади' },
+  { id: 'globaltrade', era: 4, branch: 'world', name: 'Глобальная торговля', desc: 'на рынке продажа в 1,5 раза дороже' },
+  { id: 'computers', era: 4, branch: 'science', name: 'Компьютеры', desc: 'исследования в 1,5 раза быстрее' },
+  { id: 'elearning', era: 4, branch: 'edu', name: 'Онлайн-образование', desc: 'университеты выпускают вдвое больше' },
+  { id: 'skyscrapers', era: 4, branch: 'art', name: 'Небоскрёбы', desc: 'жилая башня на 40 жителей' },
+  { id: 'ecology', era: 4, branch: 'social', name: 'Экология', desc: 'ваши заводы и станции загрязняют вдвое меньше' },
 ];
-const TECH_COST = [40, 100, 220, 400]; // research points per era
+const TECH_COST = [40, 100, 220, 400, 700]; // research points per era
 const techOf = id => TECH.find(t => t.id === id);
 const hasTech = (p, id) => !id || !!(p && p.tech && p.tech[id]);
 const techLock = (p, id) => (hasTech(p, id) ? null : `нужно исследование «${techOf(id).name}»`);
@@ -117,7 +134,7 @@ function setResearch(s, who, id) {
 const PRICES = { wood: 4, stone: 6, food: 3 };
 const SELL = { wood: 2, stone: 3, food: 1, iron: 15, gold: 40, oil: 8 };
 function trade(s, who, res, n, sell = false) {
-  const p = s.players[who], price = (sell ? SELL : PRICES)[res];
+  const p = s.players[who], price = (sell ? SELL : PRICES)[res] * (sell && hasTech(p, 'globaltrade') ? 1.5 : 1);
   if (!p) return 'сначала выберите стартовый участок';
   if (!price || !Number.isInteger(n) || n < 1 || n > 1000) return 'неверная сделка';
   const lock = techLock(p, 'trade'); if (lock) return lock;
@@ -306,7 +323,7 @@ const wants = (s, i, reach = commute(s)) => {
 const share = w => Object.values(w).filter(Boolean).length / Object.keys(WANT_TEXT).length;
 const happiness = (s, i, reach) => share(wants(s, i, reach));
 // a working home is 40% full when no needs are met and full when all are
-const fill = (s, i, h) => s.status && s.status[i] ? 0 : Math.round(B[s.grid[i]].home * (0.4 + 0.6 * h));
+const fill = (s, i, h) => s.status && s.status[i] ? 0 : Math.round(homeCap(s, i) * (0.4 + 0.6 * h));
 const residents = (s, i, reach) => fill(s, i, happiness(s, i, reach));
 const short = t => B[t].label.replace(/ \(.*\)/, '');
 
@@ -369,7 +386,7 @@ const SEATS = { kinder: 30, school: 40, hospital: 150, uni: 1.5 }; // kids / pup
 const popOf = d => d.kids + d.none + d.school + d.higher + d.old;
 const newDemo = () => ({ kids: 0, none: 0, school: 0, higher: 0, old: 0 });
 // one tick of births, newcomers, growing up, studying, ageing and deaths; cap is how many the homes can hold
-function demographics(d, cap, cnt, hap) {
+function demographics(d, cap, cnt, hap, uniK = 1) { // uniK: online education doubles graduates
   const now = popOf(d), adults = d.none + d.school + d.higher, room = cap - now;
   const kinderCov = Math.min(1, (cnt.kinder || 0) * SEATS.kinder / Math.max(1, d.kids));
   const schoolCov = Math.min(1, (cnt.school || 0) * SEATS.school / Math.max(1, d.kids));
@@ -384,7 +401,7 @@ function demographics(d, cap, cnt, hap) {
   }
   const grow = d.kids / 30; // kids grow up, with school if there are seats for them
   d.kids -= grow; d.school += grow * schoolCov; d.none += grow * (1 - schoolCov);
-  const study = Math.min(d.school / 40, (cnt.uni || 0) * SEATS.uni); // university turns school graduates into specialists
+  const study = Math.min(d.school / 40, (cnt.uni || 0) * SEATS.uni * uniK); // university turns school graduates into specialists
   d.school -= study; d.higher += study;
   for (const g of ['none', 'school', 'higher']) { const a = d[g] / 150; d[g] -= a; d.old += a; }
   d.old -= d.old / 50 * (1 - 0.5 * hospCov); // hospitals halve deaths
@@ -397,7 +414,7 @@ const POLLUTERS = { ind: 1, plant: 0.8, quarry: 0.5, ironmine: 0.6, goldmine: 0.
 function pollution(s) {
   const p = new Float32Array(W * H);
   s.grid.forEach((t, i) => {
-    const k = POLLUTERS[t]; if (!k) return;
+    const o = s.players[ownerOf(s, i)], k = (POLLUTERS[t] || 0) * (hasTech(o, 'ecology') ? 0.5 : 1); if (!k) return;
     const x = i % W, y = i / W | 0;
     for (let dy = -5; dy <= 5; dy++) for (let dx = -5; dx <= 5; dx++) {
       const X = x + dx, Y = y + dy;
@@ -427,6 +444,10 @@ function tick(s) {
   s.ships = s.ships || []; s.stock = s.stock || {}; s.shipSeq = s.shipSeq || 0; s.spec = s.spec || {}; s.shopStock = s.shopStock || {};
   const undelivered = [], starved = [], noHorse = [];
   s.breed = s.breed || {}; s.events = [];
+  if (!s.hl) { // saves from before home tiers: houses were half-timbered, zone homes take the owner's era
+    s.hl = {};
+    s.grid.forEach((t, i) => { const o = s.players[ownerOf(s, i)]; if (t === 'house') s.hl[i] = 1; if (t === 'res') s.hl[i] = o ? maxTier(o) : 0; });
+  }
   for (const [who, p] of Object.entries(s.players)) {
     if (!p.tech) { p.tech = {}; for (const t of TECH) if (t.era < (p.level || 0)) p.tech[t.id] = true; p.rpts = {}; } // saves from before research
     const cnt = {}, needs = Object.fromEntries(Object.keys(WANT_TEXT).map(k => [k, 0]));
@@ -437,13 +458,14 @@ function tick(s) {
       if (!B[t].home) return;
       const w = wants(s, i, reach), h = share(w), n = fill(s, i, h);
       cap += n; if (w.work) reachCap += n;
-      places += B[t].home; happy += h * B[t].home;
-      for (const k in w) needs[k] += w[k] ? B[t].home : 0;
+      const room = homeCap(s, i);
+      places += room; happy += h * room;
+      for (const k in w) needs[k] += w[k] ? room : 0;
     });
     const hap = places ? happy / places : 0;
     // saves from before demographics: everyone counts as an adult without a degree
     const d = p.demo || (p.demo = { ...newDemo(), none: p.pop || 0 });
-    const before0 = popOf(d), cov = demographics(d, cap, cnt, hap), pop = Math.round(popOf(d));
+    const before0 = popOf(d), cov = demographics(d, cap, cnt, hap, hasTech(p, 'elearning') ? 2 : 1), pop = Math.round(popOf(d));
     // who can work where: offices need a degree, every other job takes anyone; only people who can get to work count
     const r = cap ? reachCap / cap : 0, jobs = Object.entries(cnt).reduce((n, [t, c]) => n + c * (B[t].jobs || 0), 0);
     const offJobs = (cnt.off || 0) * B.off.jobs, otherJobs = jobs - offJobs;
@@ -457,7 +479,7 @@ function tick(s) {
     let freeHorses = engine ? Infinity : Math.floor(R.horses) - stops - s.ships.filter(sh => sh.who === who && sh.horse).length;
     const vehicle = () => (engine ? 'truck' : freeHorses >= 1 ? (freeHorses--, 'horse') : false);
     // research: points from adults, schools and universities; writing speeds it up
-    const rp = (0.5 + (d.none + d.school + d.higher) * 0.01 + (cnt.school || 0) + (cnt.uni || 0) * 3) * (hasTech(p, 'writing') ? 1.5 : 1);
+    const rp = (0.5 + (d.none + d.school + d.higher) * 0.01 + (cnt.school || 0) + (cnt.uni || 0) * 3) * (hasTech(p, 'writing') ? 1.5 : 1) * (hasTech(p, 'computers') ? 1.5 : 1);
     p.rp = rp; p.rpts = p.rpts || {};
     if (p.research && !hasTech(p, p.research)) {
       p.rpts[p.research] = (p.rpts[p.research] || 0) + rp;
@@ -536,7 +558,7 @@ function tick(s) {
     const want = { res: jobs + 16 - pop, biz: pop - jobs };
     s.grid.forEach((t, i) => {
       const z = own[i] === who && B[t] && B[t].zone, k = z === 'res' ? 'res' : 'biz';
-      if (z && !st[i] && want[k] > 0 && Math.random() < 0.3) { s.grid[i] = z; want[k] -= 6; }
+      if (z && !st[i] && want[k] > 0 && Math.random() < 0.3) { s.grid[i] = z; want[k] -= 6; if (z === 'res') s.hl[i] = maxTier(p); }
     });
     for (const k in needs) needs[k] = places ? needs[k] / places : 0;
     p.hist = p.hist || [];
@@ -546,6 +568,7 @@ function tick(s) {
   for (const i in s.stock) if (!B[s.grid[i]] || !(B[s.grid[i]].prod || s.grid[i] === 'ind' || s.grid[i] === 'refinery')) delete s.stock[i]; // building gone
   for (const i in s.spec) if (s.grid[i] !== 'ind' && s.grid[i] !== 'farm') delete s.spec[i];
   for (const i in s.breed) if (s.grid[i] !== 'farm') delete s.breed[i];
+  for (const i in s.hl) if (!B[s.grid[i]] || !B[s.grid[i]].home) delete s.hl[i];
   for (const i in s.shopStock) if (s.grid[i] !== 'shop') delete s.shopStock[i];
   s.ships = s.ships.filter(sh => isRoad(s.grid[sh.from]) && isRoad(s.grid[sh.to])); // a removed road loses the load
   s.undelivered = undelivered; s.starved = starved; s.noHorse = noHorse;
@@ -584,6 +607,14 @@ function act(s, who, tool, i, recompute = true) {
     const e = pay({ money: 2 }); if (e) return e;
     if (B[t]) for (const [k, v] of Object.entries(B[t].cost)) R[k] += Math.floor(v / 2);
     g[i] = (B[t] && B[t].ore) || 'grass'; s.util[i] = 0;
+  } else if (tool === 'improve') {
+    if (!B[t] || !B[t].home) return 'улучшать можно только жилые дома';
+    const next = HOME_TIERS[tierOf(s, i) + 1];
+    if (!next) return 'это уже лучший дом';
+    if (tierOf(s, i) + 1 > (p.level || 0)) return `«${next.name}» появится в эпоху «${LEVELS[tierOf(s, i) + 1].name}»`;
+    const lock = techLock(p, next.tech); if (lock) return lock;
+    const e = pay(next.cost); if (e) return e;
+    (s.hl = s.hl || {})[i] = tierOf(s, i) + 1;
   } else if (tool === 'mine' || tool === 'well') {
     if (tool === 'mine' && t !== 'iron' && t !== 'gold') return 'рудник ставится на месторождение железа или золота';
     if (tool === 'well' && t !== 'oil') return 'нефтяная вышка ставится на месторождение нефти';
@@ -608,6 +639,7 @@ function act(s, who, tool, i, recompute = true) {
     if (t !== 'grass' && !(tool === 'road' && t === 'path')) return 'клетка занята'; // asphalt can be laid over a path
     const e = pay(B[tool].cost); if (e) return e;
     g[i] = tool;
+    if (B[tool].home) (s.hl = s.hl || {})[i] = maxTier(p);
   }
   if (recompute) s.status = compute(s);
   return null;
@@ -616,20 +648,23 @@ function act(s, who, tool, i, recompute = true) {
 // Zones (or clears) every fitting tile of the player's land in the rectangle between corner tiles i and j; stops when resources run out.
 function actArea(s, who, tool, i, j) {
   if (tool === 'buy') return withStatus(s, buyArea(s, who, i, j));
-  const clear = tool === 'clear';
-  if (!clear && (!B[tool] || !B[tool].zone)) return 'выделять областью можно только зоны, расчистку и покупку земли';
+  const clear = tool === 'clear', improve = tool === 'improve';
+  if (!clear && !improve && (!B[tool] || !B[tool].zone)) return 'выделять областью можно только зоны, расчистку, улучшение домов и покупку земли';
   if (![i, j].every(k => Number.isInteger(k) && k >= 0 && k < W * H)) return 'неверная клетка';
   const x0 = Math.min(i % W, j % W), x1 = Math.max(i % W, j % W), y0 = Math.min(i / W | 0, j / W | 0), y1 = Math.max(i / W | 0, j / W | 0);
   let n = 0;
   for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
     const k = y * W + x;
-    if ((clear ? !CLEAR[s.grid[k]] : s.grid[k] !== 'grass') || ownerOf(s, k) !== who) continue;
-    const e = act(s, who, tool, k, false);
-    if (e) { if (n) s.status = compute(s); return e; }
-    n++;
+    const fits = clear ? CLEAR[s.grid[k]] : improve ? B[s.grid[k]] && B[s.grid[k]].home && tierOf(s, k) < maxTier(s.players[who] || {}) : s.grid[k] === 'grass';
+    if (!fits || ownerOf(s, k) !== who) continue;
+    do { // homes go all the way up to the era's tier
+      const e = act(s, who, tool, k, false);
+      if (e) { if (n) s.status = compute(s); return e; }
+      n++;
+    } while (improve && tierOf(s, k) < maxTier(s.players[who]));
   }
   if (n) s.status = compute(s); // once for the whole rectangle, not per tile
-  return n ? null : clear ? 'нечего расчищать на вашей земле' : 'нет свободных клеток на вашей земле';
+  return n ? null : clear ? 'нечего расчищать на вашей земле' : improve ? 'тут нет домов, которые можно улучшить в этой эпохе' : 'нет свободных клеток на вашей земле';
 }
 
 // A room runs one game for whoever hosts it (the Node server or a player's browser):
@@ -700,5 +735,5 @@ function room(s) {
   return r;
 }
 
-const api = { W, H, B, NEED_TEXT, WANT_TEXT, POWER, WATER, START, LEVELS, levelOf, upgradeBlock, PRICES, SELL, RES_TEXT, trade, CLEAR, startCorner, landOf, landPrice, newGame, start, nextTurn, compute, tick, act, actArea, wants, happiness, residents, commute, ownerOf, room, SPEEDS, LOAD, roadNets, networks, PRODUCTS, GROUPS, SEATS, pollution, setSpec, popOf, demographics, TECH, TECH_COST, BRANCHES, techOf, hasTech, setResearch, allTech, FARM, HORSES_PER_FARM, UTIL_ERA, isRoad };
+const api = { W, H, B, NEED_TEXT, WANT_TEXT, POWER, WATER, START, LEVELS, levelOf, upgradeBlock, PRICES, SELL, RES_TEXT, trade, CLEAR, startCorner, landOf, landPrice, newGame, start, nextTurn, compute, tick, act, actArea, wants, happiness, residents, commute, ownerOf, room, SPEEDS, LOAD, roadNets, networks, PRODUCTS, GROUPS, SEATS, pollution, setSpec, popOf, demographics, TECH, TECH_COST, BRANCHES, techOf, hasTech, setResearch, allTech, FARM, HORSES_PER_FARM, UTIL_ERA, isRoad, HOME_TIERS, tierOf, homeCap, maxTier };
 if (typeof module !== 'undefined') module.exports = api; else window.Game = api;

@@ -22,9 +22,11 @@ assert.strictEqual(G.act(s, 'A', 'pipe', 3), 'уже проложено');
 assert.strictEqual(G.act(s, 'A', 'house', 2), 'клетка занята');
 G.tick(s);
 assert.deepStrictEqual([s.status[1], s.status[2], s.status[4]], ['', '', '']);
-// homes: food and jobs (0 >= 0) met; no workplace, shop or park, power plant next door: room for 8 * (0.4 + 0.6 * 2/6)
+// homes: built in Новое время the house is a block of flats (24); food and jobs (0 >= 0) met, no workplace,
+// shop or park, power plant next door: room for 24 * (0.4 + 0.6 * 2/6)
 const A = s.players.A;
-assert.strictEqual(A.cap, 5);
+assert.strictEqual(G.tierOf(s, 4), 3);
+assert.strictEqual(A.cap, 14);
 assert.ok(A.pop >= 1 && A.pop <= A.cap, 'people move in gradually'); // the first newcomers
 // that tick's change: tax 0.5 per resident minus plant (3) and pump (2) upkeep; residents eat 0.2 each
 const near = (a, b) => assert.ok(Math.abs(a - b) < 1e-9, a + ' ≈ ' + b);
@@ -44,7 +46,8 @@ assert.strictEqual(G.act(s, 'A', 'zres', 4), null);
 for (let k = 0; k < 50 && s.grid[4] !== 'res'; k++) G.tick(s);
 assert.strictEqual(s.grid[4], 'res');
 G.tick(s);
-assert.ok(A.cap >= 3 && A.cap <= 6, 'a zone home has room for 40..100% of its 6 places');
+assert.strictEqual(G.tierOf(s, 4), 3, 'a zone home grows at the tier of the era');
+assert.ok(A.cap >= 10 && A.cap <= 24, 'and has room for 40..100% of its 24 places');
 // an office zone grows once there are free workers
 assert.strictEqual(G.act(s, 'A', 'zoff', 5), null);
 for (let k = 0; k < 50 && s.grid[5] !== 'off'; k++) G.tick(s);
@@ -54,7 +57,7 @@ assert.strictEqual(G.actArea(s, 'A', 'zind', 2 * W + 6, 2 * W), null);
 assert.strictEqual(s.grid.slice(2 * W, 2 * W + 7).filter(t => t === 'zind').length, 7);
 assert.deepStrictEqual(s.status, G.compute(s), 'status is recomputed once after the whole rectangle');
 assert.strictEqual(G.actArea(s, 'A', 'zind', 2 * W, 2 * W + 6), 'нет свободных клеток на вашей земле');
-assert.strictEqual(G.actArea(s, 'A', 'house', 30, 31), 'выделять областью можно только зоны, расчистку и покупку земли');
+assert.strictEqual(G.actArea(s, 'A', 'house', 30, 31), 'выделять областью можно только зоны, расчистку, улучшение домов и покупку земли');
 // zone lots accept a road up to 3 tiles away, plain buildings need it adjacent (road is row 1)
 s.grid[4 * W + 3] = 'zres'; s.grid[5 * W + 3] = 'zres'; s.grid[4 * W + 1] = 'farm';
 const st = G.compute(s);
@@ -134,9 +137,12 @@ assert.strictEqual(G.act(v, 'V', 'mine', 5 * W + 5), null);
 assert.strictEqual(v.grid[5 * W + 5], 'ironmine');
 assert.strictEqual(G.act(v, 'V', 'bulldoze', 5 * W + 5), null);
 assert.strictEqual(v.grid[5 * W + 5], 'iron');
-V.res.iron = 5; const m1 = V.res.money;
+V.res.iron = 5; const m1 = V.res.money; V.tech.globaltrade = false;
 assert.strictEqual(G.trade(v, 'V', 'iron', 5, true), null);
 assert.strictEqual(V.res.money, m1 + 75); assert.strictEqual(V.res.iron, 0);
+V.res.iron = 2; V.tech.globaltrade = true; // global trade sells 1.5 times dearer
+assert.strictEqual(G.trade(v, 'V', 'iron', 2, true), null);
+assert.strictEqual(V.res.money, m1 + 75 + 45);
 assert.strictEqual(G.trade(v, 'V', 'iron', 1, true), 'не хватает железа');
 V.pop = 120; V.res.money = 5000;
 assert.strictEqual(G.act(v, 'V', 'upgrade', 0), 'для эпохи «Индустриальная эпоха» нужно 20 железа');
@@ -233,8 +239,11 @@ const o = { ...FP, demo: { kids: 0, none: 50, school: 50, higher: 0, old: 0 } };
 f.players.F = o; f.grid[9] = 'off'; G.tick(f);
 assert.strictEqual(o.wr.off, 0, 'nobody with a degree, so offices stay empty');
 // pollution fades with distance from the factory
+o.tech.ecology = false;
 const pl = G.pollution(f);
 assert.ok(pl[3] >= 1 && pl[3 + 7] < pl[3] && pl[6 * W + 60] === 0);
+o.tech.ecology = true; // ecology halves the owner's pollution
+assert.ok(Math.abs(G.pollution(f)[3] - pl[3] / 2) < 1e-6);
 // research: points pile up each tick; a study needs its era and the same branch's study before it
 const rs = G.room(G.newGame(9));
 rs.s.grid.fill('grass'); rs.join('x', 'R');
@@ -291,4 +300,32 @@ assert.strictEqual(G.act(h, 'H', 'road', W + 5), 'не хватает асфал
 HP.res.asphalt = 1;
 assert.strictEqual(G.act(h, 'H', 'road', W + 5), null);
 assert.strictEqual(h.grid[W + 5], 'road');
+// home tiers: a home is built at the era's tier and older homes can be raised to it
+const hm = G.newGame(11);
+hm.grid.fill('grass');
+G.start(hm, ['M']); G.act(hm, 'M', 'claim', 0);
+const MP = hm.players.M;
+MP.tech = G.allTech(); MP.tech.skyscrapers = false; MP.res = { ...MP.res, money: 1e5, wood: 1e3, stone: 1e3, iron: 1e3 };
+assert.strictEqual(G.act(hm, 'M', 'house', 5), null);
+assert.strictEqual(G.tierOf(hm, 5), 0, 'Древность builds huts');
+assert.strictEqual(G.homeCap(hm, 5), 4);
+assert.strictEqual(G.act(hm, 'M', 'improve', 5), '«Фахверковый дом» появится в эпоху «Средневековье»');
+MP.level = 1;
+const mm = MP.res.money;
+assert.strictEqual(G.act(hm, 'M', 'improve', 5), null);
+assert.deepStrictEqual([G.tierOf(hm, 5), G.homeCap(hm, 5), MP.res.money], [1, 8, mm - 40]);
+assert.strictEqual(G.act(hm, 'M', 'improve', 6), 'улучшать можно только жилые дома');
+G.act(hm, 'M', 'house', 7); G.act(hm, 'M', 'house', 8); // built in Средневековье: already half-timbered
+assert.strictEqual(G.tierOf(hm, 7), 1);
+MP.level = 4;
+assert.strictEqual(G.actArea(hm, 'M', 'improve', 0, 10), null); // the whole row up to the era's tier
+assert.deepStrictEqual([5, 7, 8].map(i => G.tierOf(hm, i)), [3, 3, 3], 'without skyscrapers the block of flats is the top');
+assert.strictEqual(G.act(hm, 'M', 'improve', 5), 'нужно исследование «Небоскрёбы»');
+MP.tech.skyscrapers = true;
+assert.strictEqual(G.act(hm, 'M', 'improve', 5), null);
+assert.strictEqual(G.homeCap(hm, 5), 40);
+assert.strictEqual(G.act(hm, 'M', 'improve', 5), 'это уже лучший дом');
+assert.strictEqual(G.act(hm, 'M', 'bulldoze', 5), null);
+G.tick(hm);
+assert.ok(!(5 in hm.hl), 'a demolished home forgets its tier');
 console.log('ok');
