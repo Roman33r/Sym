@@ -57,7 +57,7 @@ assert.strictEqual(G.actArea(s, 'A', 'zind', 2 * W + 6, 2 * W), null);
 assert.strictEqual(s.grid.slice(2 * W, 2 * W + 7).filter(t => t === 'zind').length, 7);
 assert.deepStrictEqual(s.status, G.compute(s), 'status is recomputed once after the whole rectangle');
 assert.strictEqual(G.actArea(s, 'A', 'zind', 2 * W, 2 * W + 6), 'нет свободных клеток на вашей земле');
-assert.strictEqual(G.actArea(s, 'A', 'house', 30, 31), 'выделять областью можно только зоны, расчистку, улучшение домов и покупку земли');
+assert.strictEqual(G.actArea(s, 'A', 'house', 30, 31), 'выделять областью можно только зоны, расчистку, улучшение зданий и покупку земли');
 // zone lots accept a road up to 3 tiles away, plain buildings need it adjacent (road is row 1)
 s.grid[4 * W + 3] = 'zres'; s.grid[5 * W + 3] = 'zres'; s.grid[4 * W + 1] = 'farm';
 const st = G.compute(s);
@@ -198,7 +198,7 @@ const d = G.newGame(6);
 d.grid.fill('grass');
 G.start(d, ['D']); G.act(d, 'D', 'claim', 0);
 const DP = d.players.D;
-DP.res = { money: 1e5, wood: 1e3, stone: 1e3, food: 100, iron: 0, gold: 0, asphalt: 99 }; DP.tech = G.allTech();
+DP.res = { money: 1e5, wood: 1e3, stone: 1e3, food: 100, iron: 0, gold: 0, asphalt: 99, oil: 99 }; DP.tech = G.allTech(); // oil keeps the asphalt in repair
 d.grid[0] = 'lake';
 for (let x = 0; x < 12; x++) G.act(d, 'D', 'road', W + x);
 G.act(d, 'D', 'pump', 1); G.act(d, 'D', 'plant', 2); G.act(d, 'D', 'farm', 3); G.act(d, 'D', 'house', 4);
@@ -338,7 +338,7 @@ MP.level = 1;
 const mm = MP.res.money;
 assert.strictEqual(G.act(hm, 'M', 'improve', 5), null);
 assert.deepStrictEqual([G.tierOf(hm, 5), G.homeCap(hm, 5), MP.res.money], [1, 8, mm - 40]);
-assert.strictEqual(G.act(hm, 'M', 'improve', 6), 'улучшать можно только жилые дома');
+assert.strictEqual(G.act(hm, 'M', 'improve', 6), 'улучшать можно жилые дома и производства');
 G.act(hm, 'M', 'house', 7); G.act(hm, 'M', 'house', 8); // built in Средневековье: already half-timbered
 assert.strictEqual(G.tierOf(hm, 7), 1);
 MP.level = 4;
@@ -352,4 +352,55 @@ assert.strictEqual(G.act(hm, 'M', 'improve', 5), 'это уже лучший д�
 assert.strictEqual(G.act(hm, 'M', 'bulldoze', 5), null);
 G.tick(hm);
 assert.ok(!(5 in hm.hl), 'a demolished home forgets its tier');
+
+// production buildings: built at the era's level, raised later; each level makes more
+const lv = G.newGame(13);
+lv.grid.fill('grass');
+G.start(lv, ['L']); G.act(lv, 'L', 'claim', 0);
+const LP = lv.players.L;
+LP.res = { ...LP.res, money: 1e5, wood: 1e3, stone: 1e3, iron: 1e3 }; LP.tech = G.allTech();
+assert.strictEqual(G.act(lv, 'L', 'sawmill', 2), null);
+assert.strictEqual(G.blOf(lv, 2), 0, 'built in Antiquity: level 1');
+assert.strictEqual(G.act(lv, 'L', 'improve', 2), 'уровень 2 откроется в эпоху «Средневековье»');
+LP.level = 2;
+const m2 = LP.res.money;
+assert.strictEqual(G.act(lv, 'L', 'improve', 2), null);
+assert.strictEqual(G.blOf(lv, 2), 1); assert.strictEqual(LP.res.money, m2 - G.upCost('sawmill', 1).money);
+assert.strictEqual(G.act(lv, 'L', 'sawmill', 3), null);
+assert.strictEqual(G.blOf(lv, 3), 2, 'a new one comes at the era level');
+assert.strictEqual(G.act(lv, 'L', 'improve', 3), 'уровень 4 откроется в эпоху «Новое время»');
+assert.ok(G.prodK(lv, 3) > G.prodK(lv, 2) && G.prodK(lv, 2) > 1, 'higher level, more output');
+assert.ok(G.canImprove(lv, 2, LP) && !G.canImprove(lv, 3, LP));
+assert.deepStrictEqual(G.improveCost(lv, 2, LP), G.upCost('sawmill', 2));
+LP.level = 4;
+assert.strictEqual(G.actArea(lv, 'L', 'improve', 2, 3), null);
+assert.ok(G.blOf(lv, 2) === 4 && G.blOf(lv, 3) === 4, 'the area goes to the top level');
+assert.strictEqual(G.act(lv, 'L', 'improve', 2), 'это здание уже на последнем уровне');
+// the level multiplies a farm's food
+const fk = (lvl) => { const f = G.newGame(14); f.grid.fill('grass'); G.start(f, ['F']); G.act(f, 'F', 'claim', 0); const P2 = f.players.F;
+  P2.res = { ...P2.res, money: 1e4, wood: 100 }; P2.tech = G.allTech(); P2.level = lvl; P2.demo = { kids: 0, none: 40, school: 0, higher: 0, old: 0 };
+  G.act(f, 'F', 'path', W + 2); G.act(f, 'F', 'path', W + 3); G.act(f, 'F', 'farm', 2); G.act(f, 'F', 'house', 3); // the house gives farm hands
+  f.hl[3] = 0; f.stock = {}; G.tick(f); return f.stock[2] || 0; };
+assert.ok(Math.abs(fk(2) / fk(0) - G.PROD_K[2]) < 0.01, 'a level-3 farm makes 1.8 times the food');
+assert.strictEqual(G.act(lv, 'L', 'bulldoze', 2), null); G.tick(lv);
+assert.ok(!(2 in lv.bl), 'a demolished building forgets its level');
+
+// cobblestone costs stone to keep, asphalt costs oil; unpaid roads are as slow as a path
+const rd = G.newGame(15);
+rd.grid.fill('grass');
+G.start(rd, ['R']); G.act(rd, 'R', 'claim', 0);
+const RP = rd.players.R;
+RP.res = { ...RP.res, money: 1e4, stone: 100, asphalt: 50, oil: 0 }; RP.tech = G.allTech();
+assert.strictEqual(G.act(rd, 'R', 'path', 1), null);
+assert.strictEqual(G.act(rd, 'R', 'cobble', 1), null, 'cobblestone goes over a path');
+assert.strictEqual(G.act(rd, 'R', 'cobble', 2), null);
+assert.strictEqual(G.act(rd, 'R', 'road', 3), null);
+assert.strictEqual(G.act(rd, 'R', 'road', 2), null, 'asphalt goes over cobblestone');
+assert.strictEqual(G.act(rd, 'R', 'cobble', 2), 'клетка занята');
+const st0 = RP.res.stone; G.tick(rd);
+assert.ok(Math.abs(st0 - RP.res.stone - 0.01) < 1e-9, 'one cobblestone tile takes 0.01 stone a tick');
+assert.ok(RP.worn.road && !RP.worn.cobble, 'no oil: the asphalt wears out');
+assert.ok(G.slowAt(rd, 2) && !G.slowAt(rd, 1));
+RP.res.oil = 5; G.tick(rd);
+assert.ok(!RP.worn.road && !G.slowAt(rd, 2), 'with oil it is repaired');
 console.log('ok');

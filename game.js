@@ -3,7 +3,8 @@ const W = 120, H = 84;
 // needs: r = road nearby, p = power, w = water, t = forest within 2, k = rock within 2, l = lake adjacent
 const B = {
   path:    { cost: { money: 1 }, label: 'Тропинка (грузы идут вдвое медленнее)', icon: 'path' },
-  road:    { cost: { money: 5, asphalt: 1 }, tech: 'refining', label: 'Асфальтовая дорога', icon: '' },
+  cobble:  { cost: { money: 3, stone: 2 }, tech: 'architecture', label: 'Брусчатка (содержание — камень)', icon: 'stone' },
+  road:    { cost: { money: 5, asphalt: 1 }, tech: 'refining', label: 'Асфальтовая дорога (содержание — нефть)', icon: '' },
   power:   { cost: { money: 5, wood: 1 }, tech: 'electricity', label: 'ЛЭП', icon: '' },
   pipe:    { cost: { money: 5, stone: 1 }, tech: 'plumbing', label: 'Водопровод', icon: '' },
   // zones: cheap lots that develop on their own into res/off/ind once needs are met and there is demand
@@ -41,7 +42,11 @@ const B = {
 };
 const NEED_TEXT = { h: 'нет свободной лошади на складе', r: 'нет дороги рядом', p: 'нет электричества', w: 'нет воды', t: 'нет леса рядом', k: 'нет камня рядом', l: 'нет озера рядом' };
 const RES_TEXT = { money: 'денег', wood: 'дерева', stone: 'камня', food: 'еды', iron: 'железа', gold: 'золота', oil: 'нефти', asphalt: 'асфальта', horses: 'лошадей' };
-const isRoad = t => t === 'road' || t === 'path'; // a path is a road too, only slower
+const isRoad = t => t === 'road' || t === 'path' || t === 'cobble'; // a path is a road too, only slower
+// paved roads cost upkeep per tile and tick; a player who can't pay has worn roads, as slow as a path
+const ROAD_UPKEEP = { cobble: ['stone', 0.01], road: ['oil', 0.01] };
+const wornAt = (s, j) => !!((s.players[ownerOf(s, j)] || {}).worn || {})[s.grid[j]];
+const slowAt = (s, j) => s.grid[j] === 'path' || wornAt(s, j);
 const POWER = 1, WATER = 2; // bits in s.util: lines/pipes lie on top of grass, roads and buildings
 
 // Land is owned tile by tile: a player starts with a START x START square placed anywhere on the grid,
@@ -70,6 +75,20 @@ const HOME_TIERS = [
   { name: 'Жилая башня', cap: 40, cost: { money: 800, stone: 60, iron: 20 }, tech: 'skyscrapers' },
 ];
 const tierOf = (s, i) => (s.hl || {})[i] ?? 0;
+// production buildings: built at the owner's era level, older ones can be raised to it; output grows with the level
+const PROD_K = [1, 1.4, 1.8, 2.3, 2.9];
+const UPGRADE = { farm: 1, sawmill: 1, quarry: 1, ironmine: 1, goldmine: 1, oilwell: 1, refinery: 1, ind: 1, shop: 1 };
+const blOf = (s, i) => (s.bl || {})[i] ?? 0;
+const prodK = (s, i) => PROD_K[blOf(s, i)];
+const upCost = (t, L) => ({ money: Math.round(((B[t].cost.money || 60) + 60) * L * 0.6), ...(L < 2 ? { wood: 15 } : { stone: 12 * L }), ...(L >= 3 ? { iron: 4 * L } : {}) });
+// can tile i be raised one step now (homes by tier, producers by level), and what does it take to its era's top
+const canImprove = (s, i, p) => { const t = s.grid[i]; return !!p && (B[t] && B[t].home ? tierOf(s, i) < maxTier(p) : !!UPGRADE[t] && blOf(s, i) < Math.min(p.level || 0, PROD_K.length - 1)); };
+function improveCost(s, i, p) {
+  const t = s.grid[i], sum = {}, add = c => { for (const k in c) sum[k] = (sum[k] || 0) + c[k]; };
+  if (B[t] && B[t].home) HOME_TIERS.slice(tierOf(s, i) + 1, maxTier(p) + 1).forEach(h => add(h.cost));
+  else if (UPGRADE[t]) for (let L = blOf(s, i) + 1; L <= Math.min(p.level || 0, PROD_K.length - 1); L++) add(upCost(t, L));
+  return sum;
+}
 const homeCap = (s, i) => HOME_TIERS[tierOf(s, i)].cap;
 const maxTier = p => Math.min(p.level || 0, hasTech(p, 'skyscrapers') ? 4 : 3);
 const levelOf = p => LEVELS[p.level || 0];
@@ -261,7 +280,7 @@ function compute(s) {
   const { powered, watered } = networks(s), modern = i => B[g[i]].home && tierOf(s, i) >= UTIL_ERA;
   // zone lots only need a road within 3 tiles, so a big district fills in, not just its edge
   const ok = {
-    r: i => B[g[i]].zone || B[g[i]].grown ? near(g, i, 'road', 3) || near(g, i, 'path', 3) : road(i),
+    r: i => B[g[i]].zone || B[g[i]].grown ? near(g, i, 'road', 3) || near(g, i, 'path', 3) || near(g, i, 'cobble', 3) : road(i),
     // only modern homes need power and water, so a new era or a power plant never switches the town off
     p: i => powered.has(i) || !modern(i), w: i => watered.has(i) || !modern(i),
     t: i => near(g, i, 'tree', 2), k: i => near(g, i, 'rock', 2), l: lake,
@@ -376,7 +395,7 @@ function findRoute(s, comp, i, isDest) {
     if (cost.get(k) !== c) continue;
     for (const j of nb(k)) {
       if (!isRoad(s.grid[j])) continue;
-      const nc = c + (s.grid[j] === 'path' ? 2 : 1);
+      const nc = c + (slowAt(s, j) ? 2 : 1);
       if (!cost.has(j) || nc < cost.get(j)) { cost.set(j, nc); (buckets[nc] = buckets[nc] || []).push(j); }
     }
   }
@@ -466,7 +485,7 @@ function tick(s) {
   const reach = commute(s, st), comp = roadNets(s.grid);
   s.ships = s.ships || []; s.stock = s.stock || {}; s.shipSeq = s.shipSeq || 0; s.spec = s.spec || {}; s.shopStock = s.shopStock || {};
   const undelivered = [], starved = [], noHorse = [];
-  s.breed = s.breed || {}; s.events = [];
+  s.breed = s.breed || {}; s.bl = s.bl || {}; s.events = [];
   for (const k in s.mk || {}) s.mk[k] += (1 - s.mk[k]) * 0.02; // prices drift back to the base
   if (!s.hl) { // saves from before home tiers: houses were half-timbered, zone homes take the owner's era
     s.hl = {};
@@ -516,6 +535,12 @@ function tick(s) {
     }
     const before = { ...R }, flow = Object.fromEntries(Object.keys(R).map(k => [k, []]));
     const add = (k, what, v) => { if (v) { R[k] += v; flow[k].push([what, v]); } };
+    p.worn = {};
+    for (const [t, [k, v]] of Object.entries(ROAD_UPKEEP)) {
+      const n = s.grid.reduce((c, x, j) => c + (x === t && own[j] === who), 0), need = n * v;
+      if (!n) continue;
+      if (R[k] >= need) add(k, `Содержание: ${short(t)} (${n} кл.)`, -need); else p.worn[t] = true;
+    }
     for (const [t, n] of Object.entries(cnt)) {
       for (const [k, v] of Object.entries(B[t].prod || {})) if (!CARGO_RES.includes(k)) add(k, `${short(t)} ×${n}`, n * v * wrOf(t));
       if (B[t].upkeep) add('money', `Содержание: ${short(t)} ×${n}`, -n * B[t].upkeep);
@@ -527,12 +552,12 @@ function tick(s) {
       let res = null, made = 0;
       if (t === 'refinery') { // oil from the owner's stock into asphalt
         res = 'asphalt';
-        made = Math.min(FACTORY_RATE * wrOther, R.oil);
-        if (made < FACTORY_RATE * wrOther * 0.99) starved.push(i);
+        made = Math.min(FACTORY_RATE * wrOther * prodK(s, i), R.oil);
+        if (made < FACTORY_RATE * wrOther * prodK(s, i) * 0.99) starved.push(i);
         R.oil -= made; used.oil = (used.oil || 0) + made;
       } else if (t === 'farm') {
         const f = FARM[s.spec[i] || 'crops'];
-        res = 'food'; made = f.food * wrOther;
+        res = 'food'; made = f.food * wrOther * prodK(s, i);
         if (s.spec[i] === 'livestock') { // horses grow slowly; each livestock farm keeps at most HORSES_PER_FARM
           const herd = s.grid.reduce((n, x, k) => n + (x === 'farm' && own[k] === who && s.spec[k] === 'livestock'), 0) * HORSES_PER_FARM;
           s.breed[i] = Math.min(1, (s.breed[i] || 0) + 0.04 * wrOther);
@@ -540,13 +565,13 @@ function tick(s) {
         }
       } else if (t === 'ind') {
         res = s.spec[i] || 'clothes';
-        made = FACTORY_RATE * wrOther;
+        made = FACTORY_RATE * wrOther * prodK(s, i);
         for (const [k, v] of Object.entries(PRODUCTS[res].input)) made = Math.min(made, R[k] / v); // limited by raw material
-        if (made < FACTORY_RATE * wrOther * 0.99) starved.push(i);
+        if (made < FACTORY_RATE * wrOther * prodK(s, i) * 0.99) starved.push(i);
         for (const [k, v] of Object.entries(PRODUCTS[res].input)) { R[k] -= v * made; used[k] = (used[k] || 0) + v * made; }
       } else if (B[t].prod) {
         res = Object.keys(B[t].prod).find(k => CARGO_RES.includes(k));
-        if (res) made = B[t].prod[res] * wrOther;
+        if (res) made = B[t].prod[res] * wrOther * prodK(s, i);
       }
       if (!res) return;
       s.stock[i] = Math.min(STORE, (s.stock[i] || 0) + made);
@@ -560,7 +585,7 @@ function tick(s) {
     s.grid.forEach((t, i) => {
       if (t !== 'shop' || own[i] !== who || st[i]) return;
       const box = s.shopStock[i] = s.shopStock[i] || {};
-      let left = SHOP_SALES * wrOther;
+      let left = SHOP_SALES * wrOther * prodK(s, i);
       for (const k of Object.keys(box)) { const n = Math.min(left, box[k]); box[k] -= n; left -= n; sold += n; income += n * PRODUCTS[k].price; if (!box[k]) delete box[k]; }
       const have = Object.values(box).reduce((a, b) => a + b, 0);
       if (have >= LOAD || s.ships.some(sh => sh.kind === 'shop' && sh.dest === i)) return;
@@ -589,7 +614,7 @@ function tick(s) {
     const want = { res: jobs + 16 - pop, biz: pop - jobs };
     s.grid.forEach((t, i) => {
       const z = own[i] === who && B[t] && B[t].zone, k = z === 'res' ? 'res' : 'biz';
-      if (z && !st[i] && want[k] > 0 && Math.random() < 0.3) { s.grid[i] = z; want[k] -= 6; if (z === 'res') s.hl[i] = maxTier(p); }
+      if (z && !st[i] && want[k] > 0 && Math.random() < 0.3) { s.grid[i] = z; want[k] -= 6; if (z === 'res') s.hl[i] = maxTier(p); if (UPGRADE[z]) s.bl[i] = Math.min(p.level || 0, PROD_K.length - 1); }
     });
     for (const k in needs) needs[k] = places ? needs[k] / places : 0;
     p.hist = p.hist || [];
@@ -603,6 +628,7 @@ function tick(s) {
   for (const i in s.spec) if (s.grid[i] !== 'ind' && s.grid[i] !== 'farm') delete s.spec[i];
   for (const i in s.breed) if (s.grid[i] !== 'farm') delete s.breed[i];
   for (const i in s.hl) if (!B[s.grid[i]] || !B[s.grid[i]].home) delete s.hl[i];
+  for (const i in s.bl) if (!UPGRADE[s.grid[i]]) delete s.bl[i];
   for (const i in s.shopStock) if (s.grid[i] !== 'shop') delete s.shopStock[i];
   s.ships = s.ships.filter(sh => isRoad(s.grid[sh.from]) && isRoad(s.grid[sh.to])); // a removed road loses the load
   s.undelivered = undelivered; s.starved = starved; s.noHorse = noHorse;
@@ -641,8 +667,14 @@ function act(s, who, tool, i, recompute = true) {
     const e = pay({ money: 2 }); if (e) return e;
     if (B[t]) for (const [k, v] of Object.entries(B[t].cost)) R[k] += Math.floor(v / 2);
     g[i] = (B[t] && B[t].ore) || 'grass'; s.util[i] = 0;
+  } else if (tool === 'improve' && UPGRADE[t]) {
+    const L = blOf(s, i) + 1;
+    if (L >= PROD_K.length) return 'это здание уже на последнем уровне';
+    if (L > (p.level || 0)) return `уровень ${L + 1} откроется в эпоху «${LEVELS[L].name}»`;
+    const e = pay(upCost(t, L)); if (e) return e;
+    (s.bl = s.bl || {})[i] = L;
   } else if (tool === 'improve') {
-    if (!B[t] || !B[t].home) return 'улучшать можно только жилые дома';
+    if (!B[t] || !B[t].home) return 'улучшать можно жилые дома и производства';
     const next = HOME_TIERS[tierOf(s, i) + 1];
     if (!next) return 'это уже лучший дом';
     if (tierOf(s, i) + 1 > (p.level || 0)) return `«${next.name}» появится в эпоху «${LEVELS[tierOf(s, i) + 1].name}»`;
@@ -655,6 +687,7 @@ function act(s, who, tool, i, recompute = true) {
     const lock = techLock(p, B[tool].tech); if (lock) return lock;
     const e = pay(B[tool].cost); if (e) return e;
     g[i] = tool === 'well' ? 'oilwell' : t + 'mine';
+    (s.bl = s.bl || {})[i] = Math.min(p.level || 0, PROD_K.length - 1);
   } else if (tool === 'clear') {
     const c = CLEAR[t];
     if (!c) return 'тут нечего расчищать';
@@ -670,10 +703,12 @@ function act(s, who, tool, i, recompute = true) {
   } else {
     if (!B[tool] || B[tool].grown) return 'неизвестный инструмент';
     const lock = techLock(p, B[tool].tech); if (lock) return lock;
-    if (t !== 'grass' && !(tool === 'road' && t === 'path')) return 'клетка занята'; // asphalt can be laid over a path
+    const over = (tool === 'cobble' && t === 'path') || (tool === 'road' && (t === 'path' || t === 'cobble'));
+    if (t !== 'grass' && !over) return 'клетка занята'; // paving goes over a path, asphalt over cobblestone too
     const e = pay(B[tool].cost); if (e) return e;
     g[i] = tool;
     if (B[tool].home) (s.hl = s.hl || {})[i] = maxTier(p);
+    if (UPGRADE[tool]) (s.bl = s.bl || {})[i] = Math.min(p.level || 0, PROD_K.length - 1);
   }
   if (recompute) s.status = compute(s);
   return null;
@@ -683,22 +718,22 @@ function act(s, who, tool, i, recompute = true) {
 function actArea(s, who, tool, i, j) {
   if (tool === 'buy') return withStatus(s, buyArea(s, who, i, j));
   const clear = tool === 'clear', improve = tool === 'improve';
-  if (!clear && !improve && (!B[tool] || !B[tool].zone)) return 'выделять областью можно только зоны, расчистку, улучшение домов и покупку земли';
+  if (!clear && !improve && (!B[tool] || !B[tool].zone)) return 'выделять областью можно только зоны, расчистку, улучшение зданий и покупку земли';
   if (![i, j].every(k => Number.isInteger(k) && k >= 0 && k < W * H)) return 'неверная клетка';
   const x0 = Math.min(i % W, j % W), x1 = Math.max(i % W, j % W), y0 = Math.min(i / W | 0, j / W | 0), y1 = Math.max(i / W | 0, j / W | 0);
   let n = 0;
   for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
     const k = y * W + x;
-    const fits = clear ? CLEAR[s.grid[k]] : improve ? B[s.grid[k]] && B[s.grid[k]].home && tierOf(s, k) < maxTier(s.players[who] || {}) : s.grid[k] === 'grass';
+    const fits = clear ? CLEAR[s.grid[k]] : improve ? canImprove(s, k, s.players[who]) : s.grid[k] === 'grass';
     if (!fits || ownerOf(s, k) !== who) continue;
     do { // homes go all the way up to the era's tier
       const e = act(s, who, tool, k, false);
       if (e) { if (n) s.status = compute(s); return e; }
       n++;
-    } while (improve && tierOf(s, k) < maxTier(s.players[who]));
+    } while (improve && canImprove(s, k, s.players[who])); // all the way up to the era's level
   }
   if (n) s.status = compute(s); // once for the whole rectangle, not per tile
-  return n ? null : clear ? 'нечего расчищать на вашей земле' : improve ? 'тут нет домов, которые можно улучшить в этой эпохе' : 'нет свободных клеток на вашей земле';
+  return n ? null : clear ? 'нечего расчищать на вашей земле' : improve ? 'тут нет зданий, которые можно улучшить в этой эпохе' : 'нет свободных клеток на вашей земле';
 }
 
 // A room runs one game for whoever hosts it (the Node server or a player's browser):
@@ -769,5 +804,5 @@ function room(s) {
   return r;
 }
 
-const api = { W, H, B, NEED_TEXT, WANT_TEXT, POWER, WATER, START, LEVELS, levelOf, upgradeBlock, PRICES, SELL, RES_TEXT, trade, priceOf, mkOf, hasMarket, HIST_RES, CLEAR, startCorner, landOf, landPrice, newGame, start, nextTurn, compute, tick, act, actArea, wants, happiness, residents, commute, ownerOf, room, SPEEDS, LOAD, roadNets, networks, PRODUCTS, GROUPS, SEATS, pollution, setSpec, popOf, demographics, TECH, TECH_COST, BRANCHES, techOf, hasTech, setResearch, allTech, FARM, HORSES_PER_FARM, UTIL_ERA, isRoad, horseUse, HOME_TIERS, tierOf, homeCap, maxTier };
+const api = { W, H, B, NEED_TEXT, WANT_TEXT, POWER, WATER, START, LEVELS, levelOf, upgradeBlock, PRICES, SELL, RES_TEXT, trade, priceOf, mkOf, hasMarket, HIST_RES, CLEAR, startCorner, landOf, landPrice, newGame, start, nextTurn, compute, tick, act, actArea, wants, happiness, residents, commute, ownerOf, room, SPEEDS, LOAD, roadNets, networks, PRODUCTS, GROUPS, SEATS, pollution, setSpec, popOf, demographics, TECH, TECH_COST, BRANCHES, techOf, hasTech, setResearch, allTech, FARM, HORSES_PER_FARM, UTIL_ERA, isRoad, slowAt, wornAt, ROAD_UPKEEP, PROD_K, UPGRADE, blOf, prodK, upCost, canImprove, improveCost, horseUse, HOME_TIERS, tierOf, homeCap, maxTier };
 if (typeof module !== 'undefined') module.exports = api; else window.Game = api;
