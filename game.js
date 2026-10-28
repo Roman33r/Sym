@@ -120,7 +120,19 @@ const TECH = [
   { id: 'elearning', era: 4, branch: 'edu', name: 'Онлайн-образование', desc: 'университеты выпускают вдвое больше' },
   { id: 'skyscrapers', era: 4, branch: 'art', name: 'Небоскрёбы', desc: 'жилая башня на 40 жителей' },
   { id: 'ecology', era: 4, branch: 'social', name: 'Экология', desc: 'ваши заводы и станции загрязняют вдвое меньше' },
+  // side branches (lane 1, 2 under the main line): not needed for the next era, each gives a bonus
+  { id: 'forestry', era: 1, branch: 'world', lane: 1, side: true, req: ['explore'], name: 'Лесное хозяйство', desc: 'лесопилки дают на 30% больше дерева' },
+  { id: 'irrigation', era: 1, branch: 'science', lane: 1, side: true, req: ['agriculture'], name: 'Орошение', desc: 'фермы дают на 25% больше еды' },
+  { id: 'breeding', era: 1, branch: 'science', lane: 2, side: true, req: ['agriculture'], name: 'Коневодство', desc: 'до 3 лошадей на ферму, растут вдвое быстрее' },
+  { id: 'masonry', era: 1, branch: 'art', lane: 1, side: true, req: ['crafts'], name: 'Каменотёсы', desc: 'каменоломни дают на 30% больше камня' },
+  { id: 'banking', era: 2, branch: 'world', lane: 1, side: true, req: ['trade'], name: 'Банки', desc: 'налоги на 20% выше' },
+  { id: 'printing', era: 2, branch: 'edu', lane: 1, side: true, req: ['schools', 'writing'], name: 'Книгопечатание', desc: 'исследования на 25% быстрее' },
+  { id: 'preserving', era: 2, branch: 'social', lane: 1, side: true, req: ['post', 'irrigation'], name: 'Консервирование', desc: 'жители едят на 20% меньше' },
+  { id: 'logistics', era: 3, branch: 'world', lane: 1, side: true, req: ['banking', 'mechanics'], name: 'Логистика', desc: 'грузы доезжают в 1,5 раза быстрее' },
+  { id: 'automation', era: 4, branch: 'science', lane: 1, side: true, req: ['engine', 'industry'], name: 'Автоматизация', desc: 'заводы и НПЗ выпускают на 30% больше' },
 ];
+// the main line of each branch: every study needs the one before it in its branch
+for (const t of TECH) if (!t.req) { const b = TECH.find(x => x.branch === t.branch && x.era === t.era - 1 && !x.side); t.req = b ? [b.id] : []; }
 const TECH_COST = [40, 100, 220, 400, 700]; // research points per era
 const techOf = id => TECH.find(t => t.id === id);
 const hasTech = (p, id) => !id || !!(p && p.tech && p.tech[id]);
@@ -130,7 +142,7 @@ const allTech = () => Object.fromEntries(TECH.map(t => [t.id, true]));
 function upgradeBlock(p) {
   const next = LEVELS[(p.level || 0) + 1];
   if (!next) return 'это последняя эпоха';
-  const left = TECH.filter(t => t.era === (p.level || 0) && !hasTech(p, t.id));
+  const left = TECH.filter(t => t.era === (p.level || 0) && !t.side && !hasTech(p, t.id)); // side branches are optional
   if (left.length) return `для эпохи «${next.name}» нужно изучить: ${left.map(t => t.name).join(', ')}`;
   if (p.pop < next.pop) return `для эпохи «${next.name}» нужно ${next.pop} жителей`;
   if (p.res.money < next.cost) return `для эпохи «${next.name}» нужно ${next.cost} денег`;
@@ -144,8 +156,8 @@ function setResearch(s, who, id) {
   if (!t) return 'неизвестное исследование';
   if (hasTech(p, id)) return 'уже изучено';
   if (t.era > (p.level || 0)) return `откроется в эпоху «${LEVELS[t.era].name}»`;
-  const before = TECH.find(x => x.branch === t.branch && x.era === t.era - 1);
-  if (before && !hasTech(p, before.id)) return `сначала изучите «${before.name}»`;
+  const miss = t.req.map(techOf).filter(r => !hasTech(p, r.id));
+  if (miss.length) return `сначала изучите ${miss.map(r => `«${r.name}»`).join(' и ')}`;
   p.research = id;
   return null;
 }
@@ -372,16 +384,18 @@ const PRODUCTS = {
   tools:     { label: 'Инструменты', input: { iron: 0.5 }, price: 7 },
   jewelry:   { label: 'Украшения', input: { gold: 0.25 }, price: 14 },
 };
+const PROD_TECH = { sawmill: 'forestry', quarry: 'masonry' }; // studies that make these 30% more
 const FACTORY_RATE = 1, SHOP_SALES = 2; // units per tick with a full staff
 // farm specializations; livestock farms raise horses, at most HORSES_PER_FARM each
 const FARM = { crops: { label: 'Культуры', food: 5 }, livestock: { label: 'Животноводство', food: 2 } };
 const HORSES_PER_FARM = 2;
+const horsesPerFarm = p => HORSES_PER_FARM + (hasTech(p, 'breeding') ? 1 : 0);
 // a player's horses: trams take theirs first (see compute), carts in transit keep theirs; a livestock farm's own carts don't count
 function horseUse(s, who) {
   const p = s.players[who], mine = (t, i) => s.grid[i] === t && ownerOf(s, i) === who;
   const total = Math.floor(p.res.horses || 0), trams = hasTech(p, 'transit') ? 0 : s.grid.filter(mine.bind(null, 'stop')).length;
   const carts = (s.ships || []).filter(sh => sh.who === who && sh.horse && !sh.own).length;
-  const cap = s.grid.filter((t, i) => mine('farm', i) && (s.spec || {})[i] === 'livestock').length * HORSES_PER_FARM;
+  const cap = s.grid.filter((t, i) => mine('farm', i) && (s.spec || {})[i] === 'livestock').length * horsesPerFarm(p);
   return { total, trams: Math.min(trams, total), carts, free: Math.max(0, total - trams - carts), cap };
 }
 const isDepot = (s, who) => d => s.grid[d] === 'depot' && !s.status[d] && ownerOf(s, d) === who;
@@ -408,7 +422,8 @@ function findRoute(s, comp, i, isDest) {
 }
 // horse: the load goes by cart and keeps one of the owner's horses busy until it arrives
 function sendTruck(s, who, res, route, kind, horse, own) {
-  s.ships.push({ id: ++s.shipSeq, who, res, n: LOAD, from: route.from, to: route.to, dest: route.dest, kind, horse, own, t0: s.tick, at: s.tick + Math.max(1, Math.ceil(route.dist / 2)) });
+  const pace = hasTech(s.players[who], 'logistics') ? 3 : 2; // route cost units per tick
+  s.ships.push({ id: ++s.shipSeq, who, res, n: LOAD, from: route.from, to: route.to, dest: route.dest, kind, horse, own, t0: s.tick, at: s.tick + Math.max(1, Math.ceil(route.dist / pace)) });
 }
 // load from producer i to the nearest depot; vehicle() gives 'truck' or 'horse', or false when no horse is free
 function ship(s, comp, who, i, res, vehicle) {
@@ -523,11 +538,11 @@ function tick(s) {
     const R = p.res;
     for (const k of [...CARGO_RES, ...Object.keys(PRODUCTS), 'asphalt', 'horses']) R[k] = R[k] || 0;
     // horses: trams take theirs first (see compute), carts use what is left; with engines everything goes by truck
-    const engine = hasTech(p, 'engine');
+    const engine = hasTech(p, 'engine'), auto = hasTech(p, 'automation') ? 1.3 : 1;
     let freeHorses = engine ? Infinity : horseUse(s, who).free;
     const vehicle = () => (engine ? 'truck' : freeHorses >= 1 ? (freeHorses--, 'horse') : false);
     // research: points from adults, schools and universities; writing speeds it up
-    const rp = (0.5 + (d.none + d.school + d.higher) * 0.01 + (cnt.school || 0) + (cnt.uni || 0) * 3) * (hasTech(p, 'writing') ? 1.5 : 1) * (hasTech(p, 'computers') ? 1.5 : 1);
+    const rp = (0.5 + (d.none + d.school + d.higher) * 0.01 + (cnt.school || 0) + (cnt.uni || 0) * 3) * (hasTech(p, 'writing') ? 1.5 : 1) * (hasTech(p, 'computers') ? 1.5 : 1) * (hasTech(p, 'printing') ? 1.25 : 1);
     p.rp = rp; p.rpts = p.rpts || {};
     if (p.research && !hasTech(p, p.research)) {
       p.rpts[p.research] = (p.rpts[p.research] || 0) + rp;
@@ -552,26 +567,26 @@ function tick(s) {
       let res = null, made = 0;
       if (t === 'refinery') { // oil from the owner's stock into asphalt
         res = 'asphalt';
-        made = Math.min(FACTORY_RATE * wrOther * prodK(s, i), R.oil);
-        if (made < FACTORY_RATE * wrOther * prodK(s, i) * 0.99) starved.push(i);
+        made = Math.min(FACTORY_RATE * wrOther * prodK(s, i) * auto, R.oil);
+        if (made < FACTORY_RATE * wrOther * prodK(s, i) * auto * 0.99) starved.push(i);
         R.oil -= made; used.oil = (used.oil || 0) + made;
       } else if (t === 'farm') {
         const f = FARM[s.spec[i] || 'crops'];
-        res = 'food'; made = f.food * wrOther * prodK(s, i);
-        if (s.spec[i] === 'livestock') { // horses grow slowly; each livestock farm keeps at most HORSES_PER_FARM
-          const herd = s.grid.reduce((n, x, k) => n + (x === 'farm' && own[k] === who && s.spec[k] === 'livestock'), 0) * HORSES_PER_FARM;
-          s.breed[i] = Math.min(1, (s.breed[i] || 0) + 0.04 * wrOther);
+        res = 'food'; made = f.food * wrOther * prodK(s, i) * (hasTech(p, 'irrigation') ? 1.25 : 1);
+        if (s.spec[i] === 'livestock') { // horses grow slowly; each livestock farm keeps at most horsesPerFarm
+          const herd = s.grid.reduce((n, x, k) => n + (x === 'farm' && own[k] === who && s.spec[k] === 'livestock'), 0) * horsesPerFarm(p);
+          s.breed[i] = Math.min(1, (s.breed[i] || 0) + 0.04 * wrOther * (hasTech(p, 'breeding') ? 2 : 1));
           if (s.breed[i] >= 1 && R.horses < herd) { s.breed[i] = 0; add('horses', 'Ферма вырастила лошадь', 1); }
         }
       } else if (t === 'ind') {
         res = s.spec[i] || 'clothes';
-        made = FACTORY_RATE * wrOther * prodK(s, i);
+        made = FACTORY_RATE * wrOther * prodK(s, i) * auto;
         for (const [k, v] of Object.entries(PRODUCTS[res].input)) made = Math.min(made, R[k] / v); // limited by raw material
-        if (made < FACTORY_RATE * wrOther * prodK(s, i) * 0.99) starved.push(i);
+        if (made < FACTORY_RATE * wrOther * prodK(s, i) * auto * 0.99) starved.push(i);
         for (const [k, v] of Object.entries(PRODUCTS[res].input)) { R[k] -= v * made; used[k] = (used[k] || 0) + v * made; }
       } else if (B[t].prod) {
         res = Object.keys(B[t].prod).find(k => CARGO_RES.includes(k));
-        if (res) made = B[t].prod[res] * wrOther * prodK(s, i);
+        if (res) made = B[t].prod[res] * wrOther * prodK(s, i) * (hasTech(p, PROD_TECH[t]) && PROD_TECH[t] ? 1.3 : 1);
       }
       if (!res) return;
       s.stock[i] = Math.min(STORE, (s.stock[i] || 0) + made);
@@ -606,9 +621,9 @@ function tick(s) {
       return false;
     });
     for (const [k, c] of Object.entries(came)) add(k, `Привезли грузовики ×${c}`, c * LOAD);
-    add('food', `Жители едят (${pop})`, -pop * 0.2);
+    add('food', `Жители едят (${pop})`, -pop * 0.2 * (hasTech(p, 'preserving') ? 0.8 : 1));
     const fed = R.food > 0; if (!fed) R.food = 0;
-    add('money', `Налоги (${pop} жит.)${fed ? '' : ' — голод, ×0.3'}`, pop * 0.5 * (fed ? 1 : 0.3));
+    add('money', `Налоги (${pop} жит.)${fed ? '' : ' — голод, ×0.3'}`, pop * 0.5 * (fed ? 1 : 0.3) * (hasTech(p, 'banking') ? 1.2 : 1));
     p.delta = Object.fromEntries(Object.keys(R).map(k => [k, R[k] - before[k]])); // economy only, not player spending
     // residents move in while there are jobs (plus a starting pull); businesses open while there are free workers
     const want = { res: jobs + 16 - pop, biz: pop - jobs };
@@ -804,5 +819,5 @@ function room(s) {
   return r;
 }
 
-const api = { W, H, B, NEED_TEXT, WANT_TEXT, POWER, WATER, START, LEVELS, levelOf, upgradeBlock, PRICES, SELL, RES_TEXT, trade, priceOf, mkOf, hasMarket, HIST_RES, CLEAR, startCorner, landOf, landPrice, newGame, start, nextTurn, compute, tick, act, actArea, wants, happiness, residents, commute, ownerOf, room, SPEEDS, LOAD, roadNets, networks, PRODUCTS, GROUPS, SEATS, pollution, setSpec, popOf, demographics, TECH, TECH_COST, BRANCHES, techOf, hasTech, setResearch, allTech, FARM, HORSES_PER_FARM, UTIL_ERA, isRoad, slowAt, wornAt, ROAD_UPKEEP, PROD_K, UPGRADE, blOf, prodK, upCost, canImprove, improveCost, horseUse, HOME_TIERS, tierOf, homeCap, maxTier };
+const api = { W, H, B, NEED_TEXT, WANT_TEXT, POWER, WATER, START, LEVELS, levelOf, upgradeBlock, PRICES, SELL, RES_TEXT, trade, priceOf, mkOf, hasMarket, HIST_RES, CLEAR, startCorner, landOf, landPrice, newGame, start, nextTurn, compute, tick, act, actArea, wants, happiness, residents, commute, ownerOf, room, SPEEDS, LOAD, roadNets, networks, PRODUCTS, GROUPS, SEATS, pollution, setSpec, popOf, demographics, TECH, TECH_COST, BRANCHES, techOf, hasTech, setResearch, allTech, FARM, HORSES_PER_FARM, horsesPerFarm, UTIL_ERA, isRoad, slowAt, wornAt, ROAD_UPKEEP, PROD_K, UPGRADE, blOf, prodK, upCost, canImprove, improveCost, horseUse, HOME_TIERS, tierOf, homeCap, maxTier };
 if (typeof module !== 'undefined') module.exports = api; else window.Game = api;

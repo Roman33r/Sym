@@ -28,10 +28,10 @@ const A = s.players.A;
 assert.strictEqual(G.tierOf(s, 4), 3);
 assert.strictEqual(A.cap, 14);
 assert.ok(A.pop >= 1 && A.pop <= A.cap, 'people move in gradually'); // the first newcomers
-// that tick's change: tax 0.5 per resident minus plant (3) and pump (2) upkeep; residents eat 0.2 each
+// that tick's change: tax 0.5 per resident minus plant (3) and pump (2) upkeep; residents eat 0.2 each (with the side studies' bonuses)
 const near = (a, b) => assert.ok(Math.abs(a - b) < 1e-9, a + ' ≈ ' + b);
-near(A.delta.money, A.pop * 0.5 - 3 - 2);
-near(A.delta.food, -A.pop * 0.2);
+near(A.delta.money, A.pop * 0.5 * 1.2 - 3 - 2); // banks: taxes +20%
+near(A.delta.food, -A.pop * 0.2 * 0.8); // preserving: 20% less food
 // now the residents have 0 jobs, so the jobs need fails too
 assert.deepStrictEqual(G.wants(s, 4), { food: true, jobs: false, work: false, shop: false, park: false, quiet: false });
 s.grid[W * 2 + 7] = 'park'; s.grid[W * 2 + 9] = 'shop'; // the shop is 5 tiles away: counts as a shop nearby, too far to walk to as a job
@@ -198,7 +198,7 @@ const d = G.newGame(6);
 d.grid.fill('grass');
 G.start(d, ['D']); G.act(d, 'D', 'claim', 0);
 const DP = d.players.D;
-DP.res = { money: 1e5, wood: 1e3, stone: 1e3, food: 100, iron: 0, gold: 0, asphalt: 99, oil: 99 }; DP.tech = G.allTech(); // oil keeps the asphalt in repair
+DP.res = { money: 1e5, wood: 1e3, stone: 1e3, food: 100, iron: 0, gold: 0, asphalt: 99, oil: 99 }; DP.tech = G.allTech(); delete DP.tech.logistics; // oil keeps the asphalt in repair; logistics is tested below
 d.grid[0] = 'lake';
 for (let x = 0; x < 12; x++) G.act(d, 'D', 'road', W + x);
 G.act(d, 'D', 'pump', 1); G.act(d, 'D', 'plant', 2); G.act(d, 'D', 'farm', 3); G.act(d, 'D', 'house', 4);
@@ -213,6 +213,8 @@ assert.deepStrictEqual([sh.res, sh.n, sh.from, sh.to, sh.at - sh.t0], ['food', 8
 for (let k = 0; k < 4; k++) G.tick(d);
 assert.ok(DP.flow.food.some(([what, v]) => what.startsWith('Привезли') && v === 8), 'the load arrived on the 4th tick');
 assert.ok(!d.ships.some(x => x.id === sh.id));
+DP.tech.logistics = true; d.stock[3] = G.LOAD; G.tick(d); // logistics: 3 cost units a tick
+assert.strictEqual(d.ships[d.ships.length - 1].at - d.ships[d.ships.length - 1].t0, 3, '7 tiles at 3 per tick');
 // demographics: kids grow up with school if there are seats, the university gives degrees, hospitals halve deaths
 const dm = { kids: 30, none: 0, school: 80, higher: 0, old: 50 };
 G.demographics(dm, G.popOf(dm), { school: 1, uni: 1, hospital: 1 }, 1); // homes exactly full: nobody arrives or leaves
@@ -403,4 +405,20 @@ assert.ok(RP.worn.road && !RP.worn.cobble, 'no oil: the asphalt wears out');
 assert.ok(G.slowAt(rd, 2) && !G.slowAt(rd, 1));
 RP.res.oil = 5; G.tick(rd);
 assert.ok(!RP.worn.road && !G.slowAt(rd, 2), 'with oil it is repaired');
+
+// research is a tree: a study may need several others, from other branches too; side branches are optional for eras
+const tr = G.newGame(16);
+tr.grid.fill('grass');
+G.start(tr, ['T']); G.act(tr, 'T', 'claim', 0);
+const TP = tr.players.T;
+TP.level = 2; TP.tech = { explore: true, agriculture: true, writing: true, crafts: true, community: true };
+assert.deepStrictEqual(G.techOf('trade').req, ['explore'], 'the main line needs the study before it');
+assert.strictEqual(G.setResearch(tr, 'T', 'printing'), 'сначала изучите «Школы»');
+assert.strictEqual(G.setResearch(tr, 'T', 'preserving'), 'сначала изучите «Почта и конка» и «Орошение»', 'two branches meet');
+assert.strictEqual(G.setResearch(tr, 'T', 'irrigation'), null);
+TP.level = 1; TP.pop = 1e3; TP.res.money = 1e5; TP.res.iron = 100;
+Object.assign(TP.tech, { trade: true, mechanics: true, schools: true, architecture: true, post: true });
+assert.strictEqual(G.upgradeBlock(TP), null, 'no side study is needed for the next era');
+assert.strictEqual(G.horsesPerFarm(TP), 2); TP.tech.breeding = true; assert.strictEqual(G.horsesPerFarm(TP), 3, 'breeding: three horses a farm');
+assert.ok(G.TECH.every(t => t.req.every(r => G.techOf(r) && G.techOf(r).era <= t.era)), 'every study needs only known, not later ones');
 console.log('ok');
