@@ -102,7 +102,7 @@ const TECH = [
   { id: 'explore', era: 0, branch: 'world', name: 'Разведка', desc: 'покупка новой земли' },
   { id: 'agriculture', era: 0, branch: 'science', name: 'Земледелие', desc: 'животноводство на фермах: лошади' },
   { id: 'writing', era: 0, branch: 'edu', name: 'Письменность', desc: 'исследования идут в 1,5 раза быстрее' },
-  { id: 'crafts', era: 0, branch: 'art', name: 'Ремёсла', desc: 'дом' },
+  { id: 'crafts', era: 0, branch: 'art', name: 'Ремёсла', desc: 'жилые зоны застраиваются в 1,5 раза быстрее' },
   { id: 'community', era: 0, branch: 'social', name: 'Община', desc: 'колодец: тушит пожары рядом' },
   { id: 'trade', era: 1, branch: 'world', name: 'Торговые пути', desc: 'здание рынка: покупка и продажа ресурсов' },
   { id: 'mechanics', era: 1, branch: 'science', name: 'Механика', desc: 'рудник' },
@@ -695,7 +695,7 @@ function tick(s) {
     const want = { res: jobs + 16 - pop, biz: pop - jobs };
     s.grid.forEach((t, i) => {
       const z = own[i] === who && B[t] && B[t].zone, k = z === 'res' ? 'res' : 'biz';
-      if (z && !st[i] && want[k] > 0 && Math.random() < 0.3) { s.grid[i] = z; want[k] -= 6; if (z === 'res') s.hl[i] = maxTier(p); if (UPGRADE[z]) s.bl[i] = Math.min(p.level || 0, PROD_K.length - 1); }
+      if (z && !st[i] && want[k] > 0 && Math.random() < (z === 'res' && hasTech(p, 'crafts') ? 0.45 : 0.3)) { s.grid[i] = z; want[k] -= 6; if (z === 'res') s.hl[i] = maxTier(p); if (UPGRADE[z]) s.bl[i] = Math.min(p.level || 0, PROD_K.length - 1); }
     });
     for (const k in needs) needs[k] = places ? needs[k] / places : 0;
     p.hist = p.hist || [];
