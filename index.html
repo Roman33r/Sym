@@ -4,129 +4,240 @@
 <meta charset="utf-8">
 <title>Город вместе</title>
 <style>
-  body { margin: 0; font: 14px system-ui, sans-serif; background: #1d2330; color: #eee; display: flex; flex-direction: column; height: 100vh; }
-  #top { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; padding: 6px 12px; background: #161b26; border-bottom: 1px solid #333b4d; }
-  #top .logo { color: #f0a830; font-weight: 800; letter-spacing: .5px; text-transform: uppercase; font-size: 17px; }
-  #top .date { font-family: monospace; font-size: 14px; color: #dde; }
-  #main { flex: 1; display: flex; gap: 12px; padding: 12px; min-height: 0; }
+  /* design tokens: charcoal and blue-grey surfaces, one warm gold accent, green for gains, red for losses */
+  :root {
+    --bg0: #0f131a; --bg1: #161b24; --bg2: #1c222d; --bg3: #252c39; --bg4: #2e3646;
+    --line: #2a3140; --line2: #39425a; --line3: #4b566e;
+    --text: #e8ebf1; --text2: #aab2c0; --text3: #7d8698;
+    --gold: #e3a83c; --gold2: #f4c56b; --gold-bg: rgba(227, 168, 60, .14); --gold-line: rgba(227, 168, 60, .55);
+    --green: #6cc27a; --green-bg: rgba(108, 194, 122, .13); --red: #e8735f; --red-bg: rgba(232, 115, 95, .13); --blue: #78a6df;
+    --r1: 4px; --r2: 6px; --r3: 10px;
+    --sh1: 0 1px 0 rgba(255, 255, 255, .03) inset, 0 2px 6px rgba(0, 0, 0, .35); --sh2: 0 14px 40px rgba(0, 0, 0, .55);
+    --t: .14s ease;
+    --font: "Segoe UI", system-ui, -apple-system, Roboto, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 13px/1.45 var(--font); background: var(--bg0); color: var(--text); display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+  b { font-weight: 600; }
+  small { color: var(--text3); }
   .ic { width: 16px; height: 16px; vertical-align: -3px; }
   button .ic { width: 18px; height: 18px; }
-  #mapcol { flex: 1; display: flex; flex-direction: column; min-width: 0; gap: 8px; }
-  #build { position: relative; }
-  #bbar { display: flex; gap: 6px; background: #161b26; border: 1px solid #445; border-radius: 8px; padding: 6px; overflow-x: auto; }
-  #bbar button { width: auto; flex: none; margin: 0; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 4px 8px; min-width: 66px; font-size: 11px; text-align: center; }
-  #bbar button .ic { width: 26px; height: 26px; }
-  #bbar button small { display: none; }
-  #bbar button.on { background: #3a4660; border-color: #8ab; }
-  #bbar .sep { width: 1px; flex: none; background: #445; margin: 0 4px; }
-  #items { position: absolute; bottom: 100%; left: 0; right: 0; margin-bottom: 6px; display: flex; gap: 8px; overflow-x: auto; background: #161b26f0; border: 1px solid #556; border-radius: 8px; padding: 8px; z-index: 5; }
-  #items[hidden] { display: none; }
-  #items button { width: 124px; flex: none; margin: 0; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 6px; font-size: 12px; text-align: center; }
-  #items button .ic { width: 40px; height: 40px; }
-  #items button small .ic { width: 14px; height: 14px; }
-  .mkt { border-collapse: collapse; font-size: 14px; }
-  .mkt td, .mkt th { padding: 4px 8px; border-bottom: 1px solid #334; text-align: left; }
-  .mkt button { display: inline-block; width: auto; margin: 0 2px; padding: 3px 8px; }
-  #map { flex: 1; overflow: auto; border: 1px solid #445; border-radius: 6px; background: #142; }
-  #side { width: 270px; flex: none; overflow-y: auto; }
-  button { display: block; width: 100%; margin: 2px 0; padding: 5px 8px; text-align: left; background: #2c3446; color: #eee; border: 1px solid #445; border-radius: 4px; cursor: pointer; }
-  button.sel { background: #3d7a4f; border-color: #6c6; }
-  button small { color: #aab; }
-  #zoom button { display: inline-block; width: 32px; text-align: center; margin: 0 1px; }
-  #tabs { margin: 8px 0 2px; border-bottom: 1px solid #445; }
-  #tabs button { display: inline-block; width: auto; margin: 0 1px -1px 0; padding: 4px 5px; text-align: center; border-radius: 4px 4px 0 0; font-size: 12px; }
-  #tabs button.on { background: #3a4660; border-color: #8ab; border-bottom-color: #3a4660; }
-  .up { color: #7d7; } .down { color: #f88; }
+  .up { color: var(--green); } .down { color: var(--red); }
+  :focus-visible { outline: 2px solid var(--gold); outline-offset: 1px; }
+
+  /* buttons: one shape everywhere, gold when selected */
+  button { display: block; width: 100%; margin: 2px 0; padding: 6px 10px; text-align: left; font: inherit; color: var(--text); background: var(--bg3); border: 1px solid var(--line2); border-radius: var(--r2); cursor: pointer; transition: background var(--t), border-color var(--t), color var(--t), transform var(--t); }
+  button:hover { background: var(--bg4); border-color: var(--line3); }
+  button:active { transform: translateY(1px); }
+  button:disabled { opacity: .5; cursor: default; transform: none; }
+  button.sel, button.on, .panel button.cur { background: var(--gold-bg); border-color: var(--gold-line); color: var(--gold2); }
+  button small { color: var(--text3); }
+  input { font: inherit; color: var(--text); background: var(--bg0); border: 1px solid var(--line2); border-radius: var(--r1); padding: 4px 8px; }
+  input:focus { border-color: var(--gold-line); outline: none; }
+  textarea { width: 100%; height: 70px; background: var(--bg0); color: var(--text2); border: 1px solid var(--line2); border-radius: var(--r1); font: 11px monospace; }
+
+  /* ---- top HUD: row 1 time, speed and management; row 2 the resource strip */
+  #top { flex: none; background: var(--bg1); border-bottom: 1px solid var(--line); box-shadow: 0 2px 10px rgba(0, 0, 0, .35); z-index: 6; }
+  .hrow { display: flex; align-items: center; gap: 10px; padding: 6px 12px; }
+  .hrow + .hrow { padding: 4px 12px 6px; border-top: 1px solid var(--line); background: var(--bg0); }
+  .logo { color: var(--gold); font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase; font-size: 15px; white-space: nowrap; }
+  .date { font: 600 13px/1 var(--font); font-variant-numeric: tabular-nums; color: var(--text2); background: var(--bg0); border: 1px solid var(--line); border-radius: var(--r1); padding: 6px 10px; white-space: nowrap; min-width: 128px; text-align: center; }
+  .hgroup { display: flex; align-items: center; gap: 2px; background: var(--bg0); border: 1px solid var(--line); border-radius: var(--r2); padding: 2px; }
+  .hgroup button { width: auto; margin: 0; padding: 5px 10px; border-color: transparent; background: transparent; white-space: nowrap; display: flex; align-items: center; gap: 6px; }
+  .hgroup button:hover { background: var(--bg3); }
+  .hgroup button.sel, .hgroup button.on { background: var(--gold-bg); border-color: var(--gold-line); }
+  #speed button { padding: 5px 8px; }
+  .spacer { flex: 1; }
+  #zoom button { width: 30px; padding: 4px 0; justify-content: center; font-size: 16px; line-height: 1; }
+  #res { display: flex; gap: 4px; flex-wrap: wrap; align-items: center; min-height: 26px; }
+  #res > span { white-space: nowrap; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; padding: 3px 8px; border-radius: var(--r1); background: var(--bg2); border: 1px solid transparent; font-variant-numeric: tabular-nums; transition: border-color var(--t), background var(--t); }
+  #res > span:hover { border-color: var(--line3); background: var(--bg3); }
+  #res > span b { font-size: 14px; }
+  #res small { font-size: 11px; }
+  #res .warn { color: var(--red); background: var(--red-bg); border-color: rgba(232, 115, 95, .4); }
+
+  /* ---- city viewport and the floating error line */
+  #main { flex: 1; display: flex; min-height: 0; }
+  #mapcol { flex: 1; display: flex; flex-direction: column; min-width: 0; position: relative; background: var(--bg0); }
+  #map { flex: 1; overflow: auto; background: #142; }
   canvas { display: block; cursor: crosshair; }
-  #res { display: flex; gap: 14px; flex-wrap: wrap; font-size: 14px; }
-  #info, #log { font-size: 12px; color: #bbc; min-height: 32px; }
-  #err { color: #f77; min-height: 18px; }
+  #err { position: absolute; left: 50%; bottom: 96px; transform: translateX(-50%); z-index: 7; max-width: min(560px, 90%); padding: 7px 14px; border-radius: var(--r2); background: rgba(40, 18, 16, .94); border: 1px solid rgba(232, 115, 95, .6); color: #ffd2c8; box-shadow: var(--sh2); pointer-events: none; animation: rise .18s ease; }
+  #err:empty { display: none; }
+
+  /* ---- construction toolbar: tools, then categories; the chosen category's buildings as cards above */
+  #build { position: relative; flex: none; padding: 6px 8px 8px; background: linear-gradient(var(--bg1), var(--bg0)); border-top: 1px solid var(--line); }
+  #bbar { display: flex; gap: 4px; overflow-x: auto; }
+  #bbar button { width: auto; flex: none; margin: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; padding: 5px 6px 4px; min-width: 70px; font-size: 11px; color: var(--text2); text-align: center; background: var(--bg2); border-color: var(--line); }
+  #bbar button .ic { width: 28px; height: 28px; transition: transform var(--t); }
+  #bbar button:hover .ic { transform: translateY(-2px); }
+  #bbar button small { display: none; }
+  #bbar button.on { color: var(--gold2); background: var(--gold-bg); border-color: var(--gold-line); box-shadow: 0 -2px 0 var(--gold) inset; }
+  #bbar button.sel { color: var(--gold2); box-shadow: 0 0 0 1px var(--gold) inset; }
+  #bbar .sep { width: 1px; flex: none; background: var(--line2); margin: 4px 6px; }
+  #items { position: absolute; bottom: 100%; left: 8px; max-width: calc(100% - 16px); margin-bottom: 6px; display: flex; gap: 6px; overflow-x: auto; background: rgba(22, 27, 36, .96); border: 1px solid var(--line2); border-radius: var(--r3); padding: 8px; z-index: 5; box-shadow: var(--sh2); animation: rise .16s ease; }
+  #items[hidden] { display: none; }
+  #items button { position: relative; width: 116px; flex: none; margin: 0; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 8px 6px 6px; font-size: 12px; font-weight: 600; text-align: center; background: var(--bg2); border-color: var(--line); }
+  #items button .ic { width: 42px; height: 42px; margin-bottom: 2px; transition: transform var(--t); }
+  #items button:hover .ic { transform: scale(1.06); }
+  #items button small { font-weight: 400; font-size: 11px; color: var(--text2); }
+  #items button small .ic { width: 13px; height: 13px; margin: 0; vertical-align: -2px; }
+  #items button.sel { background: var(--gold-bg); border-color: var(--gold); box-shadow: 0 0 0 1px var(--gold) inset; color: var(--gold2); }
+  #items button.poor small { color: var(--red); }
+  #items button.poor:not(.locked)::after { content: 'не хватает'; position: absolute; top: 4px; right: 4px; font-size: 9px; font-weight: 600; color: var(--red); background: var(--red-bg); padding: 0 4px; border-radius: 3px; }
+  .locked { opacity: .5; filter: grayscale(.7); }
+  #items button.locked::after { content: ''; position: absolute; top: 5px; right: 5px; width: 14px; height: 14px; background: url(icons/lock.png) center / contain no-repeat; }
+
+  /* ---- right sidebar: the city management panel */
+  #side { width: 300px; flex: none; overflow-y: auto; background: var(--bg1); border-left: 1px solid var(--line); padding: 10px 12px 14px; display: flex; flex-direction: column; gap: 10px; }
+  .sec { background: var(--bg2); border: 1px solid var(--line); border-radius: var(--r3); padding: 10px 12px; }
+  .sec:empty { display: none; }
+  .sec > h4, #side h4 { margin: 0 0 6px; font-size: 11px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase; color: var(--text3); }
+  .who { display: flex; align-items: center; gap: 8px; }
+  .who label { font-size: 11px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase; color: var(--text3); }
+  .who input { flex: 1; min-width: 0; }
+  #phase { background: rgba(227, 168, 60, .09); border: 1px solid var(--gold-line); border-radius: var(--r3); padding: 10px 12px; line-height: 1.5; }
+  #phase button { margin-top: 8px; text-align: center; background: var(--gold); border-color: var(--gold); color: #1d1405; font-weight: 700; }
+  #phase button:hover { background: var(--gold2); }
+  #level { background: var(--bg2); border: 1px solid var(--line); border-radius: var(--r3); padding: 10px 12px; line-height: 1.6; }
+  #level > b:first-of-type { font-size: 15px; color: var(--gold2); }
+  #level button { margin-top: 8px; text-align: center; background: var(--gold-bg); border-color: var(--gold-line); color: var(--gold2); font-weight: 600; }
+  #level button:disabled { background: var(--bg3); border-color: var(--line2); color: var(--text3); }
   #phase:empty, #level:empty, #invite:empty { display: none; }
-  .panel { background: #262e3e; border: 1px solid #556; border-radius: 6px; padding: 8px; margin: 6px 0; font-size: 13px; line-height: 1.5; }
+  .panel { background: var(--bg2); border: 1px solid var(--gold-line); border-radius: var(--r3); padding: 10px 12px; line-height: 1.5; box-shadow: 0 0 0 3px rgba(227, 168, 60, .06); animation: rise .16s ease; }
   .panel[hidden] { display: none; }
-  .panel button.cur { background: #3d7a4f; border-color: #6c6; }
-  .modal { position: fixed; inset: 0; background: #0b0f17cc; display: flex; align-items: center; justify-content: center; z-index: 15; }
+  .panel > b:first-child { font-size: 14px; }
+  .panel [data-close] { background: transparent; border-color: transparent; color: var(--text3); font-size: 16px; line-height: 1; }
+  .panel [data-close]:hover { color: var(--text); background: var(--bg3); }
+  #info { font-size: 12px; color: var(--text2); line-height: 1.5; }
+  #invite { line-height: 1.5; }
+  #invite button { text-align: center; margin-top: 6px; }
+  #players > div { display: flex; align-items: center; gap: 6px; padding: 4px 0; border-bottom: 1px solid var(--line); font-weight: 600; }
+  #players > div:last-child { border-bottom: 0; }
+  #log { font-size: 12px; color: var(--text2); max-height: 170px; overflow-y: auto; }
+  #log > div { padding: 4px 0 4px 10px; border-left: 2px solid var(--line2); margin: 2px 0; }
+  #log > div:first-child { border-left-color: var(--gold); color: var(--text); }
+  #log:empty::before { content: 'Пока ничего не произошло'; color: var(--text3); }
+  #restart { text-align: center; background: transparent; color: var(--text3); border-style: dashed; margin-top: auto; }
+  #restart:hover { color: var(--red); border-color: rgba(232, 115, 95, .6); background: var(--red-bg); }
+
+  /* ---- tooltips and hover cards */
+  .pop { position: fixed; display: none; z-index: 30; width: 270px; background: rgba(15, 19, 26, .97); border: 1px solid var(--line3); border-radius: var(--r2); padding: 9px 11px; font-size: 12px; line-height: 1.55; color: var(--text2); box-shadow: var(--sh2); pointer-events: none; }
+  .pop b { font-size: 13px; color: var(--text); }
+  .pop hr { border: 0; border-top: 1px solid var(--line2); margin: 6px 0; }
+
+  /* ---- windows: research, market, charts, education; one shape for all */
+  .modal { position: fixed; inset: 0; background: rgba(6, 8, 12, .72); display: flex; align-items: center; justify-content: center; z-index: 15; animation: fade .15s ease; }
   .modal[hidden] { display: none; }
-  #toast { position: fixed; top: 64px; left: 50%; transform: translateX(-50%); z-index: 20; background: #22352a; border: 2px solid #3d9a5f; border-radius: 8px; padding: 10px 14px; box-shadow: 0 6px 24px #000a; display: flex; gap: 10px; align-items: center; font-size: 14px; }
-  #toast[hidden] { display: none; }
-  #toast button { width: auto; margin: 0; }
-  .mwin { background: #1d2330; border: 1px solid #556; border-radius: 10px; padding: 12px 16px 16px; max-width: calc(100vw - 32px); max-height: calc(100vh - 32px); overflow: auto; box-shadow: 0 10px 40px #000a; }
-  .mhead { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
-  .mhead button { width: auto; margin-left: auto; padding: 2px 10px; }
+  .mwin { background: var(--bg1); border: 1px solid var(--line2); border-radius: var(--r3); max-width: calc(100vw - 32px); max-height: calc(100vh - 32px); overflow: auto; box-shadow: var(--sh2); animation: pop .18s ease; }
+  .mhead { position: sticky; top: 0; z-index: 2; display: flex; align-items: center; gap: 12px; padding: 12px 16px; background: var(--bg2); border-bottom: 1px solid var(--line); }
+  .mhead > b { font-size: 16px; display: flex; align-items: center; gap: 8px; }
+  .mhead > b .ic { width: 22px; height: 22px; }
+  .mhead > span { color: var(--text3); font-size: 12px; }
+  .mhead button { width: 30px; height: 30px; margin: 0 0 0 auto; padding: 0; text-align: center; font-size: 18px; line-height: 1; background: transparent; border-color: transparent; color: var(--text3); }
+  .mhead button:hover { background: var(--bg3); color: var(--text); }
+  .mbody { padding: 14px 16px 16px; }
+  .chart { display: block; max-width: 100%; background: var(--bg0); border: 1px solid var(--line); border-radius: var(--r2); }
+  #eduLegend { font-size: 13px; line-height: 2; }
+  #chartNote { font-size: 12px; color: var(--text3); margin-top: 8px; }
+  #chartTitle small { margin-left: 6px; }
+
+  /* research tree */
   .tree { position: relative; }
   .tree svg { position: absolute; inset: 0; pointer-events: none; }
-  .era { position: absolute; top: 0; width: 180px; text-align: center; font-size: 13px; }
-  .branch { position: absolute; left: 0; width: 108px; font-size: 13px; display: flex; align-items: center; gap: 6px; }
-  .node { position: absolute; width: 168px; height: 80px; box-sizing: border-box; display: flex; gap: 8px; padding: 6px 8px; background: #262e3e; border: 2px solid #445; border-radius: 8px; font-size: 12px; line-height: 1.3; }
-  .node .big { width: 30px; height: 30px; flex: none; }
-  .node b { font-size: 13px; }
-  .node.done { border-color: #3d7a4f; background: #22352a; }
-  .node.cur { border-color: #f0a830; }
-  .node.open { cursor: pointer; border-color: #6a7fa8; }
-  .node.open:hover { background: #2f3a52; }
-  .node.off { opacity: .4; }
-  .node .bar { position: absolute; left: 8px; right: 8px; bottom: 5px; height: 4px; background: #333b4d; border-radius: 2px; }
-  .node .bar > i { display: block; height: 100%; background: #f0a830; border-radius: 2px; }
-  #level { background: #23303a; border: 1px solid #4a6a7a; border-radius: 6px; padding: 8px; margin: 6px 0; font-size: 13px; line-height: 1.5; }
-  #level button { margin-top: 6px; text-align: center; background: #3d6a7a; }
-  #level button:disabled { opacity: .5; cursor: default; }
-  .locked { opacity: .45; }
-  #res [data-res] { white-space: nowrap; cursor: pointer; }
-  .pop { position: fixed; display: none; z-index: 10; width: 260px; background: #11161f; border: 1px solid #556; border-radius: 6px; padding: 8px; font-size: 12px; line-height: 1.5; box-shadow: 0 4px 16px #0008; pointer-events: none; }
-  .pop hr { border: 0; border-top: 1px solid #445; margin: 4px 0; }
-  .pop b { font-size: 13px; }
-  #speed button { display: inline-block; width: auto; padding: 3px 9px; margin: 0 1px; text-align: center; }
-  #speed button.on { background: #3d7a4f; border-color: #6c6; }
-  #invite, #netbox .box { background: #262e3e; border: 1px solid #556; border-radius: 6px; padding: 8px; margin: 6px 0; font-size: 13px; }
-  textarea { width: 100%; box-sizing: border-box; height: 70px; background: #11161f; color: #ddd; border: 1px solid #556; border-radius: 4px; font: 11px monospace; }
-  #netbox { position: fixed; inset: 0; background: #0b0f17e6; display: none; align-items: center; justify-content: center; z-index: 20; }
-  #netbox .box { width: min(440px, calc(100vw - 32px)); padding: 16px; line-height: 1.5; }
-  #netbox button { text-align: center; margin: 6px 0; }
+  .era { position: absolute; top: 0; width: 180px; text-align: center; font-size: 12px; line-height: 1.35; }
+  .era b { font-size: 13px; color: var(--text); }
+  .branch { position: absolute; left: 0; width: 108px; font-size: 12px; font-weight: 600; color: var(--text2); display: flex; align-items: center; gap: 6px; }
+  .branch .ic { width: 22px; height: 22px; }
+  .node { position: absolute; width: 168px; height: 88px; overflow: hidden; display: flex; gap: 8px; padding: 7px 9px; background: var(--bg2); border: 1px solid var(--line2); border-radius: var(--r2); font-size: 11px; line-height: 1.3; color: var(--text3); transition: background var(--t), border-color var(--t), transform var(--t); }
+  .node .big { width: 32px; height: 32px; flex: none; }
+  .node b { font-size: 12px; color: var(--text); display: block; margin-bottom: 2px; }
+  .node.done { border-color: rgba(108, 194, 122, .55); background: #1b2a22; }
+  .node.done b { color: var(--green); }
+  .node.cur { border-color: var(--gold); background: #2a2414; box-shadow: 0 0 0 1px var(--gold) inset, 0 0 18px rgba(227, 168, 60, .18); }
+  .node.open { cursor: pointer; border-color: var(--blue); }
+  .node.open:hover { background: var(--bg3); transform: translateY(-2px); }
+  .node.off { opacity: .42; filter: grayscale(.8); }
+  .node .bar { position: absolute; left: 9px; right: 9px; bottom: 6px; height: 4px; background: var(--bg0); border-radius: 2px; overflow: hidden; }
+  .node .bar > i { display: block; height: 100%; background: var(--gold); border-radius: 2px; }
+
+  /* market */
+  .mkt { border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums; }
+  .mkt th { padding: 6px 10px; text-align: left; font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--text3); border-bottom: 1px solid var(--line2); }
+  .mkt td { padding: 6px 10px; border-bottom: 1px solid var(--line); }
+  .mkt tr:hover td { background: rgba(255, 255, 255, .02); }
+  .mkt td:first-child { font-weight: 600; white-space: nowrap; }
+  .mkt td:nth-child(3), .mkt td:nth-child(5) { font-size: 14px; font-weight: 600; white-space: nowrap; }
+  .mkt button { display: inline-block; width: auto; margin: 0 2px; padding: 3px 9px; font-weight: 600; }
+  .mkt button[data-trade$=":0"] { background: var(--green-bg); border-color: rgba(108, 194, 122, .45); color: #bfe8c5; }
+  .mkt button[data-trade$=":0"]:hover { background: rgba(108, 194, 122, .25); }
+  .mkt button[data-trade$=":1"] { background: var(--gold-bg); border-color: var(--gold-line); color: var(--gold2); }
+  .mkt button[data-trade$=":1"]:hover { background: rgba(227, 168, 60, .25); }
+  .mkt button small { color: inherit; opacity: .75; font-weight: 400; }
+  #mkt > .down { padding: 8px 12px; border-radius: var(--r2); background: var(--red-bg); border: 1px solid rgba(232, 115, 95, .4); margin-bottom: 10px; }
+
+  /* toast and network dialogs */
+  #toast { position: fixed; top: 92px; left: 50%; transform: translateX(-50%); z-index: 20; background: var(--bg2); border: 1px solid var(--gold-line); border-left: 4px solid var(--gold); border-radius: var(--r2); padding: 10px 14px; box-shadow: var(--sh2); display: flex; gap: 12px; align-items: center; animation: drop .22s ease; }
+  #toast[hidden] { display: none; }
+  #toast b { color: var(--gold2); }
+  #toast button { width: auto; margin: 0; white-space: nowrap; }
+  #netbox { position: fixed; inset: 0; background: rgba(6, 8, 12, .85); display: none; align-items: center; justify-content: center; z-index: 25; }
+  #netbox .box { width: min(460px, calc(100vw - 32px)); padding: 18px 20px; line-height: 1.55; background: var(--bg1); border: 1px solid var(--line2); border-radius: var(--r3); box-shadow: var(--sh2); animation: pop .18s ease; }
+  #netbox button { text-align: center; margin: 8px 0; }
   .mrow { margin: 4px 0; }
   .mrow button { display: inline-block; width: auto; margin-left: 4px; padding: 3px 7px; }
-  #phase { background: #3a3320; border: 1px solid #a83; border-radius: 6px; padding: 8px; margin: 6px 0; font-size: 13px; line-height: 1.5; }
-  #phase button { margin-top: 6px; text-align: center; background: #3d7a4f; }
-  h4 { margin: 10px 0 4px; }
+
+  @keyframes fade { from { opacity: 0; } }
+  @keyframes pop { from { opacity: 0; transform: scale(.97) translateY(6px); } }
+  @keyframes rise { from { opacity: 0; transform: translateY(6px); } }
+  @keyframes drop { from { opacity: 0; transform: translate(-50%, -8px); } }
+  #err { animation-name: rise2; } @keyframes rise2 { from { opacity: 0; transform: translate(-50%, 6px); } }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+  @media (max-width: 1440px) { #side { width: 270px; } }
+  @media (max-width: 1220px) { .hgroup.acts button span { display: none; } .date { min-width: 0; } }
 </style>
 </head>
 <body>
 <header id="top">
-  <span class="logo">Город вместе</span>
-  <div id="speed"><button data-v="0" title="Пауза"><img class="ic" src="icons/pause.png?v=25" alt="Пауза"></button><button data-v="1" title="Скорость ×1"><img class="ic" src="icons/play.png?v=25" alt="×1"></button><button data-v="2" title="Скорость ×2"><img class="ic" src="icons/fast.png?v=25" alt="×2"></button><button data-v="4" title="Скорость ×4"><img class="ic" src="icons/faster.png?v=25" alt="×4"></button></div>
-  <span id="tickN" class="date"></span>
-  <button id="commBtn" title="Показать ЛЭП, водопровод и куда доходят электричество и вода" style="width:auto"><img class="ic" src="icons/power.png?v=25" alt=""> Коммуникации</button>
-  <button id="polBtn" title="Показать загрязнение от заводов, станций, карьеров и рудников" style="width:auto"><img class="ic" src="icons/pollution.png?v=25" alt=""> Загрязнение</button>
-  <button id="resBtn" title="Дерево исследований: открывает постройки и следующие эпохи" style="width:auto"><img class="ic" src="icons/research.png?v=25" alt=""> Исследования</button>
-  <button id="mktBtn" title="Рынок: купить и продать ресурсы, цены зависят от спроса" style="width:auto"><img class="ic" src="icons/market.png?v=25" alt=""> Рынок</button>
-  <button id="eduBtn" title="График состава населения по образованию" style="width:auto"><img class="ic" src="icons/edu.png?v=25" alt=""> Образование</button>
-  <div id="res"></div>
-  <div id="zoom" title="Масштаб (или Ctrl+колесо)"><button id="zout" aria-label="Уменьшить">−</button><button id="zin" aria-label="Увеличить">+</button></div>
+  <div class="hrow">
+    <span class="logo">Город вместе</span>
+    <span id="tickN" class="date"></span>
+    <div id="speed" class="hgroup" aria-label="Скорость игры"><button data-v="0" title="Пауза (пробел)"><img class="ic" src="icons/pause.png?v=26" alt="Пауза"></button><button data-v="1" title="Скорость ×1"><img class="ic" src="icons/play.png?v=26" alt="×1"></button><button data-v="2" title="Скорость ×2"><img class="ic" src="icons/fast.png?v=26" alt="×2"></button><button data-v="4" title="Скорость ×4"><img class="ic" src="icons/faster.png?v=26" alt="×4"></button></div>
+    <div class="spacer"></div>
+    <div class="hgroup acts" aria-label="Управление городом">
+      <button id="commBtn" title="Показать ЛЭП, водопровод и куда доходят электричество и вода"><img class="ic" src="icons/power.png?v=26" alt=""><span>Коммуникации</span></button>
+      <button id="polBtn" title="Показать загрязнение от заводов, станций, карьеров и рудников"><img class="ic" src="icons/pollution.png?v=26" alt=""><span>Загрязнение</span></button>
+      <button id="resBtn" title="Дерево исследований: открывает постройки и следующие эпохи"><img class="ic" src="icons/research.png?v=26" alt=""><span>Исследования</span></button>
+      <button id="mktBtn" title="Рынок: купить и продать ресурсы, цены зависят от спроса"><img class="ic" src="icons/market.png?v=26" alt=""><span>Рынок</span></button>
+      <button id="eduBtn" title="График состава населения по образованию"><img class="ic" src="icons/edu.png?v=26" alt=""><span>Образование</span></button>
+    </div>
+    <div id="zoom" class="hgroup" title="Масштаб (или Ctrl+колесо)"><button id="zout" aria-label="Уменьшить">−</button><button id="zin" aria-label="Увеличить">+</button></div>
+  </div>
+  <div class="hrow"><div id="res" aria-label="Ресурсы"></div></div>
 </header>
 <div id="main">
-<div id="mapcol"><div id="map"><canvas id="c"></canvas></div><div id="build"><div id="items" hidden></div><div id="bbar"></div></div></div>
+<div id="mapcol"><div id="map"><canvas id="c"></canvas></div><div id="err" role="alert"></div><div id="build"><div id="items" hidden></div><div id="bbar" role="toolbar" aria-label="Строительство"></div></div></div>
 <div id="side">
-  <label>Имя: <input id="name" maxlength="20" style="width:150px"></label>
+  <div class="sec who"><label for="name">Мэр</label><input id="name" maxlength="20"></div>
   <div id="phase"></div>
   <div id="factory" class="panel" hidden></div>
   <div id="level"></div>
-  <div id="err"></div>
   <div id="tip" class="pop" role="tooltip"></div>
   <div id="hc" class="pop" role="tooltip"></div>
-  <div id="info">ЛКМ — строить (дороги и линии можно тянуть, зоны — выделять прямоугольником), ПКМ — выйти из строительства в «Информацию», а в «Информации» — снести. Колесо / Shift+колесо — прокрутка, Ctrl+колесо — масштаб.</div>
-  <div id="invite"></div>
-  <h4>Игроки</h4><div id="players"></div>
-  <h4>События</h4><div id="log"></div>
-  <button id="restart" style="margin-top:12px;text-align:center"><img class="ic" src="icons/restart.png?v=25" alt=""> Новый город</button>
+  <div id="invite" class="sec"></div>
+  <div class="sec"><h4>Игроки</h4><div id="players"></div></div>
+  <div class="sec"><h4>События</h4><div id="log" aria-live="polite"></div></div>
+  <div class="sec"><h4>Управление</h4><div id="info">ЛКМ — строить (дороги и линии можно тянуть, зоны — выделять прямоугольником), ПКМ — выйти из строительства в «Информацию», а в «Информации» — снести. Колесо / Shift+колесо — прокрутка, Ctrl+колесо — масштаб.</div></div>
+  <button id="restart"><img class="ic" src="icons/restart.png?v=26" alt=""> Новый город</button>
 </div>
 </div>
-<div id="resModal" class="modal" hidden><div class="mwin" role="dialog" aria-label="Дерево исследований"><div class="mhead"><b style="font-size:16px"><img class="ic" src="icons/research.png?v=25" alt=""> Дерево исследований</b><span id="resRate" style="color:#bbc;font-size:13px"></span><button id="resClose" aria-label="Закрыть">×</button></div><div id="research" class="tree"></div></div></div>
-<div id="eduModal" class="modal" hidden><div class="mwin" role="dialog" aria-label="Образование"><div class="mhead"><b style="font-size:16px"><img class="ic" src="icons/edu.png?v=25" alt=""> Состав населения по образованию</b><button id="eduClose" aria-label="Закрыть">×</button></div><div style="display:flex;gap:16px;flex-wrap:wrap;align-items:center"><canvas id="eduChart" width="560" height="260" style="max-width:100%;background:#161b26;border-radius:6px"></canvas><div id="eduLegend" style="font-size:14px;line-height:1.8"></div></div></div></div>
-<div id="mktModal" class="modal" hidden><div class="mwin" role="dialog" aria-label="Рынок"><div class="mhead"><b style="font-size:16px"><img class="ic" src="icons/market.png?v=25" alt=""> Рынок</b><span style="color:#bbc;font-size:13px">цены растут от покупок и падают от продаж, потом возвращаются</span><button id="mktClose" aria-label="Закрыть">×</button></div><div id="mkt"></div></div></div>
-<div id="chartModal" class="modal" hidden><div class="mwin" role="dialog" aria-label="График ресурса"><div class="mhead"><b id="chartTitle" style="font-size:16px"></b><button id="chartClose" aria-label="Закрыть">×</button></div><canvas id="resChart" width="600" height="260" style="max-width:100%;background:#161b26;border-radius:6px"></canvas><div id="chartNote" style="font-size:13px;color:#bbc;margin-top:6px"></div></div></div>
+<div id="resModal" class="modal" hidden><div class="mwin" role="dialog" aria-label="Дерево исследований"><div class="mhead"><b><img class="ic" src="icons/research.png?v=26" alt=""> Дерево исследований</b><span id="resRate"></span><button id="resClose" aria-label="Закрыть">×</button></div><div class="mbody"><div id="research" class="tree"></div></div></div></div>
+<div id="eduModal" class="modal" hidden><div class="mwin" role="dialog" aria-label="Образование"><div class="mhead"><b><img class="ic" src="icons/edu.png?v=26" alt=""> Состав населения по образованию</b><button id="eduClose" aria-label="Закрыть">×</button></div><div class="mbody" style="display:flex;gap:18px;flex-wrap:wrap;align-items:center"><canvas id="eduChart" class="chart" width="560" height="260"></canvas><div id="eduLegend"></div></div></div></div>
+<div id="mktModal" class="modal" hidden><div class="mwin" role="dialog" aria-label="Рынок"><div class="mhead"><b><img class="ic" src="icons/market.png?v=26" alt=""> Рынок</b><span>цены растут от покупок и падают от продаж, потом возвращаются</span><button id="mktClose" aria-label="Закрыть">×</button></div><div class="mbody"><div id="mkt"></div></div></div></div>
+<div id="chartModal" class="modal" hidden><div class="mwin" role="dialog" aria-label="График ресурса"><div class="mhead"><b id="chartTitle" style="font-size:16px"></b><button id="chartClose" aria-label="Закрыть">×</button></div><div class="mbody"><canvas id="resChart" class="chart" width="600" height="260"></canvas><div id="chartNote"></div></div></div></div>
 <div id="toast" role="status" hidden></div>
 <div id="netbox"><div class="box" id="netStep"></div></div>
 <!-- ?v= must change with every release: GitHub Pages lets browsers cache files for 10 minutes, and a new page with an old game.js breaks -->
-<script src="game.js?v=25"></script>
+<script src="game.js?v=26"></script>
 <script>
 // W, H, B, NEED_TEXT, POWER, WATER are globals from game.js
 // show script errors instead of a silently frozen game (e.g. a stale cached game.js)
@@ -149,7 +260,7 @@ $('name').onchange = () => {
   if (net) net.rename();
 };
 
-const ic = n => `<img class="ic" src="icons/${n}.png?v=25" alt="">`; // emoji don't render in every browser, so icons are SVG files
+const ic = n => `<img class="ic" src="icons/${n}.png?v=26" alt="">`; // emoji don't render in every browser, so icons are SVG files
 const RES = { money: 'money', wood: 'wood', stone: 'stone', food: 'food', iron: 'iron', gold: 'gold', oil: 'oil', asphalt: 'asphalt', horses: 'horses' };
 const costText = c => Object.entries(c).map(([k, v]) => v + ic(RES[k])).join(' ');
 const TOOLS = { info: { label: 'Информация', icon: 'info', cost: {} }, buy: { label: 'Купить землю', icon: 'buy', cost: {}, tech: 'explore' }, clear: { label: 'Расчистить', icon: 'clear', cost: {}, note: 'лес 5' + ic('money') + ', камень 10' + ic('money') }, ...B, bulldoze: { label: 'Снести', icon: 'bulldoze', cost: { money: 2 } } };
@@ -289,9 +400,9 @@ const nbr = (i, dx, dy) => { const x = i % W + dx, y = ((i / W) | 0) + dy; retur
 // bottom vertex, the diamond is 256 px wide). Whatever has no texture is drawn by code as before.
 const TEX = {}, texCache = new Map();
 let SPR = {}, texReady = false;
-fetch('textures/sprites.json?v=25').then(r => r.json()).then(m => {
+fetch('textures/sprites.json?v=26').then(r => r.json()).then(m => {
   SPR = m;
-  return Promise.all(Object.keys(m).map(n => new Promise(ok => { const im = new Image(); im.onload = () => { TEX[n] = im; ok(); }; im.onerror = ok; im.src = `textures/${n}.png?v=25`; })));
+  return Promise.all(Object.keys(m).map(n => new Promise(ok => { const im = new Image(); im.onload = () => { TEX[n] = im; ok(); }; im.onerror = ok; im.src = `textures/${n}.png?v=26`; })));
 }).then(() => {
   if (TEX.road_b && TEX.road_one && TEX.path_x) buildRoads();
   texReady = true; texCache.clear();
@@ -331,8 +442,8 @@ function buildRoads() {
   }
 }
 const VEH = {}, VSZ = {};
-fetch('textures/vehicles.json?v=25').then(r => r.json()).then(m => Object.keys(m).forEach(n => {
-  const im = new Image(); im.onload = () => { VEH[n] = im; VSZ[n] = m[n]; }; im.src = `textures/veh_${n}.png?v=25`;
+fetch('textures/vehicles.json?v=26').then(r => r.json()).then(m => Object.keys(m).forEach(n => {
+  const im = new Image(); im.onload = () => { VEH[n] = im; VSZ[n] = m[n]; }; im.src = `textures/veh_${n}.png?v=26`;
 })).catch(() => {});
 const MIRROR = { se: 'sw', sw: 'se', nw: 'ne', ne: 'nw', e: 'w', w: 'e' }, BACK = { se: 'nw', nw: 'se', sw: 'ne', ne: 'sw' };
 // draws vehicle `base` at screen point (x, y) heading (dx, dy), `wid` tiles wide on screen; false when it has no picture.
@@ -1259,8 +1370,9 @@ let lastPhase = '', lastLevel = '';
 function locks() {
   const me = st && st.players[name];
   document.querySelectorAll('[data-tool]').forEach(el => {
-    const off = !!me && !Game.hasTech(me, TOOLS[el.dataset.tool].tech);
+    const b = TOOLS[el.dataset.tool], off = !!me && !Game.hasTech(me, b.tech);
     el.classList.toggle('locked', off);
+    el.classList.toggle('poor', !!me && Object.entries(b.cost || {}).some(([k, v]) => (me.res[k] || 0) < v)); // can't pay for it right now
   });
 }
 function levelText(me) {
@@ -1288,7 +1400,7 @@ function render() {
   document.querySelector('[data-tool=buy] small').innerHTML = !me ? '' : Game.landOf(st, name) >= Game.levelOf(me).area ? (Game.hasTech(me, 'explore') ? ic('lock') + ' нужна новая эпоха' : ic('lock') + ' нужна «Разведка»') : Game.landPrice(st, name) + ic('money') + ' за клетку';
   locks();
   $('players').innerHTML = st.online.map(p => `<div style="color:${p.color}">● ${esc(p.name)}${st.players[p.name] ? ` — ${ic(Game.levelOf(st.players[p.name]).icon)} ${ic('pop')} ${st.players[p.name].pop}` : ''}</div>`).join('');
-  $('log').innerHTML = st.log.map(esc).join('<br>');
+  $('log').innerHTML = st.log.map(l => `<div>${esc(l)}</div>`).join('');
   paint(); hoverCard();
   document.querySelectorAll('#speed button').forEach(b => b.classList.toggle('on', +b.dataset.v === (st.speed ?? 1)));
   $('tickN').textContent = new Date(1950, 0, 1 + st.tick).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' }); // a tick is a day
@@ -1301,10 +1413,10 @@ function render() {
   const way = {}; // loads on their way to a depot, by horse cart or truck
   for (const sh of st.ships || []) if (sh.who === name && sh.kind === 'depot') way[sh.res] = (way[sh.res] || 0) + sh.n;
   const hu = Game.horseUse(st, name);
-  $('res').innerHTML = Object.keys(RES).map(k => `<span data-res="${k}">${ic(RES[k])} ${k === 'horses' ? `${hu.free}/${hu.total}` : f((r[k] || 0) + (way[k] || 0))}${way[k] ? ` <small title="везут на склад">↗${way[k]}</small>` : ''}${d(k)}</span>`).join('') +
-    `<span data-res="happy">${ic('happy')} ${Math.round((me.happy || 0) * 100)}%</span>` +
-    `<span data-res="pop">${ic('pop')} ${me.pop}${d2(me.growth || 0)}</span><span data-res="goods">${ic('depot')} ${f(Object.keys(PRODUCTS).reduce((n, g) => n + (r[g] || 0), 0))}</span><span title="Рабочие места">${ic('jobs')} ${me.jobs}</span><span title="Земля, клеток">${ic('land')} ${Game.landOf(st, name)}</span>` +
-    (me.fed ? '' : '<span style="color:#f77">Голод! Налоги падают</span>');
+  $('res').innerHTML = Object.keys(RES).map(k => `<span data-res="${k}">${ic(RES[k])} <b>${k === 'horses' ? `${hu.free}/${hu.total}` : f((r[k] || 0) + (way[k] || 0))}</b>${way[k] ? ` <small title="везут на склад">↗${way[k]}</small>` : ''}${d(k)}</span>`).join('') +
+    `<span data-res="happy">${ic('happy')} <b>${Math.round((me.happy || 0) * 100)}%</b></span>` +
+    `<span data-res="pop">${ic('pop')} <b>${me.pop}</b>${d2(me.growth || 0)}</span><span data-res="goods">${ic('depot')} <b>${f(Object.keys(PRODUCTS).reduce((n, g) => n + (r[g] || 0), 0))}</b></span><span title="Рабочие места">${ic('jobs')} <b>${me.jobs}</b></span><span title="Земля, клеток">${ic('land')} <b>${Game.landOf(st, name)}</b></span>` +
+    (me.fed ? '' : `<span class="warn">${ic('warn')} Голод! Налоги падают</span>`);
   if (tipKey) showTip();
   eduChart(me); factoryPanel(); researchPanel(me); techToast(me); mktPanel(me); resChart(me);
 }
@@ -1418,7 +1530,7 @@ $('factory').onclick = e => {
 // each branch's studies are linked from era to era; studies of the current era can be picked
 const TECH_ICON = { explore: 'buy', agriculture: 'horses', writing: 'edu', crafts: 'house', community: 'park', trade: 'money', mechanics: 'mine', schools: 'school', architecture: 'shop', post: 'stop', geology: 'oilwell', electricity: 'plant', medicine: 'hospital', industry: 'ind', plumbing: 'pump', refining: 'refinery', engine: 'engine', universities: 'uni', business: 'zoff', transit: 'bus', globaltrade: 'money', computers: 'research', elearning: 'edu', skyscrapers: 'upgrade', ecology: 'park' };
 const BRANCH_ICON = { world: 'land', science: 'research', edu: 'edu', art: 'art', social: 'pop' };
-const COL = 200, ROW = 96, LEFT = 116, TOPH = 44; // layout of the tree in pixels
+const COL = 200, ROW = 104, LEFT = 116, TOPH = 44; // layout of the tree in pixels
 const openRes = on => { $('resModal').hidden = !on; $('resBtn').classList.toggle('sel', on); lastResearch = ''; if (on && st) researchPanel(st.players[name]); };
 $('resBtn').onclick = () => openRes($('resModal').hidden);
 $('resClose').onclick = () => openRes(false);
@@ -1431,7 +1543,7 @@ function techToast(me) {
   knownTech = new Set(now);
   if (!fresh.length) return;
   const t = Game.techOf(fresh[fresh.length - 1]);
-  $('toast').innerHTML = `<img class="ic big" src="icons/${TECH_ICON[t.id]}.png?v=25" alt="" style="width:30px;height:30px"><div><b>Исследование завершено: ${t.name}</b><br><small>${t.desc}</small></div><button data-next>${ic('research')} Выбрать следующее</button>`;
+  $('toast').innerHTML = `<img class="ic big" src="icons/${TECH_ICON[t.id]}.png?v=26" alt="" style="width:30px;height:30px"><div><b>Исследование завершено: ${t.name}</b><br><small>${t.desc}</small></div><button data-next>${ic('research')} Выбрать следующее</button>`;
   $('toast').hidden = false;
   clearTimeout(toastTimer); toastTimer = setTimeout(() => { $('toast').hidden = true; }, 8000);
 }
@@ -1444,15 +1556,15 @@ function researchPanel(me) {
   let lines = '', nodes = '';
   for (let e = 0; e < eras; e++)
     nodes += `<div class="era" style="left:${LEFT + e * COL}px">${ic(LEVELS[e].icon)} <b>${LEVELS[e].name}</b><br><small style="color:#99a">${Game.TECH_COST[e]} очков на исследование</small></div>`;
-  branches.forEach((b, r) => { nodes += `<div class="branch" style="top:${TOPH + r * ROW + 28}px">${ic(BRANCH_ICON[b])} ${Game.BRANCHES[b]}</div>`; });
+  branches.forEach((b, r) => { nodes += `<div class="branch" style="top:${TOPH + r * ROW + 33}px">${ic(BRANCH_ICON[b])} ${Game.BRANCHES[b]}</div>`; });
   for (const t of TECH) {
     const [x, y] = pos(t), done = Game.hasTech(me, t.id), cur = me.research === t.id, pts = (me.rpts || {})[t.id] || 0;
     const before = TECH.find(q => q.branch === t.branch && q.era === t.era - 1);
     const open = !done && !cur && t.era <= (me.level || 0) && (!before || Game.hasTech(me, before.id));
-    if (before) { const [bx0, by0] = pos(before); lines += `<line x1="${bx0 + 168}" y1="${by0 + 40}" x2="${x}" y2="${y + 40}" stroke="${Game.hasTech(me, before.id) ? (done ? '#3d9a5f' : '#6a7fa8') : '#3a4256'}" stroke-width="3"${Game.hasTech(me, before.id) ? '' : ' stroke-dasharray="6 5"'}/>`; }
+    if (before) { const [bx0, by0] = pos(before); lines += `<line x1="${bx0 + 168}" y1="${by0 + 44}" x2="${x}" y2="${y + 44}" stroke="${Game.hasTech(me, before.id) ? (done ? '#5bb06c' : '#78a6df') : '#39425a'}" stroke-width="3"${Game.hasTech(me, before.id) ? '' : ' stroke-dasharray="6 5"'}/>`; }
     const why = done ? 'Изучено' : cur ? 'Изучается' : open ? 'Нажмите, чтобы изучать' : t.era > (me.level || 0) ? `Откроется в эпоху «${LEVELS[t.era].name}»` : `Сначала изучите «${before.name}»`;
     nodes += `<div class="node ${done ? 'done' : cur ? 'cur' : open ? 'open' : 'off'}" style="left:${x}px;top:${y}px" title="${why}"${open ? ` data-tech="${t.id}"` : ''}>` +
-      `<img class="big" src="icons/${TECH_ICON[t.id]}.png?v=25" alt=""><div><b>${done ? ic('ok') + ' ' : ''}${t.name}</b><br><span style="color:#aab">${t.desc}</span></div>` +
+      `<img class="big" src="icons/${TECH_ICON[t.id]}.png?v=26" alt=""><div><b>${done ? ic('ok') + ' ' : ''}${t.name}</b><br><span style="color:#aab">${t.desc}</span></div>` +
       (cur || (pts && !done) ? `<div class="bar"><i style="width:${Math.min(100, pts / Game.TECH_COST[t.era] * 100)}%"></i></div>` : '') + '</div>';
   }
   const html = `<div style="position:relative;width:${Wt}px;height:${Ht}px"><svg width="${Wt}" height="${Ht}">${lines}</svg>${nodes}</div>`;
@@ -1504,6 +1616,13 @@ function msg(m) {
 }
 const doAct = (tool, i, j) => msg({ type: 'act', tool, i, j });
 $('speed').onclick = e => { const b = e.target.closest('[data-v]'); if (b) msg({ type: 'speed', v: +b.dataset.v }); };
+let lastSpeed = 1; // space pauses, and resumes at the speed it was
+addEventListener('keydown', e => {
+  if (e.code !== 'Space' || !st || /INPUT|TEXTAREA|BUTTON/.test(document.activeElement.tagName)) return;
+  e.preventDefault();
+  if (st.speed) lastSpeed = st.speed;
+  msg({ type: 'speed', v: st.speed ? 0 : lastSpeed });
+});
 // screen point → tile on the ground: invert P() with u = x - y and v = x + y
 const tileAt = e => {
   const r = c.getBoundingClientRect(), u = (e.clientX - r.left - OX) / S, v = (e.clientY - r.top - OY) / (S / 2);
