@@ -12,7 +12,7 @@
   "build": {
     "appId": "com.roman33r.gorodvmeste",
     "productName": "Город вместе",
-    "files": ["electron/**", "server.js", "game.js", "index.html", "icons/**"],
+    "files": ["electron/**", "server.js", "game.js", "index.html", "icons/**", "textures/*.png", "textures/*.json"],
     "directories": { "output": "dist" },
     "win": { "target": "nsis" },
     "mac": { "target": "dmg" },

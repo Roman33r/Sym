@@ -30,6 +30,10 @@ const server = http.createServer((req, res) => {
     if (!fs.existsSync(path.join(__dirname, u.pathname))) return res.writeHead(404).end();
     return send(res, 'image/svg+xml', u.pathname);
   }
+  if (/^\/textures\/[a-z0-9_]+\.(png|json)$/.test(u.pathname)) { // same for the map textures and their anchors
+    if (!fs.existsSync(path.join(__dirname, u.pathname))) return res.writeHead(404).end();
+    return send(res, u.pathname.endsWith('.png') ? 'image/png' : 'application/json', u.pathname);
+  }
   if (u.pathname === '/hello') return res.writeHead(200).end('city'); // lets the page know a server is running here
   if (u.pathname === '/events') {
     res.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache' });
