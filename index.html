@@ -29,12 +29,25 @@
   .panel { background: #262e3e; border: 1px solid #556; border-radius: 6px; padding: 8px; margin: 6px 0; font-size: 13px; line-height: 1.5; }
   .panel[hidden] { display: none; }
   .panel button.cur { background: #3d7a4f; border-color: #6c6; }
-  .tech { margin: 3px 0; padding: 4px 6px; border: 1px solid #445; border-radius: 4px; }
-  .tech.done { border-color: #3d7a4f; color: #9c9; }
-  .tech.cur { border-color: #f0a830; }
-  .tech.off { opacity: .45; }
-  .bar { height: 4px; background: #333b4d; border-radius: 2px; margin-top: 3px; }
-  .bar > i { display: block; height: 100%; background: #f0a830; border-radius: 2px; }
+  .modal { position: fixed; inset: 0; background: #0b0f17cc; display: flex; align-items: center; justify-content: center; z-index: 15; }
+  .modal[hidden] { display: none; }
+  .mwin { background: #1d2330; border: 1px solid #556; border-radius: 10px; padding: 12px 16px 16px; max-width: calc(100vw - 32px); max-height: calc(100vh - 32px); overflow: auto; box-shadow: 0 10px 40px #000a; }
+  .mhead { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+  .mhead button { width: auto; margin-left: auto; padding: 2px 10px; }
+  .tree { position: relative; }
+  .tree svg { position: absolute; inset: 0; pointer-events: none; }
+  .era { position: absolute; top: 0; width: 180px; text-align: center; font-size: 13px; }
+  .branch { position: absolute; left: 0; width: 108px; font-size: 13px; display: flex; align-items: center; gap: 6px; }
+  .node { position: absolute; width: 168px; height: 80px; box-sizing: border-box; display: flex; gap: 8px; padding: 6px 8px; background: #262e3e; border: 2px solid #445; border-radius: 8px; font-size: 12px; line-height: 1.3; }
+  .node .big { width: 30px; height: 30px; flex: none; }
+  .node b { font-size: 13px; }
+  .node.done { border-color: #3d7a4f; background: #22352a; }
+  .node.cur { border-color: #f0a830; }
+  .node.open { cursor: pointer; border-color: #6a7fa8; }
+  .node.open:hover { background: #2f3a52; }
+  .node.off { opacity: .4; }
+  .node .bar { position: absolute; left: 8px; right: 8px; bottom: 5px; height: 4px; background: #333b4d; border-radius: 2px; }
+  .node .bar > i { display: block; height: 100%; background: #f0a830; border-radius: 2px; }
   #level { background: #23303a; border: 1px solid #4a6a7a; border-radius: 6px; padding: 8px; margin: 6px 0; font-size: 13px; line-height: 1.5; }
   #level button { margin-top: 6px; text-align: center; background: #3d6a7a; }
   #level button:disabled { opacity: .5; cursor: default; }
@@ -60,12 +73,12 @@
 <body>
 <header id="top">
   <span class="logo">Город вместе</span>
-  <div id="speed"><button data-v="0" title="Пауза"><img class="ic" src="icons/pause.svg?v=12" alt="Пауза"></button><button data-v="1" title="Скорость ×1"><img class="ic" src="icons/play.svg?v=12" alt="×1"></button><button data-v="2" title="Скорость ×2"><img class="ic" src="icons/fast.svg?v=12" alt="×2"></button><button data-v="4" title="Скорость ×4"><img class="ic" src="icons/faster.svg?v=12" alt="×4"></button></div>
+  <div id="speed"><button data-v="0" title="Пауза"><img class="ic" src="icons/pause.svg?v=13" alt="Пауза"></button><button data-v="1" title="Скорость ×1"><img class="ic" src="icons/play.svg?v=13" alt="×1"></button><button data-v="2" title="Скорость ×2"><img class="ic" src="icons/fast.svg?v=13" alt="×2"></button><button data-v="4" title="Скорость ×4"><img class="ic" src="icons/faster.svg?v=13" alt="×4"></button></div>
   <span id="tickN" class="date"></span>
-  <button id="commBtn" title="Показать ЛЭП, водопровод и куда доходят электричество и вода" style="width:auto"><img class="ic" src="icons/power.svg?v=12" alt=""> Коммуникации</button>
-  <button id="polBtn" title="Показать загрязнение от заводов, станций, карьеров и рудников" style="width:auto"><img class="ic" src="icons/pollution.svg?v=12" alt=""> Загрязнение</button>
-  <button id="resBtn" title="Дерево исследований: открывает постройки и следующие эпохи" style="width:auto"><img class="ic" src="icons/research.svg?v=12" alt=""> Исследования</button>
-  <button id="eduBtn" title="График состава населения по образованию" style="width:auto"><img class="ic" src="icons/edu.svg?v=12" alt=""> Образование</button>
+  <button id="commBtn" title="Показать ЛЭП, водопровод и куда доходят электричество и вода" style="width:auto"><img class="ic" src="icons/power.svg?v=13" alt=""> Коммуникации</button>
+  <button id="polBtn" title="Показать загрязнение от заводов, станций, карьеров и рудников" style="width:auto"><img class="ic" src="icons/pollution.svg?v=13" alt=""> Загрязнение</button>
+  <button id="resBtn" title="Дерево исследований: открывает постройки и следующие эпохи" style="width:auto"><img class="ic" src="icons/research.svg?v=13" alt=""> Исследования</button>
+  <button id="eduBtn" title="График состава населения по образованию" style="width:auto"><img class="ic" src="icons/edu.svg?v=13" alt=""> Образование</button>
   <div id="res"></div>
   <div id="zoom" title="Масштаб (или Ctrl+колесо)"><button id="zout" aria-label="Уменьшить">−</button><button id="zin" aria-label="Увеличить">+</button></div>
 </header>
@@ -76,7 +89,6 @@
   <div id="phase"></div>
   <div id="edu" class="panel" hidden><b>Состав населения</b><canvas id="eduChart" width="250" height="140" style="width:100%"></canvas><div id="eduLegend"></div></div>
   <div id="factory" class="panel" hidden></div>
-  <div id="research" class="panel" hidden></div>
   <div id="level"></div>
   <div id="tools"></div>
   <div id="err"></div>
@@ -86,12 +98,13 @@
   <div id="invite"></div>
   <h4>Игроки</h4><div id="players"></div>
   <h4>События</h4><div id="log"></div>
-  <button id="restart" style="margin-top:12px;text-align:center"><img class="ic" src="icons/restart.svg?v=12" alt=""> Новый город</button>
+  <button id="restart" style="margin-top:12px;text-align:center"><img class="ic" src="icons/restart.svg?v=13" alt=""> Новый город</button>
 </div>
 </div>
+<div id="resModal" class="modal" hidden><div class="mwin" role="dialog" aria-label="Дерево исследований"><div class="mhead"><b style="font-size:16px"><img class="ic" src="icons/research.svg?v=13" alt=""> Дерево исследований</b><span id="resRate" style="color:#bbc;font-size:13px"></span><button id="resClose" aria-label="Закрыть">×</button></div><div id="research" class="tree"></div></div></div>
 <div id="netbox"><div class="box" id="netStep"></div></div>
 <!-- ?v= must change with every release: GitHub Pages lets browsers cache files for 10 minutes, and a new page with an old game.js breaks -->
-<script src="game.js?v=12"></script>
+<script src="game.js?v=13"></script>
 <script>
 // W, H, B, NEED_TEXT, POWER, WATER are globals from game.js
 // show script errors instead of a silently frozen game (e.g. a stale cached game.js)
@@ -114,7 +127,7 @@ $('name').onchange = () => {
   if (net) net.rename();
 };
 
-const ic = n => `<img class="ic" src="icons/${n}.svg?v=12" alt="">`; // emoji don't render in every browser, so icons are SVG files
+const ic = n => `<img class="ic" src="icons/${n}.svg?v=13" alt="">`; // emoji don't render in every browser, so icons are SVG files
 const RES = { money: 'money', wood: 'wood', stone: 'stone', food: 'food', iron: 'iron', gold: 'gold', oil: 'oil', asphalt: 'asphalt', horses: 'horses' };
 const costText = c => Object.entries(c).map(([k, v]) => v + ic(RES[k])).join(' ');
 const TOOLS = { info: { label: 'Информация', icon: 'info', cost: {} }, buy: { label: 'Купить землю', icon: 'buy', cost: {}, tech: 'explore' }, clear: { label: 'Расчистить', icon: 'clear', cost: {}, note: 'лес 5' + ic('money') + ', камень 10' + ic('money') }, ...B, bulldoze: { label: 'Снести', icon: 'bulldoze', cost: { money: 2 } } };
@@ -331,18 +344,69 @@ function rocks(i, x, y) {
     dot('rgba(255,255,255,.22)', [p[0] - r * 0.3, p[1] - r * 0.7], r * 0.3);
   }
 }
-// oil deposit: a dark glossy pool
+// oil deposit: a black spring in a ring of mud with reeds and stones; sheen and bubbles are animated in drawDepositFx
 function oilPatch(x, y, i) {
-  const p = P(x + 0.5, y + 0.5);
-  oval('#1c1b20', [p[0], p[1]], S * 0.62, S * 0.28);
-  oval('rgba(120,110,160,.35)', [p[0] - S * 0.18, p[1] - S * 0.06], S * 0.2, S * 0.07);
+  const p = P(x + 0.5, y + 0.55);
+  oval('#5a4a32', p, S * 0.62, S * 0.28);
+  oval('#3a3022', [p[0], p[1] - S * 0.01], S * 0.5, S * 0.22);
+  oval('#0d0c10', [p[0], p[1] - S * 0.02], S * 0.4, S * 0.17);
+  for (let k = 0; k < 7; k++) { // reeds around the spring
+    const a = rnd(i, k + 10) * Math.PI * 2, q = [p[0] + Math.cos(a) * S * 0.6, p[1] + Math.sin(a) * S * 0.27], h = S * (0.22 + rnd(i, k) * 0.18);
+    line('#3f7a2e', Math.max(1, S * 0.035), q, [q[0] + S * 0.02, q[1] - h]);
+    if (k % 3 === 0) oval('#6b4a2a', [q[0] + S * 0.02, q[1] - h], S * 0.025, S * 0.06);
+  }
+  for (const [dx, dy] of [[0.62, -0.1], [-0.55, 0.12]]) { const q = [p[0] + dx * S, p[1] + dy * S]; oval('rgba(0,0,0,.25)', [q[0] + 2, q[1] + 1], S * 0.1, S * 0.04); oval('#7d776f', [q[0], q[1] - S * 0.04], S * 0.09, S * 0.06); }
 }
-function ore(i, x, y, t) {
-  const [rock, nugget] = t === 'iron' ? ['#6f6a66', '#c47a42'] : ['#7a6a4a', '#f2c230'];
-  const p = P(x + 0.5, y + 0.5);
-  oval('rgba(0,0,0,.25)', [p[0] + S * 0.1, p[1] + S * 0.06], S * 0.7, S * 0.32);
-  oval(rock, [p[0], p[1] - S * 0.08], S * 0.66, S * 0.3);
-  for (let k = 0; k < 6; k++) dot(nugget, P(x + 0.25 + rnd(i, k) * 0.5, y + 0.25 + rnd(i, k + 5) * 0.5, 0.08), S * (0.05 + rnd(i, k + 9) * 0.04));
+// a crystal: a pointed prism with a lit face, a dark face, a bright facet and a sharp highlight
+function crystal(x, y, h, w, lean, c) {
+  const tx = x + lean * h, ty = y - h, mid = y - h * 0.72;
+  poly(shade(c, 0.62), [[x, y], [x + w, y - w * 0.35], [tx + w * 0.7, mid - w * 0.2 + lean * h * 0.1], [tx, ty]]);
+  poly(shade(c, 1.0), [[x, y], [x - w, y - w * 0.35], [tx - w * 0.7, mid - w * 0.2], [tx, ty]]);
+  poly(shade(c, 1.35), [[x - w * 0.2, y - w * 0.1], [x - w * 0.55, y - w * 0.3], [tx - w * 0.35, mid - w * 0.1], [tx, ty]]);
+  line('rgba(255,255,255,.75)', Math.max(0.8, w * 0.12), [tx, ty + h * 0.06], [x - w * 0.1, y - h * 0.25]);
+}
+// broken rock the crystals grow from
+function rubble(p, r, seed, col) {
+  oval('rgba(0,0,0,.25)', [p[0] + r * 0.25, p[1] + r * 0.12], r * 1.15, r * 0.45);
+  const pts = [];
+  for (let a = 0; a < 9; a++) { const ang = a / 9 * Math.PI * 2, rr = r * (0.78 + rnd(seed, a) * 0.28); pts.push([p[0] + Math.cos(ang) * rr, p[1] - r * 0.18 + Math.sin(ang) * rr * 0.42]); }
+  poly(col, pts); poly(shade(col, 1.18), pts.slice(4, 9).concat([[p[0], p[1] - r * 0.18]]));
+  line(shade(col, 0.7), 1, [p[0] - r * 0.5, p[1] - r * 0.2], [p[0] - r * 0.1, p[1] - r * 0.05]);
+  line(shade(col, 0.7), 1, [p[0] - r * 0.1, p[1] - r * 0.05], [p[0] + r * 0.3, p[1] - r * 0.25]);
+}
+const ORE_PAL = { iron: { rock: '#5f5a56', c: ['#b4643a', '#c97a48', '#9a5530'], peb: '#8e4f28' }, gold: { rock: '#6f6247', c: ['#e8b923', '#f6cd45', '#d4a21a'], peb: '#c79a1c' } };
+// iron or gold: a cluster of crystals on broken rock with pebbles of ore around; k < 1 draws it smaller (under a mine)
+function ore(i, x, y, t, k = 1) {
+  const pal = ORE_PAL[t], base = P(x + 0.5, y + 0.55), r = S * 0.42 * k;
+  for (let n = 0; n < 5; n++) dot(pal.peb, P(x + 0.15 + rnd(i, n + 30) * 0.7, y + 0.2 + rnd(i, n + 40) * 0.65), S * (0.035 + rnd(i, n) * 0.02));
+  rubble(base, r, i, pal.rock);
+  [[-0.32, 0.02, 0.62, 0.11, -0.25], [0, -0.06, 0.95, 0.13, 0.08], [0.3, 0, 0.55, 0.1, 0.3], [-0.12, 0.08, 0.45, 0.09, -0.1], [0.16, 0.1, 0.38, 0.08, 0.18]]
+    .forEach(([dx, dy, h, w, lean], n) => crystal(base[0] + dx * r * 2, base[1] + dy * r - r * 0.1, h * S * k, w * S * k, lean, pal.c[n % 3]));
+}
+// gold twinkles, oil sheen and bubbles: drawn over the map every frame, only for deposits on screen
+function drawDepositFx(vx, vy, vw, vh, t) {
+  gx = ctx;
+  for (const [i, kind] of traffic.deposits || []) {
+    const x = i % W, y = (i / W) | 0, p = P(x + 0.5, y + 0.55);
+    if (p[0] < vx - S || p[0] > vx + vw + S || p[1] < vy - 2 * S || p[1] > vy + vh + S) continue;
+    if (kind === 'gold') {
+      const r = S * 0.42;
+      for (const [dx, dy, ph] of [[-0.45, -0.95, 0], [0.38, -1.25, 2], [0.05, -1.6, 4]]) {
+        const a = 0.5 + 0.5 * Math.sin(t / 300 + ph + i), sx = p[0] + dx * r * 1.4, sy = p[1] + dy * r, l = S * 0.09 * (0.6 + a);
+        ctx.strokeStyle = `rgba(255,250,210,${0.3 + 0.7 * a})`; ctx.lineWidth = 1.3; ctx.beginPath();
+        ctx.moveTo(sx - l, sy); ctx.lineTo(sx + l, sy); ctx.moveTo(sx, sy - l); ctx.lineTo(sx, sy + l); ctx.stroke();
+      }
+    } else {
+      ctx.save(); ctx.beginPath(); ctx.ellipse(p[0], p[1] - S * 0.02, S * 0.4, S * 0.17, 0, 0, 7); ctx.clip(); // sheen drifts across the pool
+      const sh = (t / 2000 + rnd(i)) % 1;
+      for (const [c, o] of [['rgba(120,90,200,.35)', 0], ['rgba(60,170,200,.3)', 0.33], ['rgba(220,120,180,.28)', 0.66]]) { const q = (sh + o) % 1; oval(c, [p[0] - S * 0.3 + q * S * 0.6, p[1] - S * 0.05], S * 0.16, S * 0.04); }
+      ctx.restore();
+      for (let k = 0; k < 3; k++) { // bubbles rise and pop
+        const ph = (t / 1400 + k / 3 + rnd(i, 5)) % 1, bx = p[0] + (rnd(i, k) - 0.5) * S * 0.45, r = S * (0.03 + 0.05 * ph);
+        ctx.strokeStyle = `rgba(150,145,170,${1 - ph})`; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.arc(bx, p[1] - S * 0.04 - ph * S * 0.06, r, Math.PI, 0); ctx.stroke();
+      }
+    }
+  }
 }
 
 const ROOFS = ['#c8553d', '#8e5b3a', '#3f7f7a', '#6b5ca5'];
@@ -484,7 +548,7 @@ const OBJ = {
   },
 };
 for (const t of ['iron', 'gold']) OBJ[t + 'mine'] = (x, y, i) => { // the deposit with a shed and a headframe over the shaft
-  ore(i, x, y, t);
+  ore(i, x + 0.12, y + 0.12, t, 0.65); // a smaller cluster beside the shaft
   block(x + 0.55, y + 0.6, x + 0.85, y + 0.85, 0.3, '#5b4a3a');
   const top = P(x + 0.4, y + 0.4, 1.4);
   line('#8b5a2b', Math.max(1.5, S / 10), P(x + 0.25, y + 0.55), top); line('#8b5a2b', Math.max(1.5, S / 10), P(x + 0.55, y + 0.25), top);
@@ -625,6 +689,7 @@ function draw() {
   const m = $('map'), vx = m.scrollLeft, vy = m.scrollTop, vw = Math.min(m.clientWidth, c.width - vx), vh = Math.min(m.clientHeight, c.height - vy);
   if (vw > 0 && vh > 0) ctx.drawImage(base, vx, vy, vw, vh, vx, vy, vw, vh);
   drawTraffic(vx, vy, vw, vh);
+  drawDepositFx(vx, vy, vw, vh, performance.now());
   if (sel >= 0) {
     const clr = tool === 'clear', buy = tool === 'buy', [x0, y0, x1, y1] = selRect(), col = buy ? '255,225,80' : clr ? '235,140,60' : ZCOL[B[tool].zone];
     const price = buy && st.players[name] ? Game.landPrice(st, name) : 0;
@@ -686,6 +751,7 @@ function trafficRebuild() {
   traffic.shops = list(t => t === 'shop');
   traffic.producers = list((t, b) => b.prod && Object.keys(b.prod).some(k => CARGO[k]));
   traffic.stops = list(t => t === 'stop');
+  traffic.deposits = g.flatMap((t, i) => (t === 'gold' || t === 'oil' ? [[i, t]] : [])); // animated in drawDepositFx
   // drop agents whose route lost a road
   traffic.agents = traffic.agents.filter(a => a.kind === 'truck' || a.path.every(i => isRoad(g[i])));
 }
@@ -1067,23 +1133,38 @@ $('factory').onclick = e => {
   if (b.dataset.spec) msg({ type: 'spec', i: selFactory, v: b.dataset.spec });
 };
 
-// research tree: the current era's studies can be picked; later eras are shown greyed out
-$('resBtn').onclick = () => { $('research').hidden = !$('research').hidden; $('resBtn').classList.toggle('sel', !$('research').hidden); lastResearch = ''; if (st) researchPanel(st.players[name]); };
+// research tree in a window in the middle of the screen: eras are columns, branches are rows,
+// each branch's studies are linked from era to era; studies of the current era can be picked
+const TECH_ICON = { explore: 'buy', agriculture: 'horses', writing: 'edu', crafts: 'house', community: 'park', trade: 'money', mechanics: 'mine', schools: 'school', architecture: 'shop', post: 'stop', geology: 'oilwell', electricity: 'plant', medicine: 'hospital', industry: 'ind', plumbing: 'pump', refining: 'refinery', engine: 'engine', universities: 'uni', business: 'zoff', transit: 'bus' };
+const BRANCH_ICON = { world: 'land', science: 'research', edu: 'edu', art: 'art', social: 'pop' };
+const COL = 200, ROW = 96, LEFT = 116, TOPH = 44; // layout of the tree in pixels
+const openRes = on => { $('resModal').hidden = !on; $('resBtn').classList.toggle('sel', on); lastResearch = ''; if (on && st) researchPanel(st.players[name]); };
+$('resBtn').onclick = () => openRes($('resModal').hidden);
+$('resClose').onclick = () => openRes(false);
+$('resModal').onclick = e => { if (e.target === $('resModal')) openRes(false); }; // click outside the window closes it
+addEventListener('keydown', e => { if (e.key === 'Escape' && !$('resModal').hidden) openRes(false); });
 let lastResearch = '';
 function researchPanel(me) {
   const box = $('research');
-  if (box.hidden || !me) return;
-  let html = `<b>${ic('research')} Исследования</b> <small>${(me.rp || 0).toFixed(1)} очк. за тик</small>`;
-  for (let e = 0; e < Game.TECH_COST.length; e++) {
-    html += `<div style="margin-top:6px"><b>${LEVELS[e].name}</b> <small>${Game.TECH_COST[e]} очк.</small></div>`;
-    for (const t of TECH.filter(x => x.era === e)) {
-      const done = Game.hasTech(me, t.id), cur = me.research === t.id, pts = (me.rpts || {})[t.id] || 0;
-      const before = TECH.find(x => x.branch === t.branch && x.era === t.era - 1), open = !done && e <= (me.level || 0) && (!before || Game.hasTech(me, before.id));
-      html += `<div class="tech ${done ? 'done' : cur ? 'cur' : open ? '' : 'off'}"${open && !cur ? ` data-tech="${t.id}" style="cursor:pointer"` : ''}>` +
-        `${done ? ic('ok') : cur ? ic('research') : ''} <b>${t.name}</b> <small>· ${Game.BRANCHES[t.branch]}</small><br><small>${t.desc}</small>` +
-        (cur || (pts && !done) ? `<div class="bar"><i style="width:${Math.min(100, pts / Game.TECH_COST[e] * 100)}%"></i></div>` : '') + '</div>';
-    }
+  if ($('resModal').hidden || !me) return;
+  const eras = Game.TECH_COST.length, branches = Object.keys(Game.BRANCHES), Wt = LEFT + eras * COL, Ht = TOPH + branches.length * ROW;
+  const pos = t => [LEFT + t.era * COL, TOPH + branches.indexOf(t.branch) * ROW];
+  let lines = '', nodes = '';
+  for (let e = 0; e < eras; e++)
+    nodes += `<div class="era" style="left:${LEFT + e * COL}px">${ic(LEVELS[e].icon)} <b>${LEVELS[e].name}</b><br><small style="color:#99a">${Game.TECH_COST[e]} очков на исследование</small></div>`;
+  branches.forEach((b, r) => { nodes += `<div class="branch" style="top:${TOPH + r * ROW + 28}px">${ic(BRANCH_ICON[b])} ${Game.BRANCHES[b]}</div>`; });
+  for (const t of TECH) {
+    const [x, y] = pos(t), done = Game.hasTech(me, t.id), cur = me.research === t.id, pts = (me.rpts || {})[t.id] || 0;
+    const before = TECH.find(q => q.branch === t.branch && q.era === t.era - 1);
+    const open = !done && !cur && t.era <= (me.level || 0) && (!before || Game.hasTech(me, before.id));
+    if (before) { const [bx0, by0] = pos(before); lines += `<line x1="${bx0 + 168}" y1="${by0 + 40}" x2="${x}" y2="${y + 40}" stroke="${Game.hasTech(me, before.id) ? (done ? '#3d9a5f' : '#6a7fa8') : '#3a4256'}" stroke-width="3"${Game.hasTech(me, before.id) ? '' : ' stroke-dasharray="6 5"'}/>`; }
+    const why = done ? 'Изучено' : cur ? 'Изучается' : open ? 'Нажмите, чтобы изучать' : t.era > (me.level || 0) ? `Откроется в эпоху «${LEVELS[t.era].name}»` : `Сначала изучите «${before.name}»`;
+    nodes += `<div class="node ${done ? 'done' : cur ? 'cur' : open ? 'open' : 'off'}" style="left:${x}px;top:${y}px" title="${why}"${open ? ` data-tech="${t.id}"` : ''}>` +
+      `<img class="big" src="icons/${TECH_ICON[t.id]}.svg?v=13" alt=""><div><b>${done ? ic('ok') + ' ' : ''}${t.name}</b><br><span style="color:#aab">${t.desc}</span></div>` +
+      (cur || (pts && !done) ? `<div class="bar"><i style="width:${Math.min(100, pts / Game.TECH_COST[t.era] * 100)}%"></i></div>` : '') + '</div>';
   }
+  const html = `<div style="position:relative;width:${Wt}px;height:${Ht}px"><svg width="${Wt}" height="${Ht}">${lines}</svg>${nodes}</div>`;
+  $('resRate').textContent = `${(me.rp || 0).toFixed(1)} очк. за тик` + (me.research ? ` · сейчас: ${Game.techOf(me.research).name}` : ' · выберите исследование');
   if (html !== lastResearch) box.innerHTML = lastResearch = html; // rebuild only on change so a click isn't lost
 }
 $('research').onclick = e => { const t = e.target.closest('[data-tech]'); if (t) msg({ type: 'research', v: t.dataset.tech }); };

@@ -148,15 +148,15 @@ const near = (g, i, type, rad) => {
 function newGame(seed = (Date.now() % 2147483646) + 1) {
   const r = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
   const grid = Array(W * H).fill('grass');
-  const blob = (type, n, rad, density) => {
+  const blob = (type, n, rad, density, base = 1.5) => { // base: smallest radius
     for (let k = 0; k < n; k++) {
-      const cx = r() * W, cy = r() * H, rr = 1.5 + r() * rad;
+      const cx = r() * W, cy = r() * H, rr = base + r() * rad;
       for (let y = 0; y < H; y++) for (let x = 0; x < W; x++)
         if ((x - cx) ** 2 + (y - cy) ** 2 < rr * rr && r() < density) grid[y * W + x] = type;
     }
   };
   blob('lake', 22, 4, 1); blob('tree', 76, 3.5, 0.75); blob('rock', 40, 2, 0.7);
-  blob('iron', 12, 0.6, 0.7); blob('gold', 6, 0.3, 0.7); blob('oil', 8, 0.5, 0.7); // rare deposits: small scattered clusters
+  blob('iron', 5, 0.6, 0.9, 0.7); blob('gold', 3, 0.4, 0.9, 0.6); blob('oil', 3, 0.6, 0.9, 0.8); // rare deposits: a few small clusters of 1–4 tiles
   // phase: lobby (waiting for start) → draft (players pick a starting area in drawn order) → play
   return { grid, util: Array(W * H).fill(0), owner: Array(W * H).fill(''), players: {}, phase: 'lobby', order: [], turn: 0, tick: 0, speed: 1 };
 }
