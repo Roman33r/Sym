@@ -186,6 +186,8 @@
   .mrow { margin: 4px 0; }
   .mrow button { display: inline-block; width: auto; margin-left: 4px; padding: 3px 7px; }
 
+  #map, #bbar, #items, #side, #log, .mwin { scrollbar-width: none; }
+  #map::-webkit-scrollbar, #bbar::-webkit-scrollbar, #items::-webkit-scrollbar, #side::-webkit-scrollbar, #log::-webkit-scrollbar, .mwin::-webkit-scrollbar { width: 0; height: 0; }
   @keyframes fade { from { opacity: 0; } }
   @keyframes pop { from { opacity: 0; transform: scale(.97) translateY(6px); } }
   @keyframes rise { from { opacity: 0; transform: translateY(6px); } }
@@ -201,14 +203,14 @@
   <div class="hrow">
     <span class="logo">Город вместе</span>
     <span id="tickN" class="date"></span>
-    <div id="speed" class="hgroup" aria-label="Скорость игры"><button data-v="0" title="Пауза (пробел)"><img class="ic" src="icons/pause.png?v=26" alt="Пауза"></button><button data-v="1" title="Скорость ×1"><img class="ic" src="icons/play.png?v=26" alt="×1"></button><button data-v="2" title="Скорость ×2"><img class="ic" src="icons/fast.png?v=26" alt="×2"></button><button data-v="4" title="Скорость ×4"><img class="ic" src="icons/faster.png?v=26" alt="×4"></button></div>
+    <div id="speed" class="hgroup" aria-label="Скорость игры"><button data-v="0" title="Пауза (пробел)"><img class="ic" src="icons/pause.png?v=27" alt="Пауза"></button><button data-v="1" title="Скорость ×1"><img class="ic" src="icons/play.png?v=27" alt="×1"></button><button data-v="2" title="Скорость ×2"><img class="ic" src="icons/fast.png?v=27" alt="×2"></button><button data-v="4" title="Скорость ×4"><img class="ic" src="icons/faster.png?v=27" alt="×4"></button></div>
     <div class="spacer"></div>
     <div class="hgroup acts" aria-label="Управление городом">
-      <button id="commBtn" title="Показать ЛЭП, водопровод и куда доходят электричество и вода"><img class="ic" src="icons/power.png?v=26" alt=""><span>Коммуникации</span></button>
-      <button id="polBtn" title="Показать загрязнение от заводов, станций, карьеров и рудников"><img class="ic" src="icons/pollution.png?v=26" alt=""><span>Загрязнение</span></button>
-      <button id="resBtn" title="Дерево исследований: открывает постройки и следующие эпохи"><img class="ic" src="icons/research.png?v=26" alt=""><span>Исследования</span></button>
-      <button id="mktBtn" title="Рынок: купить и продать ресурсы, цены зависят от спроса"><img class="ic" src="icons/market.png?v=26" alt=""><span>Рынок</span></button>
-      <button id="eduBtn" title="График состава населения по образованию"><img class="ic" src="icons/edu.png?v=26" alt=""><span>Образование</span></button>
+      <button id="commBtn" title="Показать ЛЭП, водопровод и куда доходят электричество и вода"><img class="ic" src="icons/power.png?v=27" alt=""><span>Коммуникации</span></button>
+      <button id="polBtn" title="Показать загрязнение от заводов, станций, карьеров и рудников"><img class="ic" src="icons/pollution.png?v=27" alt=""><span>Загрязнение</span></button>
+      <button id="resBtn" title="Дерево исследований: открывает постройки и следующие эпохи"><img class="ic" src="icons/research.png?v=27" alt=""><span>Исследования</span></button>
+      <button id="mktBtn" title="Рынок: купить и продать ресурсы, цены зависят от спроса"><img class="ic" src="icons/market.png?v=27" alt=""><span>Рынок</span></button>
+      <button id="eduBtn" title="График состава населения по образованию"><img class="ic" src="icons/edu.png?v=27" alt=""><span>Образование</span></button>
     </div>
     <div id="zoom" class="hgroup" title="Масштаб (или Ctrl+колесо)"><button id="zout" aria-label="Уменьшить">−</button><button id="zin" aria-label="Увеличить">+</button></div>
   </div>
@@ -227,17 +229,17 @@
   <div class="sec"><h4>Игроки</h4><div id="players"></div></div>
   <div class="sec"><h4>События</h4><div id="log" aria-live="polite"></div></div>
   <div class="sec"><h4>Управление</h4><div id="info">ЛКМ — строить (дороги и линии можно тянуть, зоны — выделять прямоугольником), ПКМ — выйти из строительства в «Информацию», а в «Информации» — снести. Колесо / Shift+колесо — прокрутка, Ctrl+колесо — масштаб.</div></div>
-  <button id="restart"><img class="ic" src="icons/restart.png?v=26" alt=""> Новый город</button>
+  <button id="restart"><img class="ic" src="icons/restart.png?v=27" alt=""> Новый город</button>
 </div>
 </div>
-<div id="resModal" class="modal" hidden><div class="mwin" role="dialog" aria-label="Дерево исследований"><div class="mhead"><b><img class="ic" src="icons/research.png?v=26" alt=""> Дерево исследований</b><span id="resRate"></span><button id="resClose" aria-label="Закрыть">×</button></div><div class="mbody"><div id="research" class="tree"></div></div></div></div>
-<div id="eduModal" class="modal" hidden><div class="mwin" role="dialog" aria-label="Образование"><div class="mhead"><b><img class="ic" src="icons/edu.png?v=26" alt=""> Состав населения по образованию</b><button id="eduClose" aria-label="Закрыть">×</button></div><div class="mbody" style="display:flex;gap:18px;flex-wrap:wrap;align-items:center"><canvas id="eduChart" class="chart" width="560" height="260"></canvas><div id="eduLegend"></div></div></div></div>
-<div id="mktModal" class="modal" hidden><div class="mwin" role="dialog" aria-label="Рынок"><div class="mhead"><b><img class="ic" src="icons/market.png?v=26" alt=""> Рынок</b><span>цены растут от покупок и падают от продаж, потом возвращаются</span><button id="mktClose" aria-label="Закрыть">×</button></div><div class="mbody"><div id="mkt"></div></div></div></div>
+<div id="resModal" class="modal" hidden><div class="mwin" role="dialog" aria-label="Дерево исследований"><div class="mhead"><b><img class="ic" src="icons/research.png?v=27" alt=""> Дерево исследований</b><span id="resRate"></span><button id="resClose" aria-label="Закрыть">×</button></div><div class="mbody"><div id="research" class="tree"></div></div></div></div>
+<div id="eduModal" class="modal" hidden><div class="mwin" role="dialog" aria-label="Образование"><div class="mhead"><b><img class="ic" src="icons/edu.png?v=27" alt=""> Состав населения по образованию</b><button id="eduClose" aria-label="Закрыть">×</button></div><div class="mbody" style="display:flex;gap:18px;flex-wrap:wrap;align-items:center"><canvas id="eduChart" class="chart" width="560" height="260"></canvas><div id="eduLegend"></div></div></div></div>
+<div id="mktModal" class="modal" hidden><div class="mwin" role="dialog" aria-label="Рынок"><div class="mhead"><b><img class="ic" src="icons/market.png?v=27" alt=""> Рынок</b><span>цены растут от покупок и падают от продаж, потом возвращаются</span><button id="mktClose" aria-label="Закрыть">×</button></div><div class="mbody"><div id="mkt"></div></div></div></div>
 <div id="chartModal" class="modal" hidden><div class="mwin" role="dialog" aria-label="График ресурса"><div class="mhead"><b id="chartTitle" style="font-size:16px"></b><button id="chartClose" aria-label="Закрыть">×</button></div><div class="mbody"><canvas id="resChart" class="chart" width="600" height="260"></canvas><div id="chartNote"></div></div></div></div>
 <div id="toast" role="status" hidden></div>
 <div id="netbox"><div class="box" id="netStep"></div></div>
 <!-- ?v= must change with every release: GitHub Pages lets browsers cache files for 10 minutes, and a new page with an old game.js breaks -->
-<script src="game.js?v=26"></script>
+<script src="game.js?v=27"></script>
 <script>
 // W, H, B, NEED_TEXT, POWER, WATER are globals from game.js
 // show script errors instead of a silently frozen game (e.g. a stale cached game.js)
@@ -260,7 +262,7 @@ $('name').onchange = () => {
   if (net) net.rename();
 };
 
-const ic = n => `<img class="ic" src="icons/${n}.png?v=26" alt="">`; // emoji don't render in every browser, so icons are SVG files
+const ic = n => `<img class="ic" src="icons/${n}.png?v=27" alt="">`; // emoji don't render in every browser, so icons are SVG files
 const RES = { money: 'money', wood: 'wood', stone: 'stone', food: 'food', iron: 'iron', gold: 'gold', oil: 'oil', asphalt: 'asphalt', horses: 'horses' };
 const costText = c => Object.entries(c).map(([k, v]) => v + ic(RES[k])).join(' ');
 const TOOLS = { info: { label: 'Информация', icon: 'info', cost: {} }, buy: { label: 'Купить землю', icon: 'buy', cost: {}, tech: 'explore' }, clear: { label: 'Расчистить', icon: 'clear', cost: {}, note: 'лес 5' + ic('money') + ', камень 10' + ic('money') }, ...B, bulldoze: { label: 'Снести', icon: 'bulldoze', cost: { money: 2 } } };
@@ -400,9 +402,9 @@ const nbr = (i, dx, dy) => { const x = i % W + dx, y = ((i / W) | 0) + dy; retur
 // bottom vertex, the diamond is 256 px wide). Whatever has no texture is drawn by code as before.
 const TEX = {}, texCache = new Map();
 let SPR = {}, texReady = false;
-fetch('textures/sprites.json?v=26').then(r => r.json()).then(m => {
+fetch('textures/sprites.json?v=27').then(r => r.json()).then(m => {
   SPR = m;
-  return Promise.all(Object.keys(m).map(n => new Promise(ok => { const im = new Image(); im.onload = () => { TEX[n] = im; ok(); }; im.onerror = ok; im.src = `textures/${n}.png?v=26`; })));
+  return Promise.all(Object.keys(m).map(n => new Promise(ok => { const im = new Image(); im.onload = () => { TEX[n] = im; ok(); }; im.onerror = ok; im.src = `textures/${n}.png?v=27`; })));
 }).then(() => {
   if (TEX.road_b && TEX.road_one && TEX.path_x) buildRoads();
   texReady = true; texCache.clear();
@@ -442,8 +444,8 @@ function buildRoads() {
   }
 }
 const VEH = {}, VSZ = {};
-fetch('textures/vehicles.json?v=26').then(r => r.json()).then(m => Object.keys(m).forEach(n => {
-  const im = new Image(); im.onload = () => { VEH[n] = im; VSZ[n] = m[n]; }; im.src = `textures/veh_${n}.png?v=26`;
+fetch('textures/vehicles.json?v=27').then(r => r.json()).then(m => Object.keys(m).forEach(n => {
+  const im = new Image(); im.onload = () => { VEH[n] = im; VSZ[n] = m[n]; }; im.src = `textures/veh_${n}.png?v=27`;
 })).catch(() => {});
 const MIRROR = { se: 'sw', sw: 'se', nw: 'ne', ne: 'nw', e: 'w', w: 'e' }, BACK = { se: 'nw', nw: 'se', sw: 'ne', ne: 'sw' };
 // draws vehicle `base` at screen point (x, y) heading (dx, dy), `wid` tiles wide on screen; false when it has no picture.
@@ -1030,7 +1032,7 @@ function outline(x0, y0, x1, y1, stroke, fillCol, w = 2) {
 function draw() {
   if (!st) return;
   // only the visible part of the map: this runs every frame
-  const m = $('map'), vx = m.scrollLeft, vy = m.scrollTop, vw = Math.min(m.clientWidth, c.width - vx), vh = Math.min(m.clientHeight, c.height - vy);
+  const m = $('map'), vx = m.scrollLeft / Z, vy = m.scrollTop / Z, vw = Math.min(m.clientWidth / Z, c.width - vx), vh = Math.min(m.clientHeight / Z, c.height - vy);
   if (vw > 0 && vh > 0) ctx.drawImage(base, vx, vy, vw, vh, vx, vy, vw, vh);
   drawTraffic(vx, vy, vw, vh);
   drawDepositFx(vx, vy, vw, vh, performance.now());
@@ -1241,30 +1243,51 @@ function drawTraffic(vx, vy, vw, vh) {
 
 // one loop draws the visible part of the map every frame so traffic moves smoothly; game speed scales it, pause stops it
 let lastFrame = 0;
+const PAN_KEYS = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1], KeyA: [-1, 0], KeyD: [1, 0], KeyW: [0, -1], KeyS: [0, 1] };
+const held = new Set(), pan = { x: 0, y: 0 };
+let fast = false;
+const typing = () => /INPUT|TEXTAREA/.test(document.activeElement.tagName);
+addEventListener('keydown', e => { if (PAN_KEYS[e.code] && !typing()) { held.add(e.code); fast = e.shiftKey; e.preventDefault(); } });
+addEventListener('keyup', e => { held.delete(e.code); fast = e.shiftKey; });
+addEventListener('blur', () => held.clear());
+function panStep(dt) {
+  let tx = 0, ty = 0;
+  for (const k of held) { tx += PAN_KEYS[k][0]; ty += PAN_KEYS[k][1]; }
+  const sp = (fast ? 1800 : 900) * (tx && ty ? Math.SQRT1_2 : 1), k = Math.min(1, dt * 9); // eases towards the target speed
+  pan.x += (tx * sp - pan.x) * k; pan.y += (ty * sp - pan.y) * k;
+  if (Math.abs(pan.x) < 1 && Math.abs(pan.y) < 1) { pan.x = pan.y = 0; return; }
+  const m = $('map'); m.scrollLeft += pan.x * dt; m.scrollTop += pan.y * dt;
+}
 function frameLoop(t) {
   const dt = Math.min(0.1, (t - lastFrame) / 1000 || 0);
   lastFrame = t;
+  panStep(dt);
   if (st) { trafficStep(dt * (st.speed ?? 1)); draw(); }
   requestAnimationFrame(frameLoop);
 }
 requestAnimationFrame(frameLoop);
 
 // keeps the point under the middle of the view in place; the map canvas is (W + H) diamonds wide.
-// S stays at 32 or below: the two map-sized canvases grow with the square of it.
-let zoomed = false;
+// S stays at 32 or below: the two map-sized canvases grow with the square of it; closer than that the canvas is shown scaled up (Z).
+let zoomed = false, Z = 1; // Z: extra display scale above S = 32, up to ×2
 function setZoom(n) {
   const m = $('map');
-  const u = zoomed ? (m.scrollLeft + m.clientWidth / 2 - OX) / S : (W - H) / 2; // u = x - y, v = x + y of the middle
-  const v = zoomed ? (m.scrollTop + m.clientHeight / 2 - OY) / (S / 2) : (W + H) / 2;
-  S = Math.max(10, Math.min(32, n)); zoomed = true;
-  OX = H * S; OY = MT * S;
-  c.width = base.width = (W + H) * S; c.height = base.height = (W + H) * S / 2 + MT * S;
-  if (st) paint(true);
-  m.scrollLeft = OX + u * S - m.clientWidth / 2; m.scrollTop = OY + v * S / 2 - m.clientHeight / 2;
+  const u = zoomed ? ((m.scrollLeft + m.clientWidth / 2) / Z - OX) / S : (W - H) / 2; // u = x - y, v = x + y of the middle
+  const v = zoomed ? ((m.scrollTop + m.clientHeight / 2) / Z - OY) / (S / 2) : (W + H) / 2;
+  n = Math.max(10, Math.min(64, n));
+  const S2 = Math.min(32, n), resize = S2 !== S || !zoomed; // the first call sizes the canvases
+  Z = n / S2; zoomed = true;
+  if (resize) {
+    S = S2; OX = H * S; OY = MT * S;
+    c.width = base.width = (W + H) * S; c.height = base.height = (W + H) * S / 2 + MT * S;
+    if (st) paint(true);
+  }
+  c.style.width = c.width * Z + 'px'; c.style.height = c.height * Z + 'px';
+  m.scrollLeft = (OX + u * S) * Z - m.clientWidth / 2; m.scrollTop = (OY + v * S / 2) * Z - m.clientHeight / 2;
 }
-$('zin').onclick = () => setZoom(S + 4);
-$('zout').onclick = () => setZoom(S - 4);
-$('map').addEventListener('wheel', e => { if (!e.ctrlKey) return; e.preventDefault(); setZoom(S + (e.deltaY < 0 ? 2 : -2)); }, { passive: false });
+$('zin').onclick = () => setZoom(S * Z + 4);
+$('zout').onclick = () => setZoom(S * Z - 4);
+$('map').addEventListener('wheel', e => { if (!e.ctrlKey) return; e.preventDefault(); setZoom(S * Z + (e.deltaY < 0 ? 2 : -2)); }, { passive: false });
 setZoom(S);
 
 // hover window over a resource: what adds to it and takes from it this tick
@@ -1543,7 +1566,7 @@ function techToast(me) {
   knownTech = new Set(now);
   if (!fresh.length) return;
   const t = Game.techOf(fresh[fresh.length - 1]);
-  $('toast').innerHTML = `<img class="ic big" src="icons/${TECH_ICON[t.id]}.png?v=26" alt="" style="width:30px;height:30px"><div><b>Исследование завершено: ${t.name}</b><br><small>${t.desc}</small></div><button data-next>${ic('research')} Выбрать следующее</button>`;
+  $('toast').innerHTML = `<img class="ic big" src="icons/${TECH_ICON[t.id]}.png?v=27" alt="" style="width:30px;height:30px"><div><b>Исследование завершено: ${t.name}</b><br><small>${t.desc}</small></div><button data-next>${ic('research')} Выбрать следующее</button>`;
   $('toast').hidden = false;
   clearTimeout(toastTimer); toastTimer = setTimeout(() => { $('toast').hidden = true; }, 8000);
 }
@@ -1564,7 +1587,7 @@ function researchPanel(me) {
     if (before) { const [bx0, by0] = pos(before); lines += `<line x1="${bx0 + 168}" y1="${by0 + 44}" x2="${x}" y2="${y + 44}" stroke="${Game.hasTech(me, before.id) ? (done ? '#5bb06c' : '#78a6df') : '#39425a'}" stroke-width="3"${Game.hasTech(me, before.id) ? '' : ' stroke-dasharray="6 5"'}/>`; }
     const why = done ? 'Изучено' : cur ? 'Изучается' : open ? 'Нажмите, чтобы изучать' : t.era > (me.level || 0) ? `Откроется в эпоху «${LEVELS[t.era].name}»` : `Сначала изучите «${before.name}»`;
     nodes += `<div class="node ${done ? 'done' : cur ? 'cur' : open ? 'open' : 'off'}" style="left:${x}px;top:${y}px" title="${why}"${open ? ` data-tech="${t.id}"` : ''}>` +
-      `<img class="big" src="icons/${TECH_ICON[t.id]}.png?v=26" alt=""><div><b>${done ? ic('ok') + ' ' : ''}${t.name}</b><br><span style="color:#aab">${t.desc}</span></div>` +
+      `<img class="big" src="icons/${TECH_ICON[t.id]}.png?v=27" alt=""><div><b>${done ? ic('ok') + ' ' : ''}${t.name}</b><br><span style="color:#aab">${t.desc}</span></div>` +
       (cur || (pts && !done) ? `<div class="bar"><i style="width:${Math.min(100, pts / Game.TECH_COST[t.era] * 100)}%"></i></div>` : '') + '</div>';
   }
   const html = `<div style="position:relative;width:${Wt}px;height:${Ht}px"><svg width="${Wt}" height="${Ht}">${lines}</svg>${nodes}</div>`;
@@ -1625,7 +1648,7 @@ addEventListener('keydown', e => {
 });
 // screen point → tile on the ground: invert P() with u = x - y and v = x + y
 const tileAt = e => {
-  const r = c.getBoundingClientRect(), u = (e.clientX - r.left - OX) / S, v = (e.clientY - r.top - OY) / (S / 2);
+  const r = c.getBoundingClientRect(), u = ((e.clientX - r.left) / Z - OX) / S, v = ((e.clientY - r.top) / Z - OY) / (S / 2);
   const x = Math.floor((u + v) / 2), y = Math.floor((v - u) / 2);
   return x >= 0 && y >= 0 && x < W && y < H ? y * W + x : -1;
 };
