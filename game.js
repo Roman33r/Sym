@@ -107,7 +107,7 @@ const TECH = [
   { id: 'trade', era: 1, branch: 'world', name: 'Торговые пути', desc: 'здание рынка: покупка и продажа ресурсов' },
   { id: 'mechanics', era: 1, branch: 'science', name: 'Механика', desc: 'рудник' },
   { id: 'schools', era: 1, branch: 'edu', name: 'Школы', desc: 'школа и детский сад' },
-  { id: 'architecture', era: 1, branch: 'art', name: 'Зодчество', desc: 'магазин' },
+  { id: 'architecture', era: 1, branch: 'art', name: 'Зодчество', desc: 'магазин и брусчатка' },
   { id: 'post', era: 1, branch: 'social', name: 'Почта и конка', desc: 'остановка конки: лошадь возит людей на работу' },
   { id: 'geology', era: 2, branch: 'world', name: 'Геология', desc: 'нефтяная вышка' },
   { id: 'electricity', era: 2, branch: 'science', name: 'Электричество', desc: 'электростанция и ЛЭП' },
