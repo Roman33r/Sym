@@ -9,8 +9,8 @@ assert.strictEqual(G.act(s, 'A', 'claim', 0), 'сначала нажмите «�
 assert.strictEqual(G.start(s, ['A']), null);
 assert.strictEqual(G.act(s, 'A', 'claim', 0), null);
 assert.strictEqual(s.phase, 'play');
-s.players.A.res = { money: 9999, wood: 999, stone: 999, food: 50, iron: 0, gold: 0 };
-s.players.A.level = 2; // a city: all buildings and up to 1000 tiles, levels are tested separately below
+s.players.A.res = { money: 9999, wood: 999, stone: 999, food: 50, iron: 0, gold: 0, asphalt: 999 };
+s.players.A.level = 3; s.players.A.tech = G.allTech(); // Новое время, everything researched: power and water are hard needs; eras are tested below
 s.grid[0] = 'lake';
 for (let x = 0; x < 6; x++) assert.strictEqual(G.act(s, 'A', 'road', W + x), null);
 assert.strictEqual(G.act(s, 'A', 'pump', 1), null);
@@ -82,6 +82,7 @@ assert.strictEqual(G.act(t, 'A', 'claim', 0), 'сейчас выбирает B')
 assert.strictEqual(G.act(t, 'B', 'claim', 18), null); // square x 12..23
 assert.strictEqual(G.act(t, 'A', 'claim', 18), 'там уже чужая земля — выберите место правее, левее или дальше');
 assert.strictEqual(G.act(t, 'A', 'claim', 0), null); // square x 0..11, right next to B
+for (const n of ['A', 'B']) Object.assign(t.players[n], { level: 3, tech: G.allTech(), res: { ...t.players[n].res, asphalt: 99 } });
 assert.strictEqual(t.phase, 'play');
 assert.strictEqual(G.actArea(t, 'A', 'buy', 11, 12), 'в выделении есть чужая земля');
 G.act(t, 'A', 'road', W + 10); G.act(t, 'A', 'plant', 10); G.act(t, 'A', 'power', 11);
@@ -93,17 +94,23 @@ const v = G.newGame(3);
 v.grid.fill('grass');
 G.start(v, ['V']); G.act(v, 'V', 'claim', 0);
 const V = v.players.V;
-assert.strictEqual(G.act(v, 'V', 'shop', 5), 'откроется на уровне «Посёлок»');
-assert.strictEqual(G.act(v, 'V', 'buy', 12), '«Деревня» может владеть не больше 144 кл. земли (сейчас 144) — повысьте уровень');
-assert.strictEqual(G.act(v, 'V', 'upgrade', 0), 'для уровня «Посёлок» нужно 30 жителей');
+assert.strictEqual(G.act(v, 'V', 'shop', 5), 'нужно исследование «Зодчество»');
+assert.strictEqual(G.act(v, 'V', 'road', 7), 'нужно исследование «Нефтепереработка»');
+assert.strictEqual(G.act(v, 'V', 'path', 7), null); // the first eras only have paths
+assert.strictEqual(G.act(v, 'V', 'buy', 12), 'нужно исследование «Разведка»');
+V.tech.explore = true;
+assert.strictEqual(G.act(v, 'V', 'buy', 12), '«Древность» может владеть не больше 144 кл. земли (сейчас 144) — нужна следующая эпоха');
+assert.strictEqual(G.act(v, 'V', 'upgrade', 0), 'для эпохи «Средневековье» нужно изучить: Земледелие, Письменность, Ремёсла, Община');
+V.tech = G.allTech(); // research itself is tested below
+assert.strictEqual(G.act(v, 'V', 'upgrade', 0), 'для эпохи «Средневековье» нужно 30 жителей');
 V.pop = 30; V.res.money = 299;
-assert.strictEqual(G.act(v, 'V', 'upgrade', 0), 'для уровня «Посёлок» нужно 300 денег');
+assert.strictEqual(G.act(v, 'V', 'upgrade', 0), 'для эпохи «Средневековье» нужно 300 денег');
 V.res.money = 1000;
 assert.strictEqual(G.act(v, 'V', 'upgrade', 0), null);
 assert.strictEqual(V.level, 1); assert.strictEqual(V.res.money, 700);
 assert.strictEqual(G.act(v, 'V', 'shop', 5), null);
 assert.strictEqual(G.act(v, 'V', 'buy', 12), null);
-assert.strictEqual(G.act(v, 'V', 'upgrade', 0), 'для уровня «Город» нужно 120 жителей');
+assert.strictEqual(G.act(v, 'V', 'upgrade', 0), 'для эпохи «Индустриальная эпоха» нужно 120 жителей');
 // market and clearing
 assert.strictEqual(G.trade(v, 'V', 'wood', 10), null);
 assert.strictEqual(V.res.wood, 40 - 10 + 10); assert.strictEqual(V.res.money, 700 - 100 - 3 - 40); // shop 100 (+10 wood), 1 tile of land 3, then 10 wood at 4
@@ -132,7 +139,7 @@ assert.strictEqual(G.trade(v, 'V', 'iron', 5, true), null);
 assert.strictEqual(V.res.money, m1 + 75); assert.strictEqual(V.res.iron, 0);
 assert.strictEqual(G.trade(v, 'V', 'iron', 1, true), 'не хватает железа');
 V.pop = 120; V.res.money = 5000;
-assert.strictEqual(G.act(v, 'V', 'upgrade', 0), 'для уровня «Город» нужно 20 железа');
+assert.strictEqual(G.act(v, 'V', 'upgrade', 0), 'для эпохи «Индустриальная эпоха» нужно 20 железа');
 V.res.iron = 20;
 assert.strictEqual(G.act(v, 'V', 'upgrade', 0), null);
 assert.strictEqual(V.res.iron, 0); assert.strictEqual(V.res.money, 4000);
@@ -172,7 +179,7 @@ const d = G.newGame(6);
 d.grid.fill('grass');
 G.start(d, ['D']); G.act(d, 'D', 'claim', 0);
 const DP = d.players.D;
-DP.res = { money: 1e5, wood: 1e3, stone: 1e3, food: 100, iron: 0, gold: 0 };
+DP.res = { money: 1e5, wood: 1e3, stone: 1e3, food: 100, iron: 0, gold: 0, asphalt: 99 }; DP.tech = G.allTech();
 d.grid[0] = 'lake';
 for (let x = 0; x < 12; x++) G.act(d, 'D', 'road', W + x);
 G.act(d, 'D', 'pump', 1); G.act(d, 'D', 'plant', 2); G.act(d, 'D', 'farm', 3); G.act(d, 'D', 'house', 4);
@@ -201,14 +208,14 @@ const f = G.newGame(8);
 f.grid.fill('grass');
 G.start(f, ['F']); G.act(f, 'F', 'claim', 0);
 const FP = f.players.F;
-FP.level = 2; FP.res = { money: 1e5, wood: 500, stone: 1e3, food: 500, iron: 0, gold: 0 };
+FP.level = 2; FP.tech = G.allTech(); FP.res = { money: 1e5, wood: 500, stone: 1e3, food: 500, iron: 0, gold: 0, asphalt: 99 };
 f.grid[0] = 'lake';
 for (let x = 0; x < 12; x++) G.act(f, 'F', 'road', W + x);
 G.act(f, 'F', 'pump', 1); G.act(f, 'F', 'plant', 2); f.grid[3] = 'ind';
 for (const x of [4, 5, 6, 7]) G.act(f, 'F', 'house', x);
 G.act(f, 'F', 'shop', 8); G.act(f, 'F', 'depot', 10);
 assert.strictEqual(G.setSpec(f, 'F', 3, 'gold-bars'), 'неизвестный товар');
-assert.strictEqual(G.setSpec(f, 'F', 4, 'furniture'), 'выпуск настраивается только у завода');
+assert.strictEqual(G.setSpec(f, 'F', 4, 'furniture'), 'выпуск настраивается только у завода или фермы');
 assert.strictEqual(G.setSpec(f, 'Z', 3, 'furniture'), 'это не ваш участок');
 assert.strictEqual(G.setSpec(f, 'F', 3, 'furniture'), null);
 let toDepot = false, toShop = false, sale = false;
@@ -228,4 +235,60 @@ assert.strictEqual(o.wr.off, 0, 'nobody with a degree, so offices stay empty');
 // pollution fades with distance from the factory
 const pl = G.pollution(f);
 assert.ok(pl[3] >= 1 && pl[3 + 7] < pl[3] && pl[6 * W + 60] === 0);
+// research: points pile up each tick; a study needs its era and the same branch's study before it
+const rs = G.room(G.newGame(9));
+rs.s.grid.fill('grass'); rs.join('x', 'R');
+rs.handle('R', { type: 'start' }); rs.handle('R', { type: 'act', tool: 'claim', i: 0 });
+assert.strictEqual(rs.handle('R', { type: 'research', v: 'trade' }), 'откроется в эпоху «Средневековье»');
+assert.strictEqual(rs.handle('R', { type: 'research', v: 'nope' }), 'неизвестное исследование');
+assert.strictEqual(rs.handle('R', { type: 'research', v: 'explore' }), null);
+for (let k = 0; k < 400 && !G.hasTech(rs.s.players.R, 'explore'); k++) { rs.s.speed = 4; rs.step(); }
+assert.ok(G.hasTech(rs.s.players.R, 'explore'), 'the study finished');
+assert.ok(rs.log.some(l => l.includes('изучено «Разведка»')), 'and the log says so');
+rs.s.players.R.level = 1;
+assert.strictEqual(rs.handle('R', { type: 'research', v: 'post' }), 'сначала изучите «Община»');
+assert.strictEqual(rs.handle('R', { type: 'research', v: 'explore' }), 'уже изучено');
+
+// paths are roads but twice as slow; without engines every load needs a free horse
+const h = G.newGame(10);
+h.grid.fill('grass');
+G.start(h, ['H']); G.act(h, 'H', 'claim', 0);
+const HP = h.players.H;
+HP.res = { ...HP.res, money: 1e5, wood: 1e3, stone: 1e3 };
+for (let x = 0; x < 12; x++) G.act(h, 'H', 'path', W + x);
+G.act(h, 'H', 'farm', 2); G.act(h, 'H', 'depot', 10); h.grid[3] = 'zres'; h.grid[4] = 'zres';
+h.stock = {}; h.stock[2] = G.LOAD;
+G.tick(h);
+assert.ok(h.noHorse.includes(2) && !h.ships.length, 'no horse: the load waits');
+HP.res.horses = 1; h.stock[2] = G.LOAD;
+G.tick(h);
+assert.strictEqual(h.ships.length, 1);
+assert.ok(h.ships[0].horse && h.ships[0].at - h.ships[0].t0 === 8, 'a cart over 8 path tiles takes 8 ticks'); // 16 cost units at 2 per tick
+// livestock farms raise horses, two per farm at most
+assert.strictEqual(G.setSpec(h, 'H', 2, 'livestock'), 'нужно исследование «Земледелие»');
+HP.tech.agriculture = true;
+assert.strictEqual(G.setSpec(h, 'H', 2, 'livestock'), null);
+HP.demo = { kids: 0, none: 40, school: 0, higher: 0, old: 0 }; // enough farm hands
+for (let k = 0; k < 200; k++) G.tick(h);
+assert.strictEqual(HP.res.horses, G.HORSES_PER_FARM, 'the herd stops at two');
+// a horse-tram stop needs one of those horses
+h.grid[8] = 'stop';
+HP.res.horses = 0;
+assert.ok(G.compute(h)[8].includes('h'));
+HP.res.horses = 1;
+assert.ok(!G.compute(h)[8].includes('h'));
+// oil: the well goes on a deposit, the refinery makes asphalt, asphalt roads can replace paths
+HP.tech = G.allTech();
+h.grid[6] = 'oil';
+assert.strictEqual(G.act(h, 'H', 'well', 7), 'нефтяная вышка ставится на месторождение нефти');
+assert.strictEqual(G.act(h, 'H', 'well', 6), null);
+assert.strictEqual(h.grid[6], 'oilwell');
+HP.res.iron = 50; HP.res.oil = 30;
+assert.strictEqual(G.act(h, 'H', 'refinery', 9), null);
+for (let k = 0; k < 10; k++) G.tick(h);
+assert.ok(HP.res.oil < 30 && h.stock[9] > 0, 'the refinery turned oil into asphalt');
+assert.strictEqual(G.act(h, 'H', 'road', W + 5), 'не хватает асфальта');
+HP.res.asphalt = 1;
+assert.strictEqual(G.act(h, 'H', 'road', W + 5), null);
+assert.strictEqual(h.grid[W + 5], 'road');
 console.log('ok');

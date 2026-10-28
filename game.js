@@ -2,38 +2,44 @@
 const W = 120, H = 84;
 // needs: r = road nearby, p = power, w = water, t = forest within 2, k = rock within 2, l = lake adjacent
 const B = {
-  road:    { cost: { money: 5 }, label: 'Дорога', icon: '' },
-  power:   { cost: { money: 5, wood: 1 }, label: 'ЛЭП', icon: '' },
-  pipe:    { cost: { money: 5, stone: 1 }, label: 'Водопровод', icon: '' },
+  path:    { cost: { money: 1 }, label: 'Тропинка (грузы идут вдвое медленнее)', icon: 'path' },
+  road:    { cost: { money: 5, asphalt: 1 }, tech: 'refining', label: 'Асфальтовая дорога', icon: '' },
+  power:   { cost: { money: 5, wood: 1 }, tech: 'electricity', label: 'ЛЭП', icon: '' },
+  pipe:    { cost: { money: 5, stone: 1 }, tech: 'plumbing', label: 'Водопровод', icon: '' },
   // zones: cheap lots that develop on their own into res/off/ind once needs are met and there is demand
   zres:    { cost: { money: 10 }, needs: 'rpw', zone: 'res', label: 'Жилая зона', icon: 'zres' },
-  zoff:    { cost: { money: 10 }, needs: 'rpw', zone: 'off', lvl: 2, label: 'Офисная зона', icon: 'zoff' },
-  zind:    { cost: { money: 10 }, needs: 'rp', zone: 'ind', lvl: 1, label: 'Промзона', icon: 'zind' },
+  zoff:    { cost: { money: 10 }, needs: 'rpw', zone: 'off', tech: 'business', label: 'Офисная зона', icon: 'zoff' },
+  zind:    { cost: { money: 10 }, needs: 'rp', zone: 'ind', tech: 'industry', label: 'Промзона', icon: 'zind' },
   res:     { cost: { money: 10 }, needs: 'rpw', grown: true, home: 6, label: 'Жилой дом', icon: '' },
   off:     { cost: { money: 10 }, needs: 'rpw', grown: true, jobs: 6, prod: { money: 4 }, label: 'Офис', icon: '' },
   ind:     { cost: { money: 10 }, needs: 'rp', grown: true, jobs: 8, label: 'Завод', icon: '' }, // makes a product, see PRODUCTS
-  house:   { cost: { money: 50, wood: 10 }, needs: 'rpw', home: 8, label: 'Дом (до 8 жителей)', icon: 'house' },
+  house:   { cost: { money: 50, wood: 10 }, needs: 'rpw', tech: 'crafts', home: 8, label: 'Дом (до 8 жителей)', icon: 'house' },
   farm:    { cost: { money: 40, wood: 5 }, needs: 'rw', jobs: 4, prod: { food: 5 }, label: 'Ферма (еда)', icon: 'farm' },
   sawmill: { cost: { money: 60 }, needs: 'rpt', jobs: 4, prod: { wood: 2 }, label: 'Лесопилка (дерево)', icon: 'sawmill' },
   quarry:  { cost: { money: 80, wood: 10 }, needs: 'rpk', jobs: 4, prod: { stone: 1.5 }, label: 'Каменоломня (камень)', icon: 'quarry' },
-  plant:   { cost: { money: 200, stone: 20 }, needs: 'r', upkeep: 3, label: 'Электростанция', icon: 'plant' },
-  pump:    { cost: { money: 150, stone: 10 }, needs: 'rpl', upkeep: 2, label: 'Водокачка (у озера)', icon: 'pump' },
-  shop:    { cost: { money: 100, wood: 10, stone: 10 }, needs: 'rpw', lvl: 1, jobs: 6, prod: { money: 1 }, label: 'Магазин (продаёт товары)', icon: 'shop' },
-  park:    { cost: { money: 30 }, label: 'Парк (радует жителей)', icon: 'park' },
-  stop:    { cost: { money: 40 }, needs: 'r', upkeep: 1, label: 'Остановка (автобус до работы)', icon: 'stop' },
+  plant:   { cost: { money: 200, stone: 20 }, needs: 'r', tech: 'electricity', upkeep: 3, label: 'Электростанция', icon: 'plant' },
+  pump:    { cost: { money: 150, stone: 10 }, needs: 'rpl', tech: 'plumbing', upkeep: 2, label: 'Водокачка (у озера)', icon: 'pump' },
+  shop:    { cost: { money: 100, wood: 10, stone: 10 }, needs: 'rpw', tech: 'architecture', jobs: 6, prod: { money: 1 }, label: 'Магазин (продаёт товары)', icon: 'shop' },
+  park:    { cost: { money: 30 }, tech: 'community', label: 'Парк (радует жителей)', icon: 'park' },
+  stop:    { cost: { money: 40 }, needs: 'r', tech: 'post', upkeep: 1, label: 'Остановка (автобус до работы)', icon: 'stop' },
   depot:   { cost: { money: 80, wood: 10 }, needs: 'r', label: 'Склад (сюда грузовики везут товары)', icon: 'depot' },
   // services: see SEATS for how many each serves
-  kinder:  { cost: { money: 120, wood: 20 }, needs: 'rpw', jobs: 3, upkeep: 2, label: 'Детский сад (30 детей)', icon: 'kinder' },
-  school:  { cost: { money: 200, stone: 20 }, needs: 'rpw', jobs: 4, upkeep: 3, label: 'Школа (40 учеников)', icon: 'school' },
-  hospital: { cost: { money: 400, stone: 40 }, needs: 'rpw', lvl: 1, jobs: 6, upkeep: 5, label: 'Больница (150 жителей)', icon: 'hospital' },
-  uni:     { cost: { money: 600, stone: 60, iron: 10 }, needs: 'rpw', lvl: 2, jobs: 6, upkeep: 6, label: 'Университет (высшее образование)', icon: 'uni' },
+  kinder:  { cost: { money: 120, wood: 20 }, needs: 'rpw', tech: 'schools', jobs: 3, upkeep: 2, label: 'Детский сад (30 детей)', icon: 'kinder' },
+  school:  { cost: { money: 200, stone: 20 }, needs: 'rpw', tech: 'schools', jobs: 4, upkeep: 3, label: 'Школа (40 учеников)', icon: 'school' },
+  hospital: { cost: { money: 400, stone: 40 }, needs: 'rpw', tech: 'medicine', jobs: 6, upkeep: 5, label: 'Больница (150 жителей)', icon: 'hospital' },
+  uni:     { cost: { money: 600, stone: 60, iron: 10 }, needs: 'rpw', tech: 'universities', jobs: 6, upkeep: 6, label: 'Университет (высшее образование)', icon: 'uni' },
   // a mine is built on an ore deposit and turns into the matching mine; demolishing it leaves the deposit
-  mine:    { cost: { money: 150, wood: 20 }, lvl: 1, label: 'Рудник (на месторождение)', icon: 'mine' },
+  mine:    { cost: { money: 150, wood: 20 }, tech: 'mechanics', label: 'Рудник (на месторождение)', icon: 'mine' },
   ironmine: { cost: { money: 150, wood: 20 }, needs: 'rp', grown: true, ore: 'iron', jobs: 5, prod: { iron: 1 }, label: 'Железный рудник', icon: 'mine' },
+  // oil: a well goes on an oil deposit; the refinery turns oil into asphalt for roads
+  well:    { cost: { money: 200, wood: 20 }, tech: 'geology', label: 'Нефтяная вышка (на месторождение нефти)', icon: 'oilwell' },
+  oilwell: { cost: { money: 200, wood: 20 }, needs: 'r', grown: true, ore: 'oil', jobs: 4, prod: { oil: 0.8 }, label: 'Нефтяная вышка', icon: 'oilwell' },
+  refinery: { cost: { money: 400, stone: 40, iron: 10 }, needs: 'rp', tech: 'refining', jobs: 6, upkeep: 2, label: 'НПЗ (нефть → асфальт)', icon: 'refinery' },
   goldmine: { cost: { money: 150, wood: 20 }, needs: 'rp', grown: true, ore: 'gold', jobs: 5, prod: { gold: 0.4 }, label: 'Золотой прииск', icon: 'mine' },
 };
-const NEED_TEXT = { r: 'нет дороги рядом', p: 'нет электричества', w: 'нет воды', t: 'нет леса рядом', k: 'нет камня рядом', l: 'нет озера рядом' };
-const RES_TEXT = { money: 'денег', wood: 'дерева', stone: 'камня', food: 'еды', iron: 'железа', gold: 'золота' };
+const NEED_TEXT = { h: 'нет свободной лошади на складе', r: 'нет дороги рядом', p: 'нет электричества', w: 'нет воды', t: 'нет леса рядом', k: 'нет камня рядом', l: 'нет озера рядом' };
+const RES_TEXT = { money: 'денег', wood: 'дерева', stone: 'камня', food: 'еды', iron: 'железа', gold: 'золота', oil: 'нефти', asphalt: 'асфальта', horses: 'лошадей' };
+const isRoad = t => t === 'road' || t === 'path'; // a path is a road too, only slower
 const POWER = 1, WATER = 2; // bits in s.util: lines/pipes lie on top of grass, roads and buildings
 
 // Land is owned tile by tile: a player starts with a START x START square placed anywhere on the grid,
@@ -42,31 +48,79 @@ const START = 12;
 const ownerOf = (s, i) => s.owner[i];
 const landOf = (s, who) => s.owner.reduce((n, o) => n + (o === who), 0);
 const landPrice = (s, who) => 3 + Math.floor(landOf(s, who) / 300); // per tile, grows as the city spreads
-// Settlement levels: reaching the population and paying the cost moves a player up, allowing more land and new buildings (B[t].lvl).
-// area: most tiles of land a level may own; rare: rare resources the upgrade costs on top of money
+// Eras: reaching the population, paying the cost and finishing the era's research moves a player on,
+// allowing more land. Buildings open through research (B[t].tech). Power and water become hard needs from UTIL_ERA.
+// area: most tiles of land an era may own; rare: rare resources the step costs on top of money
 const LEVELS = [
-  { name: 'Деревня', icon: 'village', area: START * START },
-  { name: 'Посёлок', icon: 'town', pop: 30, cost: 300, area: 400 },
-  { name: 'Город', icon: 'city', pop: 120, cost: 1000, rare: { iron: 20 }, area: 1000 },
-  { name: 'Мегаполис', icon: 'metro', pop: 400, cost: 3000, rare: { iron: 50, gold: 20 }, area: 2500 },
+  { name: 'Древность', icon: 'village', area: START * START },
+  { name: 'Средневековье', icon: 'town', pop: 30, cost: 300, area: 400 },
+  { name: 'Индустриальная эпоха', icon: 'ind', pop: 120, cost: 1000, rare: { iron: 20 }, area: 1000 },
+  { name: 'Новое время', icon: 'city', pop: 300, cost: 3000, rare: { iron: 50 }, area: 2500 },
+  { name: 'Современность', icon: 'metro', pop: 600, cost: 6000, rare: { iron: 100, gold: 20 }, area: 4000 },
 ];
+const UTIL_ERA = 3;
 const levelOf = p => LEVELS[p.level || 0];
-// what still blocks moving to the next level, or null when it can be done
+const BRANCHES = { world: 'Мир', science: 'Наука', edu: 'Образование', art: 'Искусство', social: 'Социальное' };
+// one study per branch in each era; it needs the same branch's study of the era before
+const TECH = [
+  { id: 'explore', era: 0, branch: 'world', name: 'Разведка', desc: 'покупка новой земли' },
+  { id: 'agriculture', era: 0, branch: 'science', name: 'Земледелие', desc: 'животноводство на фермах: лошади' },
+  { id: 'writing', era: 0, branch: 'edu', name: 'Письменность', desc: 'исследования идут в 1,5 раза быстрее' },
+  { id: 'crafts', era: 0, branch: 'art', name: 'Ремёсла', desc: 'дом' },
+  { id: 'community', era: 0, branch: 'social', name: 'Община', desc: 'парк' },
+  { id: 'trade', era: 1, branch: 'world', name: 'Торговые пути', desc: 'рынок: покупка и продажа ресурсов' },
+  { id: 'mechanics', era: 1, branch: 'science', name: 'Механика', desc: 'рудник' },
+  { id: 'schools', era: 1, branch: 'edu', name: 'Школы', desc: 'школа и детский сад' },
+  { id: 'architecture', era: 1, branch: 'art', name: 'Зодчество', desc: 'магазин' },
+  { id: 'post', era: 1, branch: 'social', name: 'Почта и конка', desc: 'остановка конки: лошадь возит людей на работу' },
+  { id: 'geology', era: 2, branch: 'world', name: 'Геология', desc: 'нефтяная вышка' },
+  { id: 'electricity', era: 2, branch: 'science', name: 'Электричество', desc: 'электростанция и ЛЭП' },
+  { id: 'medicine', era: 2, branch: 'edu', name: 'Медицина', desc: 'больница' },
+  { id: 'industry', era: 2, branch: 'art', name: 'Промышленность', desc: 'промзона и заводы' },
+  { id: 'plumbing', era: 2, branch: 'social', name: 'Водопровод', desc: 'водокачка и трубы' },
+  { id: 'refining', era: 3, branch: 'world', name: 'Нефтепереработка', desc: 'НПЗ и асфальтовые дороги' },
+  { id: 'engine', era: 3, branch: 'science', name: 'Двигатель', desc: 'грузовики вместо телег: лошади больше не нужны' },
+  { id: 'universities', era: 3, branch: 'edu', name: 'Университеты', desc: 'университет: высшее образование' },
+  { id: 'business', era: 3, branch: 'art', name: 'Деловой центр', desc: 'офисная зона' },
+  { id: 'transit', era: 3, branch: 'social', name: 'Общественный транспорт', desc: 'автобусы: остановкам не нужны лошади' },
+];
+const TECH_COST = [40, 100, 220, 400]; // research points per era
+const techOf = id => TECH.find(t => t.id === id);
+const hasTech = (p, id) => !id || !!(p && p.tech && p.tech[id]);
+const techLock = (p, id) => (hasTech(p, id) ? null : `нужно исследование «${techOf(id).name}»`);
+const allTech = () => Object.fromEntries(TECH.map(t => [t.id, true]));
+// what still blocks moving to the next era, or null when it can be done
 function upgradeBlock(p) {
   const next = LEVELS[(p.level || 0) + 1];
-  if (!next) return 'это высший уровень';
-  if (p.pop < next.pop) return `для уровня «${next.name}» нужно ${next.pop} жителей`;
-  if (p.res.money < next.cost) return `для уровня «${next.name}» нужно ${next.cost} денег`;
-  for (const [k, v] of Object.entries(next.rare || {})) if ((p.res[k] || 0) < v) return `для уровня «${next.name}» нужно ${v} ${RES_TEXT[k]}`;
+  if (!next) return 'это последняя эпоха';
+  const left = TECH.filter(t => t.era === (p.level || 0) && !hasTech(p, t.id));
+  if (left.length) return `для эпохи «${next.name}» нужно изучить: ${left.map(t => t.name).join(', ')}`;
+  if (p.pop < next.pop) return `для эпохи «${next.name}» нужно ${next.pop} жителей`;
+  if (p.res.money < next.cost) return `для эпохи «${next.name}» нужно ${next.cost} денег`;
+  for (const [k, v] of Object.entries(next.rare || {})) if ((p.res[k] || 0) < v) return `для эпохи «${next.name}» нужно ${v} ${RES_TEXT[k]}`;
   return null;
 }
+// Picks what the player studies next; progress on each study is kept if they switch.
+function setResearch(s, who, id) {
+  const p = s.players[who], t = techOf(id);
+  if (!p) return 'сначала выберите стартовый участок';
+  if (!t) return 'неизвестное исследование';
+  if (hasTech(p, id)) return 'уже изучено';
+  if (t.era > (p.level || 0)) return `откроется в эпоху «${LEVELS[t.era].name}»`;
+  const before = TECH.find(x => x.branch === t.branch && x.era === t.era - 1);
+  if (before && !hasTech(p, before.id)) return `сначала изучите «${before.name}»`;
+  p.research = id;
+  return null;
+}
+
 // Market: fixed money price per unit to buy (PRICES) or sell (SELL); rare resources can only be sold.
 const PRICES = { wood: 4, stone: 6, food: 3 };
-const SELL = { wood: 2, stone: 3, food: 1, iron: 15, gold: 40 };
+const SELL = { wood: 2, stone: 3, food: 1, iron: 15, gold: 40, oil: 8 };
 function trade(s, who, res, n, sell = false) {
   const p = s.players[who], price = (sell ? SELL : PRICES)[res];
   if (!p) return 'сначала выберите стартовый участок';
   if (!price || !Number.isInteger(n) || n < 1 || n > 1000) return 'неверная сделка';
+  const lock = techLock(p, 'trade'); if (lock) return lock;
   if (sell) {
     if ((p.res[res] || 0) < n) return 'не хватает ' + RES_TEXT[res];
     p.res[res] -= n; p.res.money += price * n;
@@ -102,7 +156,7 @@ function newGame(seed = (Date.now() % 2147483646) + 1) {
     }
   };
   blob('lake', 22, 4, 1); blob('tree', 76, 3.5, 0.75); blob('rock', 40, 2, 0.7);
-  blob('iron', 12, 0.6, 0.7); blob('gold', 6, 0.3, 0.7); // rare deposits: small scattered clusters
+  blob('iron', 12, 0.6, 0.7); blob('gold', 6, 0.3, 0.7); blob('oil', 8, 0.5, 0.7); // rare deposits: small scattered clusters
   // phase: lobby (waiting for start) → draft (players pick a starting area in drawn order) → play
   return { grid, util: Array(W * H).fill(0), owner: Array(W * H).fill(''), players: {}, phase: 'lobby', order: [], turn: 0, tick: 0, speed: 1 };
 }
@@ -130,7 +184,7 @@ function claim(s, who, i) {
   const [x0, y0] = startCorner(i), tiles = rectTiles(x0, y0, x0 + START - 1, y0 + START - 1);
   if (tiles.some(k => s.owner[k])) return 'там уже чужая земля — выберите место правее, левее или дальше';
   for (const k of tiles) s.owner[k] = who;
-  s.players[who] = { res: { money: 1000, wood: 40, stone: 50, food: 50, iron: 0, gold: 0 }, demo: newDemo(), hist: [], level: 0, pop: 0, jobs: 0, fed: true, delta: {}, color: COLORS[Object.keys(s.players).length % COLORS.length] };
+  s.players[who] = { res: { money: 1000, wood: 40, stone: 50, food: 50, iron: 0, gold: 0, oil: 0, asphalt: 0, horses: 0 }, demo: newDemo(), hist: [], tech: {}, rpts: {}, research: null, level: 0, pop: 0, jobs: 0, fed: true, delta: {}, color: COLORS[Object.keys(s.players).length % COLORS.length] };
   if (s.phase === 'draft') nextTurn(s);
   return null;
 }
@@ -139,13 +193,14 @@ function claim(s, who, i) {
 function buyArea(s, who, i, j) {
   const p = s.players[who];
   if (!p) return 'сначала выберите стартовый участок';
+  const lock = techLock(p, 'explore'); if (lock) return lock;
   const tiles = rectTiles(Math.min(i % W, j % W), Math.min(i / W | 0, j / W | 0), Math.max(i % W, j % W), Math.max(i / W | 0, j / W | 0));
   if (tiles.some(k => s.owner[k] && s.owner[k] !== who)) return 'в выделении есть чужая земля';
   const fresh = tiles.filter(k => !s.owner[k]);
   if (!fresh.length) return 'эта земля уже ваша';
   if (!fresh.some(k => nb(k).some(n => s.owner[n] === who))) return 'новая земля должна примыкать к вашей';
   const lv = levelOf(p), have = landOf(s, who);
-  if (have + fresh.length > lv.area) return `«${lv.name}» может владеть не больше ${lv.area} кл. земли (сейчас ${have}) — повысьте уровень`;
+  if (have + fresh.length > lv.area) return `«${lv.name}» может владеть не больше ${lv.area} кл. земли (сейчас ${have}) — нужна следующая эпоха`;
   const cost = fresh.length * landPrice(s, who);
   if (p.res.money < cost) return `не хватает денег: ${fresh.length} кл. стоят ${cost}`;
   p.res.money -= cost;
@@ -165,7 +220,7 @@ function flood(s, sources, bit) {
 
 // Tiles reached by electricity and by water.
 function networks(s) {
-  const g = s.grid, road = i => nb(i).some(j => g[j] === 'road'), lake = i => nb(i).some(j => g[j] === 'lake');
+  const g = s.grid, road = i => nb(i).some(j => isRoad(g[j])), lake = i => nb(i).some(j => g[j] === 'lake');
   const powered = flood(s, g.flatMap((t, i) => t === 'plant' && road(i) ? [i] : []), POWER);
   const watered = flood(s, g.flatMap((t, i) => t === 'pump' && road(i) && powered.has(i) && lake(i) ? [i] : []), WATER);
   return { powered, watered };
@@ -173,11 +228,24 @@ function networks(s) {
 
 // Returns per-tile string of unmet needs ('' = working or not a building).
 function compute(s) {
-  const g = s.grid, road = i => nb(i).some(j => g[j] === 'road'), lake = i => nb(i).some(j => g[j] === 'lake');
-  const { powered, watered } = networks(s);
+  const g = s.grid, road = i => nb(i).some(j => isRoad(g[j])), lake = i => nb(i).some(j => g[j] === 'lake');
+  const { powered, watered } = networks(s), era = i => (s.players[ownerOf(s, i)] || {}).level || 0;
   // zone lots only need a road within 3 tiles, so a big district fills in, not just its edge
-  const ok = { r: i => B[g[i]].zone || B[g[i]].grown ? near(g, i, 'road', 3) : road(i), p: i => powered.has(i), w: i => watered.has(i), t: i => near(g, i, 'tree', 2), k: i => near(g, i, 'rock', 2), l: lake };
-  return g.map((t, i) => isBuilding(t) ? [...B[t].needs].filter(c => !ok[c](i)).join('') : '');
+  const ok = {
+    r: i => B[g[i]].zone || B[g[i]].grown ? near(g, i, 'road', 3) || near(g, i, 'path', 3) : road(i),
+    p: i => powered.has(i) || era(i) < UTIL_ERA, w: i => watered.has(i) || era(i) < UTIL_ERA, // before that era towns live without them
+    t: i => near(g, i, 'tree', 2), k: i => near(g, i, 'rock', 2), l: lake,
+  };
+  const st = g.map((t, i) => isBuilding(t) ? [...B[t].needs].filter(c => !ok[c](i)).join('') : '');
+  // before public transport every stop is a horse tram and takes one of the owner's horses
+  const horses = {};
+  g.forEach((t, i) => {
+    const p = s.players[ownerOf(s, i)];
+    if (t !== 'stop' || !p || hasTech(p, 'transit')) return;
+    const o = ownerOf(s, i), left = horses[o] ?? Math.floor(p.res.horses || 0);
+    if (left < 1) st[i] += 'h'; else horses[o] = left - 1;
+  });
+  return st;
 }
 
 // Which working homes can get to a job of their owner: on foot within 4 tiles, or by bus between
@@ -187,9 +255,9 @@ function roadNets(g) {
   const comp = new Array(g.length).fill(-1);
   let c = 0;
   g.forEach((t, i) => {
-    if (t !== 'road' || comp[i] >= 0) return;
+    if (!isRoad(t) || comp[i] >= 0) return;
     const q = [i]; comp[i] = c;
-    while (q.length) { const k = q.pop(); for (const j of nb(k)) if (g[j] === 'road' && comp[j] < 0) { comp[j] = c; q.push(j); } }
+    while (q.length) { const k = q.pop(); for (const j of nb(k)) if (isRoad(g[j]) && comp[j] < 0) { comp[j] = c; q.push(j); } }
     c++;
   });
   return comp;
@@ -245,7 +313,7 @@ const short = t => B[t].label.replace(/ \(.*\)/, '');
 // Goods don't go straight to the treasury: a producer fills its own stock, a full load leaves by truck for the
 // owner's nearest depot on the same road network and counts when it arrives (2 tiles per tick).
 // Factories make products the same way; depots then send products on to shops, which sell them for money.
-const CARGO_RES = ['food', 'wood', 'stone', 'iron', 'gold'];
+const CARGO_RES = ['food', 'wood', 'stone', 'iron', 'gold', 'oil'];
 const LOAD = 8, STORE = 3 * LOAD; // a truck load; a producer with nowhere to send goods stops at STORE
 // what a factory (ind) can be set to make; input is taken from the owner's stock per unit made
 const PRODUCTS = {
@@ -256,29 +324,43 @@ const PRODUCTS = {
   jewelry:   { label: 'Украшения', input: { gold: 0.25 }, price: 14 },
 };
 const FACTORY_RATE = 1, SHOP_SALES = 2; // units per tick with a full staff
+// farm specializations; livestock farms raise horses, at most HORSES_PER_FARM each
+const FARM = { crops: { label: 'Культуры', food: 5 }, livestock: { label: 'Животноводство', food: 2 } };
+const HORSES_PER_FARM = 2;
 const isDepot = (s, who) => d => s.grid[d] === 'depot' && !s.status[d] && ownerOf(s, d) === who;
 // nearest tile passing isDest that shares a road network with tile i: { from, to, dest, dist } (from/to are road tiles)
 function findRoute(s, comp, i, isDest) {
-  let best = null;
   const mine = nb(i).filter(k => comp[k] >= 0);
   if (!mine.length) return null;
+  // travel cost from i's roads to every road tile: asphalt costs 1, a path 2 (it is twice as slow)
+  const cost = new Map(mine.map(r => [r, 0])), buckets = [mine.slice()];
+  for (let c = 0; c < buckets.length; c++) for (const k of buckets[c] || []) {
+    if (cost.get(k) !== c) continue;
+    for (const j of nb(k)) {
+      if (!isRoad(s.grid[j])) continue;
+      const nc = c + (s.grid[j] === 'path' ? 2 : 1);
+      if (!cost.has(j) || nc < cost.get(j)) { cost.set(j, nc); (buckets[nc] = buckets[nc] || []).push(j); }
+    }
+  }
+  let best = null;
   s.grid.forEach((t, d) => {
     if (!isDest(d)) return;
-    for (const r of mine) for (const rd of nb(d)) if (comp[rd] === comp[r]) {
-      const dist = Math.abs(rd % W - r % W) + Math.abs((rd / W | 0) - (r / W | 0));
-      if (!best || dist < best.dist) best = { from: r, to: rd, dest: d, dist };
-    }
+    for (const rd of nb(d)) if (cost.has(rd) && (!best || cost.get(rd) < best.dist)) best = { from: mine[0], to: rd, dest: d, dist: cost.get(rd) };
   });
   return best;
 }
-function sendTruck(s, who, res, route, kind) {
-  s.ships.push({ id: ++s.shipSeq, who, res, n: LOAD, from: route.from, to: route.to, dest: route.dest, kind, t0: s.tick, at: s.tick + Math.max(1, Math.ceil(route.dist / 2)) });
+// horse: the load goes by cart and keeps one of the owner's horses busy until it arrives
+function sendTruck(s, who, res, route, kind, horse) {
+  s.ships.push({ id: ++s.shipSeq, who, res, n: LOAD, from: route.from, to: route.to, dest: route.dest, kind, horse, t0: s.tick, at: s.tick + Math.max(1, Math.ceil(route.dist / 2)) });
 }
-// load from producer i to the nearest depot
-function ship(s, comp, who, i, res) {
+// load from producer i to the nearest depot; vehicle() gives 'truck' or 'horse', or false when no horse is free
+function ship(s, comp, who, i, res, vehicle) {
   const r = findRoute(s, comp, i, isDepot(s, who));
-  if (r) sendTruck(s, who, res, r, 'depot');
-  return !!r;
+  if (!r) return 'depot';
+  const v = vehicle();
+  if (!v) return 'horse';
+  sendTruck(s, who, res, r, 'depot', v === 'horse');
+  return true;
 }
 
 // Residents by age and education; schools, kindergartens, hospitals and universities change how the groups move.
@@ -311,7 +393,7 @@ function demographics(d, cap, cnt, hap) {
 }
 
 // Pollution per tile from factories, power plants, quarries and mines, fading over 5 tiles.
-const POLLUTERS = { ind: 1, plant: 0.8, quarry: 0.5, ironmine: 0.6, goldmine: 0.6 };
+const POLLUTERS = { ind: 1, plant: 0.8, quarry: 0.5, ironmine: 0.6, goldmine: 0.6, oilwell: 0.6, refinery: 1.2 };
 function pollution(s) {
   const p = new Float32Array(W * H);
   s.grid.forEach((t, i) => {
@@ -329,8 +411,11 @@ function pollution(s) {
 function setSpec(s, who, i, v) {
   if (!Number.isInteger(i) || i < 0 || i >= W * H) return 'неверная клетка';
   if (ownerOf(s, i) !== who) return 'это не ваш участок';
-  if (s.grid[i] !== 'ind') return 'выпуск настраивается только у завода';
-  if (!PRODUCTS[v]) return 'неизвестный товар';
+  if (s.grid[i] === 'farm') {
+    if (!FARM[v]) return 'неизвестная специализация';
+    if (v === 'livestock') { const lock = techLock(s.players[who], 'agriculture'); if (lock) return lock; }
+  } else if (s.grid[i] !== 'ind') return 'выпуск настраивается только у завода или фермы';
+  else if (!PRODUCTS[v]) return 'неизвестный товар';
   (s.spec = s.spec || {})[i] = v;
   return null;
 }
@@ -340,8 +425,10 @@ function tick(s) {
   s.status = st;
   const reach = commute(s, st), comp = roadNets(s.grid);
   s.ships = s.ships || []; s.stock = s.stock || {}; s.shipSeq = s.shipSeq || 0; s.spec = s.spec || {}; s.shopStock = s.shopStock || {};
-  const undelivered = [], starved = [];
+  const undelivered = [], starved = [], noHorse = [];
+  s.breed = s.breed || {}; s.events = [];
   for (const [who, p] of Object.entries(s.players)) {
+    if (!p.tech) { p.tech = {}; for (const t of TECH) if (t.era < (p.level || 0)) p.tech[t.id] = true; p.rpts = {}; } // saves from before research
     const cnt = {}, needs = Object.fromEntries(Object.keys(WANT_TEXT).map(k => [k, 0]));
     let cap = 0, reachCap = 0, places = 0, happy = 0;
     s.grid.forEach((t, i) => {
@@ -364,7 +451,18 @@ function tick(s) {
     const wrOff = offJobs ? fo / offJobs : 0, wrOther = otherJobs ? Math.max(0, fOther) / otherJobs : 0;
     const wrOf = t => (t === 'off' ? wrOff : wrOther);
     const R = p.res;
-    for (const k of [...CARGO_RES, ...Object.keys(PRODUCTS)]) R[k] = R[k] || 0;
+    for (const k of [...CARGO_RES, ...Object.keys(PRODUCTS), 'asphalt', 'horses']) R[k] = R[k] || 0;
+    // horses: trams take theirs first (see compute), carts use what is left; with engines everything goes by truck
+    const engine = hasTech(p, 'engine'), stops = hasTech(p, 'transit') ? 0 : (cnt.stop || 0);
+    let freeHorses = engine ? Infinity : Math.floor(R.horses) - stops - s.ships.filter(sh => sh.who === who && sh.horse).length;
+    const vehicle = () => (engine ? 'truck' : freeHorses >= 1 ? (freeHorses--, 'horse') : false);
+    // research: points from adults, schools and universities; writing speeds it up
+    const rp = (0.5 + (d.none + d.school + d.higher) * 0.01 + (cnt.school || 0) + (cnt.uni || 0) * 3) * (hasTech(p, 'writing') ? 1.5 : 1);
+    p.rp = rp; p.rpts = p.rpts || {};
+    if (p.research && !hasTech(p, p.research)) {
+      p.rpts[p.research] = (p.rpts[p.research] || 0) + rp;
+      if (p.rpts[p.research] >= TECH_COST[techOf(p.research).era]) { p.tech[p.research] = true; s.events.push(`${who}: изучено «${techOf(p.research).name}»`); p.research = null; }
+    }
     const before = { ...R }, flow = Object.fromEntries(Object.keys(R).map(k => [k, []]));
     const add = (k, what, v) => { if (v) { R[k] += v; flow[k].push([what, v]); } };
     for (const [t, n] of Object.entries(cnt)) {
@@ -376,7 +474,20 @@ function tick(s) {
     s.grid.forEach((t, i) => {
       if (own[i] !== who || st[i] || !B[t]) return;
       let res = null, made = 0;
-      if (t === 'ind') {
+      if (t === 'refinery') { // oil from the owner's stock into asphalt
+        res = 'asphalt';
+        made = Math.min(FACTORY_RATE * wrOther, R.oil);
+        if (made < FACTORY_RATE * wrOther * 0.99) starved.push(i);
+        R.oil -= made; used.oil = (used.oil || 0) + made;
+      } else if (t === 'farm') {
+        const f = FARM[s.spec[i] || 'crops'];
+        res = 'food'; made = f.food * wrOther;
+        if (s.spec[i] === 'livestock') { // horses grow slowly; each livestock farm keeps at most HORSES_PER_FARM
+          const herd = s.grid.reduce((n, x, k) => n + (x === 'farm' && own[k] === who && s.spec[k] === 'livestock'), 0) * HORSES_PER_FARM;
+          s.breed[i] = Math.min(1, (s.breed[i] || 0) + 0.04 * wrOther);
+          if (s.breed[i] >= 1 && R.horses < herd) { s.breed[i] = 0; add('horses', 'Ферма вырастила лошадь', 1); }
+        }
+      } else if (t === 'ind') {
         res = s.spec[i] || 'clothes';
         made = FACTORY_RATE * wrOther;
         for (const [k, v] of Object.entries(PRODUCTS[res].input)) made = Math.min(made, R[k] / v); // limited by raw material
@@ -388,7 +499,7 @@ function tick(s) {
       }
       if (!res) return;
       s.stock[i] = Math.min(STORE, (s.stock[i] || 0) + made);
-      if (s.stock[i] >= LOAD) { if (ship(s, comp, who, i, res)) s.stock[i] -= LOAD; else undelivered.push(i); }
+      if (s.stock[i] >= LOAD) { const r = ship(s, comp, who, i, res, vehicle); if (r === true) s.stock[i] -= LOAD; else (r === 'horse' ? noHorse : undelivered).push(i); }
     });
     for (const [k, v] of Object.entries(used)) { R[k] += v; add(k, 'Заводы берут сырьё', -v); } // re-run through add() for the breakdown
     // shops: sell what they have, order a load of the most stocked product from the nearest depot when running low
@@ -404,7 +515,8 @@ function tick(s) {
       if (!best) return;
       const route = findRoute(s, comp, i, isDepot(s, who));
       if (!route) return;
-      sendTruck(s, who, best, { from: route.to, to: route.from, dest: i, dist: route.dist }, 'shop'); // depot → shop
+      const v = vehicle(); if (!v) return;
+      sendTruck(s, who, best, { from: route.to, to: route.from, dest: i, dist: route.dist }, 'shop', v === 'horse'); // depot → shop
       add(best, 'Отправлено в магазины', -LOAD);
     });
     if (income) add('money', `Магазины продали товары (${Math.round(sold)} шт.)`, income);
@@ -431,11 +543,12 @@ function tick(s) {
     if (s.tick % 5 === 0) { p.hist.push({ t: s.tick, ...Object.fromEntries(Object.keys(GROUPS).map(g => [g, Math.round(d[g] * 10) / 10])) }); if (p.hist.length > 120) p.hist.shift(); }
     Object.assign(p, { pop, cap, growth: popOf(d) - before0, jobs, workers: Math.round(fo + Math.max(0, fOther)), wr: { off: wrOff, other: wrOther }, cov, fed, flow, needs, happy: hap });
   }
-  for (const i in s.stock) if (!B[s.grid[i]] || !(B[s.grid[i]].prod || s.grid[i] === 'ind')) delete s.stock[i]; // building gone
-  for (const i in s.spec) if (s.grid[i] !== 'ind') delete s.spec[i];
+  for (const i in s.stock) if (!B[s.grid[i]] || !(B[s.grid[i]].prod || s.grid[i] === 'ind' || s.grid[i] === 'refinery')) delete s.stock[i]; // building gone
+  for (const i in s.spec) if (s.grid[i] !== 'ind' && s.grid[i] !== 'farm') delete s.spec[i];
+  for (const i in s.breed) if (s.grid[i] !== 'farm') delete s.breed[i];
   for (const i in s.shopStock) if (s.grid[i] !== 'shop') delete s.shopStock[i];
-  s.ships = s.ships.filter(sh => s.grid[sh.from] === 'road' && s.grid[sh.to] === 'road'); // a removed road loses the load
-  s.undelivered = undelivered; s.starved = starved;
+  s.ships = s.ships.filter(sh => isRoad(s.grid[sh.from]) && isRoad(s.grid[sh.to])); // a removed road loses the load
+  s.undelivered = undelivered; s.starved = starved; s.noHorse = noHorse;
   s.status = compute(s); s.tick++;
 }
 
@@ -471,11 +584,12 @@ function act(s, who, tool, i, recompute = true) {
     const e = pay({ money: 2 }); if (e) return e;
     if (B[t]) for (const [k, v] of Object.entries(B[t].cost)) R[k] += Math.floor(v / 2);
     g[i] = (B[t] && B[t].ore) || 'grass'; s.util[i] = 0;
-  } else if (tool === 'mine') {
-    if (t !== 'iron' && t !== 'gold') return 'рудник ставится на месторождение железа или золота';
-    if ((p.level || 0) < B.mine.lvl) return `откроется на уровне «${LEVELS[B.mine.lvl].name}»`;
-    const e = pay(B.mine.cost); if (e) return e;
-    g[i] = t + 'mine';
+  } else if (tool === 'mine' || tool === 'well') {
+    if (tool === 'mine' && t !== 'iron' && t !== 'gold') return 'рудник ставится на месторождение железа или золота';
+    if (tool === 'well' && t !== 'oil') return 'нефтяная вышка ставится на месторождение нефти';
+    const lock = techLock(p, B[tool].tech); if (lock) return lock;
+    const e = pay(B[tool].cost); if (e) return e;
+    g[i] = tool === 'well' ? 'oilwell' : t + 'mine';
   } else if (tool === 'clear') {
     const c = CLEAR[t];
     if (!c) return 'тут нечего расчищать';
@@ -483,14 +597,15 @@ function act(s, who, tool, i, recompute = true) {
     R[c.res] += 3; g[i] = 'grass';
   } else if (tool === 'power' || tool === 'pipe') {
     const bit = tool === 'power' ? POWER : WATER;
+    const lock = techLock(p, B[tool].tech); if (lock) return lock;
     if (t === 'lake' || t === 'tree' || t === 'rock') return 'здесь нельзя прокладывать';
     if (s.util[i] & bit) return 'уже проложено';
     const e = pay(B[tool].cost); if (e) return e;
     s.util[i] |= bit;
   } else {
     if (!B[tool] || B[tool].grown) return 'неизвестный инструмент';
-    if ((B[tool].lvl || 0) > (p.level || 0)) return `откроется на уровне «${LEVELS[B[tool].lvl].name}»`;
-    if (t !== 'grass') return 'клетка занята';
+    const lock = techLock(p, B[tool].tech); if (lock) return lock;
+    if (t !== 'grass' && !(tool === 'road' && t === 'path')) return 'клетка занята'; // asphalt can be laid over a path
     const e = pay(B[tool].cost); if (e) return e;
     g[i] = tool;
   }
@@ -536,6 +651,7 @@ function room(s) {
       // a player who left during the draft loses the turn, so the others aren't stuck waiting
       while (r.s.phase === 'draft' && !r.names().includes(r.s.order[r.s.turn])) { r.say(`${r.s.order[r.s.turn]} не в игре — ход переходит дальше`); nextTurn(r.s); }
       tick(r.s);
+      for (const e of r.s.events) r.say(e);
     }
     return true;
   };
@@ -554,7 +670,12 @@ function room(s) {
     }
     if (m.type === 'spec') {
       const err = setSpec(s, who, m.i, String(m.v));
-      if (!err) r.say(`${who}: завод выпускает ${PRODUCTS[m.v].label.toLowerCase()}`);
+      if (!err) r.say(`${who}: ${FARM[m.v] ? 'ферма — ' + FARM[m.v].label.toLowerCase() : 'завод выпускает ' + PRODUCTS[m.v].label.toLowerCase()}`);
+      return err;
+    }
+    if (m.type === 'research') {
+      const err = setResearch(s, who, String(m.v));
+      if (!err) r.say(`${who}: исследует «${techOf(m.v).name}»`);
       return err;
     }
     if (m.type === 'speed') {
@@ -569,7 +690,7 @@ function room(s) {
     }
     if (m.type === 'act') {
       const tool = String(m.tool), err = m.j !== undefined ? actArea(s, who, tool, m.i, m.j) : act(s, who, tool, m.i);
-      const what = tool === 'upgrade' ? 'теперь ' + (s.players[who] && levelOf(s.players[who]).name)
+      const what = tool === 'upgrade' ? 'новая эпоха: ' + (s.players[who] && levelOf(s.players[who]).name)
         : { bulldoze: 'снос', claim: 'занял стартовый участок', buy: 'купил участок' }[tool] || (B[tool] && B[tool].needs && B[tool].label);
       if (!err && what) r.say(`${who}: ${what}`);
       return err;
@@ -579,5 +700,5 @@ function room(s) {
   return r;
 }
 
-const api = { W, H, B, NEED_TEXT, WANT_TEXT, POWER, WATER, START, LEVELS, levelOf, upgradeBlock, PRICES, SELL, RES_TEXT, trade, CLEAR, startCorner, landOf, landPrice, newGame, start, nextTurn, compute, tick, act, actArea, wants, happiness, residents, commute, ownerOf, room, SPEEDS, LOAD, roadNets, networks, PRODUCTS, GROUPS, SEATS, pollution, setSpec, popOf, demographics };
+const api = { W, H, B, NEED_TEXT, WANT_TEXT, POWER, WATER, START, LEVELS, levelOf, upgradeBlock, PRICES, SELL, RES_TEXT, trade, CLEAR, startCorner, landOf, landPrice, newGame, start, nextTurn, compute, tick, act, actArea, wants, happiness, residents, commute, ownerOf, room, SPEEDS, LOAD, roadNets, networks, PRODUCTS, GROUPS, SEATS, pollution, setSpec, popOf, demographics, TECH, TECH_COST, BRANCHES, techOf, hasTech, setResearch, allTech, FARM, HORSES_PER_FARM, UTIL_ERA, isRoad };
 if (typeof module !== 'undefined') module.exports = api; else window.Game = api;

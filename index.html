@@ -29,6 +29,12 @@
   .panel { background: #262e3e; border: 1px solid #556; border-radius: 6px; padding: 8px; margin: 6px 0; font-size: 13px; line-height: 1.5; }
   .panel[hidden] { display: none; }
   .panel button.cur { background: #3d7a4f; border-color: #6c6; }
+  .tech { margin: 3px 0; padding: 4px 6px; border: 1px solid #445; border-radius: 4px; }
+  .tech.done { border-color: #3d7a4f; color: #9c9; }
+  .tech.cur { border-color: #f0a830; }
+  .tech.off { opacity: .45; }
+  .bar { height: 4px; background: #333b4d; border-radius: 2px; margin-top: 3px; }
+  .bar > i { display: block; height: 100%; background: #f0a830; border-radius: 2px; }
   #level { background: #23303a; border: 1px solid #4a6a7a; border-radius: 6px; padding: 8px; margin: 6px 0; font-size: 13px; line-height: 1.5; }
   #level button { margin-top: 6px; text-align: center; background: #3d6a7a; }
   #level button:disabled { opacity: .5; cursor: default; }
@@ -54,11 +60,12 @@
 <body>
 <header id="top">
   <span class="logo">Город вместе</span>
-  <div id="speed"><button data-v="0" title="Пауза"><img class="ic" src="icons/pause.svg?v=11" alt="Пауза"></button><button data-v="1" title="Скорость ×1"><img class="ic" src="icons/play.svg?v=11" alt="×1"></button><button data-v="2" title="Скорость ×2"><img class="ic" src="icons/fast.svg?v=11" alt="×2"></button><button data-v="4" title="Скорость ×4"><img class="ic" src="icons/faster.svg?v=11" alt="×4"></button></div>
+  <div id="speed"><button data-v="0" title="Пауза"><img class="ic" src="icons/pause.svg?v=12" alt="Пауза"></button><button data-v="1" title="Скорость ×1"><img class="ic" src="icons/play.svg?v=12" alt="×1"></button><button data-v="2" title="Скорость ×2"><img class="ic" src="icons/fast.svg?v=12" alt="×2"></button><button data-v="4" title="Скорость ×4"><img class="ic" src="icons/faster.svg?v=12" alt="×4"></button></div>
   <span id="tickN" class="date"></span>
-  <button id="commBtn" title="Показать ЛЭП, водопровод и куда доходят электричество и вода" style="width:auto"><img class="ic" src="icons/power.svg?v=11" alt=""> Коммуникации</button>
-  <button id="polBtn" title="Показать загрязнение от заводов, станций, карьеров и рудников" style="width:auto"><img class="ic" src="icons/pollution.svg?v=11" alt=""> Загрязнение</button>
-  <button id="eduBtn" title="График состава населения по образованию" style="width:auto"><img class="ic" src="icons/edu.svg?v=11" alt=""> Образование</button>
+  <button id="commBtn" title="Показать ЛЭП, водопровод и куда доходят электричество и вода" style="width:auto"><img class="ic" src="icons/power.svg?v=12" alt=""> Коммуникации</button>
+  <button id="polBtn" title="Показать загрязнение от заводов, станций, карьеров и рудников" style="width:auto"><img class="ic" src="icons/pollution.svg?v=12" alt=""> Загрязнение</button>
+  <button id="resBtn" title="Дерево исследований: открывает постройки и следующие эпохи" style="width:auto"><img class="ic" src="icons/research.svg?v=12" alt=""> Исследования</button>
+  <button id="eduBtn" title="График состава населения по образованию" style="width:auto"><img class="ic" src="icons/edu.svg?v=12" alt=""> Образование</button>
   <div id="res"></div>
   <div id="zoom" title="Масштаб (или Ctrl+колесо)"><button id="zout" aria-label="Уменьшить">−</button><button id="zin" aria-label="Увеличить">+</button></div>
 </header>
@@ -69,6 +76,7 @@
   <div id="phase"></div>
   <div id="edu" class="panel" hidden><b>Состав населения</b><canvas id="eduChart" width="250" height="140" style="width:100%"></canvas><div id="eduLegend"></div></div>
   <div id="factory" class="panel" hidden></div>
+  <div id="research" class="panel" hidden></div>
   <div id="level"></div>
   <div id="tools"></div>
   <div id="err"></div>
@@ -78,12 +86,12 @@
   <div id="invite"></div>
   <h4>Игроки</h4><div id="players"></div>
   <h4>События</h4><div id="log"></div>
-  <button id="restart" style="margin-top:12px;text-align:center"><img class="ic" src="icons/restart.svg?v=11" alt=""> Новый город</button>
+  <button id="restart" style="margin-top:12px;text-align:center"><img class="ic" src="icons/restart.svg?v=12" alt=""> Новый город</button>
 </div>
 </div>
 <div id="netbox"><div class="box" id="netStep"></div></div>
 <!-- ?v= must change with every release: GitHub Pages lets browsers cache files for 10 minutes, and a new page with an old game.js breaks -->
-<script src="game.js?v=11"></script>
+<script src="game.js?v=12"></script>
 <script>
 // W, H, B, NEED_TEXT, POWER, WATER are globals from game.js
 // show script errors instead of a silently frozen game (e.g. a stale cached game.js)
@@ -106,12 +114,12 @@ $('name').onchange = () => {
   if (net) net.rename();
 };
 
-const ic = n => `<img class="ic" src="icons/${n}.svg?v=11" alt="">`; // emoji don't render in every browser, so icons are SVG files
-const RES = { money: 'money', wood: 'wood', stone: 'stone', food: 'food', iron: 'iron', gold: 'gold' };
+const ic = n => `<img class="ic" src="icons/${n}.svg?v=12" alt="">`; // emoji don't render in every browser, so icons are SVG files
+const RES = { money: 'money', wood: 'wood', stone: 'stone', food: 'food', iron: 'iron', gold: 'gold', oil: 'oil', asphalt: 'asphalt', horses: 'horses' };
 const costText = c => Object.entries(c).map(([k, v]) => v + ic(RES[k])).join(' ');
-const TOOLS = { info: { label: 'Информация', icon: 'info', cost: {} }, buy: { label: 'Купить землю', icon: 'buy', cost: {} }, clear: { label: 'Расчистить', icon: 'clear', cost: {}, note: 'лес 5' + ic('money') + ', камень 10' + ic('money') }, ...B, bulldoze: { label: 'Снести', icon: 'bulldoze', cost: { money: 2 } } };
-const TABS = [['Сети', ['road', 'power', 'pipe', 'stop']], ['Зоны', ['zres', 'zoff', 'zind']], ['Жильё', ['house', 'shop', 'park']],
-  ['Добыча', ['farm', 'sawmill', 'quarry', 'mine', 'depot']], ['Соцсфера', ['kinder', 'school', 'hospital', 'uni']], ['Энергия', ['plant', 'pump']], ['Рынок', 'market']];
+const TOOLS = { info: { label: 'Информация', icon: 'info', cost: {} }, buy: { label: 'Купить землю', icon: 'buy', cost: {}, tech: 'explore' }, clear: { label: 'Расчистить', icon: 'clear', cost: {}, note: 'лес 5' + ic('money') + ', камень 10' + ic('money') }, ...B, bulldoze: { label: 'Снести', icon: 'bulldoze', cost: { money: 2 } } };
+const TABS = [['Сети', ['path', 'road', 'power', 'pipe', 'stop']], ['Зоны', ['zres', 'zoff', 'zind']], ['Жильё', ['house', 'shop', 'park']],
+  ['Добыча', ['farm', 'sawmill', 'quarry', 'mine', 'well', 'depot']], ['Соцсфера', ['kinder', 'school', 'hospital', 'uni']], ['Энергия', ['plant', 'pump', 'refinery']], ['Рынок', 'market']];
 const toolBtn = k => {
   const b = TOOLS[k], el = document.createElement('button');
   el.dataset.tool = k;
@@ -125,7 +133,8 @@ const toolBtn = k => {
 };
 $('tools').append(toolBtn('info'), toolBtn('buy'), toolBtn('clear'), toolBtn('bulldoze'));
 function marketPanel() {
-  const d = document.createElement('div');
+  const d = document.createElement('div'), me = st && st.players[name];
+  if (me && !Game.hasTech(me, 'trade')) { d.innerHTML = `${ic('lock')} Рынок откроется после исследования «Торговые пути» (Средневековье)`; return d; }
   const row = (k, v, sell) => `<div class="mrow">${ic(RES[k])} ${v}${ic('money')} за шт.` +
     [10, 50].map(n => `<button data-trade="${k}:${n}:${sell ? 1 : 0}">${sell ? '−' : '+'}${n} <small>${n * v}</small></button>`).join('') + '</div>';
   d.innerHTML = '<b>Купить</b>' + Object.entries(PRICES).map(([k, v]) => row(k, v, false)).join('') +
@@ -252,9 +261,20 @@ function ground(i) {
     if (rnd(i, 3) < 0.5) line('rgba(255,255,255,.35)', 1, P(x + 0.3, y + 0.5), P(x + 0.55, y + 0.5));
     return;
   }
+  if (t === 'path') { // trodden earth with links to the neighbouring roads
+    groundFill(x, y, grassCol(i));
+    flat(x + 0.3, y + 0.3, x + 0.7, y + 0.7, 0, '#a98a5a');
+    for (const [dx, dy] of D) {
+      const j = nbr(i, dx, dy);
+      if (j >= 0 && isRoad(st.grid[j])) flat(dx > 0 ? x + 0.5 : dx < 0 ? x : x + 0.3, dy > 0 ? y + 0.5 : dy < 0 ? y : y + 0.3, dx > 0 ? x + 1 : dx < 0 ? x + 0.5 : x + 0.7, dy > 0 ? y + 1 : dy < 0 ? y + 0.5 : y + 0.7, 0, '#a98a5a');
+    }
+    dot('rgba(80,60,30,.35)', P(x + 0.4 + rnd(i) * 0.2, y + 0.45), Math.max(1, S / 16));
+    return;
+  }
   if (t === 'road') {
     groundFill(x, y, '#45474e');
     edges(i, 0.1, '#a5a7aa', n => n === 'road');
+    for (const [dx, dy] of D) { const j = nbr(i, dx, dy); if (j >= 0 && st.grid[j] === 'path') edge(x, y, dx, dy, 0.1, '#a98a5a'); } // where asphalt meets a path
     for (const [dx, dy] of D) {
       const j = nbr(i, dx, dy);
       if (j >= 0 && st.grid[j] === 'road') line('#e8c547', Math.max(1, S / 16), P(x + 0.5, y + 0.5), P(x + 0.5 + dx / 2, y + 0.5 + dy / 2), [S / 6, S / 6]);
@@ -311,6 +331,12 @@ function rocks(i, x, y) {
     dot('rgba(255,255,255,.22)', [p[0] - r * 0.3, p[1] - r * 0.7], r * 0.3);
   }
 }
+// oil deposit: a dark glossy pool
+function oilPatch(x, y, i) {
+  const p = P(x + 0.5, y + 0.5);
+  oval('#1c1b20', [p[0], p[1]], S * 0.62, S * 0.28);
+  oval('rgba(120,110,160,.35)', [p[0] - S * 0.18, p[1] - S * 0.06], S * 0.2, S * 0.07);
+}
 function ore(i, x, y, t) {
   const [rock, nugget] = t === 'iron' ? ['#6f6a66', '#c47a42'] : ['#7a6a4a', '#f2c230'];
   const p = P(x + 0.5, y + 0.5);
@@ -333,6 +359,26 @@ const OBJ = {
   tree(x, y, i) { const ks = [0, 1, 2].sort((a, b) => (rnd(i, a) + rnd(i, a + 3)) - (rnd(i, b) + rnd(i, b + 3))); for (const k of ks) tree(i, x, y, k); },
   rock(x, y, i) { rocks(i, x, y); },
   iron(x, y, i) { ore(i, x, y, 'iron'); },
+  oil(x, y, i) { oilPatch(x, y, i); },
+  oilwell(x, y, i) { // pumpjack over the deposit
+    oilPatch(x, y, i);
+    block(x + 0.55, y + 0.55, x + 0.8, y + 0.8, 0.25, '#5d5f66');
+    line('#2f3136', Math.max(1.5, S / 12), P(x + 0.35, y + 0.6), P(x + 0.45, y + 0.45, 0.9)); line('#2f3136', Math.max(1.5, S / 12), P(x + 0.55, y + 0.4), P(x + 0.45, y + 0.45, 0.9));
+    const ph = ((st.tick || 0) % 2) * 0.15; // the beam rocks with the ticks
+    line('#e0b040', Math.max(2, S / 8), P(x + 0.15, y + 0.6, 0.75 + ph), P(x + 0.75, y + 0.3, 1.05 - ph));
+    dot('#2f3136', P(x + 0.45, y + 0.45, 0.9), S * 0.08);
+  },
+  refinery(x, y) {
+    for (const [a, b, r] of [[0.3, 0.3, 0.2], [0.3, 0.7, 0.17]]) { // storage tanks
+      const base = P(x + a, y + b), top = P(x + a, y + b, 0.5), rr = S * r * 1.5;
+      gx.fillStyle = tint('#c9ccd1'); gx.fillRect(base[0] - rr, top[1], rr * 2, base[1] - top[1]);
+      oval('#a9acb1', base, rr, rr * 0.45); oval('#e3e5e8', top, rr, rr * 0.45);
+    }
+    block(x + 0.62, y + 0.15, x + 0.82, y + 0.35, 1.7, '#8c8f94'); // distillation column
+    block(x + 0.55, y + 0.55, x + 0.9, y + 0.9, 0.5, '#6a6f78');
+    line('#555', Math.max(1, S / 14), P(x + 0.72, y + 0.25, 1.7), P(x + 0.72, y + 0.25, 2.1));
+    dot('#ff9c33', P(x + 0.72, y + 0.25, 2.15), S * 0.1); // flare
+  },
   gold(x, y, i) { ore(i, x, y, 'gold'); },
   house,
   res(x, y, i) {
@@ -444,7 +490,7 @@ for (const t of ['iron', 'gold']) OBJ[t + 'mine'] = (x, y, i) => { // the deposi
   line('#8b5a2b', Math.max(1.5, S / 10), P(x + 0.25, y + 0.55), top); line('#8b5a2b', Math.max(1.5, S / 10), P(x + 0.55, y + 0.25), top);
   dot('#444', top, S * 0.12);
 };
-const TOP = { kinder: 0.9, school: 1.7, hospital: 1.4, uni: 1.6, house: 1.3, res: 2, off: 4, ind: 2, plant: 2.2, pump: 1.7, shop: 0.9, depot: 1, stop: 0.8, farm: 0.9, sawmill: 1, quarry: 0.5, ironmine: 1.5, goldmine: 1.5 };
+const TOP = { oilwell: 1.3, refinery: 2.3, kinder: 0.9, school: 1.7, hospital: 1.4, uni: 1.6, house: 1.3, res: 2, off: 4, ind: 2, plant: 2.2, pump: 1.7, shop: 0.9, depot: 1, stop: 0.8, farm: 0.9, sawmill: 1, quarry: 0.5, ironmine: 1.5, goldmine: 1.5 };
 
 // communications mode: power lines, pipes and which buildings get electricity / water; hidden otherwise
 // view: '' normal, 'comm' networks, 'pol' pollution heat map
@@ -600,14 +646,14 @@ function draw() {
     return;
   }
   const t = st.grid[hover], own = Game.ownerOf(st, hover) === name, hx = hover % W, hy = (hover / W) | 0;
-  const free = tool === 'buy' ? !Game.ownerOf(st, hover) : own && (tool === 'mine' ? t === 'iron' || t === 'gold' : tool === 'clear' ? !!CLEAR[t] : tool === 'bulldoze' ? t !== 'lake' && !CLEAR[t] : (tool === 'power' || tool === 'pipe') ? !['lake', 'tree', 'rock'].includes(t) : t === 'grass');
+  const free = tool === 'buy' ? !Game.ownerOf(st, hover) : own && (tool === 'well' ? t === 'oil' : tool === 'road' ? t === 'grass' || t === 'path' : tool === 'mine' ? t === 'iron' || t === 'gold' : tool === 'clear' ? !!CLEAR[t] : tool === 'bulldoze' ? t !== 'lake' && !CLEAR[t] : (tool === 'power' || tool === 'pipe') ? !['lake', 'tree', 'rock'].includes(t) : t === 'grass');
   outline(hx, hy, hx + 1, hy + 1, tool === 'info' ? '#fffa' : free ? '#9f9' : '#f66', null, 2);
 }
 
 // ---- Traffic: people, cars, buses and trucks moving along the roads.
 // Purely for show: it follows what the city does (residents, workers, stops, production), the rules don't depend on it.
 const traffic = { agents: [], comp: [], homes: [], works: [], shops: [], producers: [], stops: [] };
-const CARGO = { food: '#e0b040', wood: '#8b5a2b', stone: '#9a9a94', iron: '#6f7c88', gold: '#f2c230', clothes: '#d46ab0', furniture: '#b5651d', canned: '#c8ccd2', tools: '#4f6d8f', jewelry: '#f5d76e' };
+const CARGO = { oil: '#2b2a30', asphalt: '#3a3d44', food: '#e0b040', wood: '#8b5a2b', stone: '#9a9a94', iron: '#6f7c88', gold: '#f2c230', clothes: '#d46ab0', furniture: '#b5651d', canned: '#c8ccd2', tools: '#4f6d8f', jewelry: '#f5d76e' };
 const CAR_COLORS = ['#d64545', '#3f7fd6', '#e8e8e8', '#2f2f35', '#3cb44b', '#f58231', '#8e44ad'];
 const SKIN = ['#f1c9a5', '#d9a77e', '#a86f4c', '#6e4630'], SHIRT = ['#e74c3c', '#3498db', '#2ecc71', '#f1c40f', '#9b59b6', '#ecf0f1', '#e67e22'];
 const pickR = a => a[(Math.random() * a.length) | 0];
@@ -618,7 +664,7 @@ function roadNear(i, rad = 1) {
   let best = -1, bd = 99;
   for (let dy = -rad; dy <= rad; dy++) for (let dx = -rad; dx <= rad; dx++) {
     const X = x + dx, Y = y + dy, d = Math.abs(dx) + Math.abs(dy);
-    if (X >= 0 && Y >= 0 && X < W && Y < H && st.grid[Y * W + X] === 'road' && d < bd) { bd = d; best = Y * W + X; }
+    if (X >= 0 && Y >= 0 && X < W && Y < H && isRoad(st.grid[Y * W + X]) && d < bd) { bd = d; best = Y * W + X; }
   }
   return best;
 }
@@ -628,9 +674,9 @@ function trafficRebuild() {
   const g = st.grid, comp = new Array(g.length).fill(-1);
   let c = 0;
   g.forEach((t, i) => {
-    if (t !== 'road' || comp[i] >= 0) return;
+    if (!isRoad(t) || comp[i] >= 0) return;
     const q = [i]; comp[i] = c;
-    while (q.length) { const k = q.pop(); for (const [dx, dy] of D) { const j = nbr(k, dx, dy); if (j >= 0 && g[j] === 'road' && comp[j] < 0) { comp[j] = c; q.push(j); } } }
+    while (q.length) { const k = q.pop(); for (const [dx, dy] of D) { const j = nbr(k, dx, dy); if (j >= 0 && isRoad(g[j]) && comp[j] < 0) { comp[j] = c; q.push(j); } } }
     c++;
   });
   traffic.comp = comp;
@@ -641,7 +687,7 @@ function trafficRebuild() {
   traffic.producers = list((t, b) => b.prod && Object.keys(b.prod).some(k => CARGO[k]));
   traffic.stops = list(t => t === 'stop');
   // drop agents whose route lost a road
-  traffic.agents = traffic.agents.filter(a => a.kind === 'truck' || a.path.every(i => g[i] === 'road'));
+  traffic.agents = traffic.agents.filter(a => a.kind === 'truck' || a.path.every(i => isRoad(g[i])));
 }
 
 // shortest road route between two road tiles, or null
@@ -651,7 +697,7 @@ function route(from, to) {
   for (let h = 0; h < q.length; h++) {
     const k = q[h];
     if (k === to) break;
-    for (const [dx, dy] of D) { const j = nbr(k, dx, dy); if (j >= 0 && st.grid[j] === 'road' && !prev.has(j)) { prev.set(j, k); q.push(j); } }
+    for (const [dx, dy] of D) { const j = nbr(k, dx, dy); if (j >= 0 && isRoad(st.grid[j]) && !prev.has(j)) { prev.set(j, k); q.push(j); } }
   }
   if (!prev.has(to)) return null;
   const p = [];
@@ -715,7 +761,7 @@ function trafficStep(dt) {
     if (a.kind === 'truck') return true;
     if (a.kind === 'ped') a.ph += dt * 9;
     if (a.wait > 0) { a.wait -= dt; return true; }
-    a.f += a.speed * dt;
+    a.f += a.speed * dt * (st.grid[a.path[a.k]] === 'path' ? 0.5 : 1); // paths are twice as slow
     while (a.f >= 1) {
       a.f -= 1; a.k++;
       if (a.k >= a.path.length - 1) {
@@ -751,6 +797,13 @@ function drawAgent(a, fx, fy, dx, dy) {
   const len = a.kind === 'bus' ? 0.5 : a.kind === 'truck' ? 0.42 : 0.3, wid = a.kind === 'car' ? 0.15 : 0.18, h = a.kind === 'car' ? 0.12 : 0.2;
   const [x0, y0, x1, y1] = dx ? [fx - len / 2, fy - wid / 2, fx + len / 2, fy + wid / 2] : [fx - wid / 2, fy - len / 2, fx + wid / 2, fy + len / 2];
   flat(x0 + 0.05, y0 + 0.05, x1 + 0.05, y1 + 0.05, 0, 'rgba(0,0,0,.3)');
+  if (a.kind === 'truck' && a.ship.horse) { // horse in front, wooden cart with the load behind
+    const c = 0.14, horse = dx > 0 ? [x1 - c, y0 + 0.03, x1, y1 - 0.03] : dx < 0 ? [x0, y0 + 0.03, x0 + c, y1 - 0.03] : dy > 0 ? [x0 + 0.03, y1 - c, x1 - 0.03, y1] : [x0 + 0.03, y0, x1 - 0.03, y0 + c];
+    const cart = dx > 0 ? [x0, y0, x1 - c - 0.03, y1] : dx < 0 ? [x0 + c + 0.03, y0, x1, y1] : dy > 0 ? [x0, y0, x1, y1 - c - 0.03] : [x0, y0 + c + 0.03, x1, y1];
+    block(...cart, 0.1, '#8b5a2b'); block(cart[0] + 0.03, cart[1] + 0.03, cart[2] - 0.03, cart[3] - 0.03, 0.08, a.cargo, 0.1);
+    block(...horse, 0.16, '#6b4226');
+    return;
+  }
   if (a.kind === 'truck') { // red cab in front, load box behind it in the cargo's colour
     const c = 0.12, cab = dx > 0 ? [x1 - c, y0, x1, y1] : dx < 0 ? [x0, y0, x0 + c, y1] : dy > 0 ? [x0, y1 - c, x1, y1] : [x0, y0, x1, y0 + c];
     const load = dx > 0 ? [x0, y0, x1 - c, y1] : dx < 0 ? [x0 + c, y0, x1, y1] : dy > 0 ? [x0, y0, x1, y1 - c] : [x0, y0 + c, x1, y1];
@@ -799,7 +852,7 @@ setZoom(S);
 
 // hover window over a resource: what adds to it and takes from it this tick
 let tipKey = '';
-const RES_NAME = { money: 'Деньги', wood: 'Дерево', stone: 'Камень', food: 'Еда', iron: 'Железо', gold: 'Золото' };
+const RES_NAME = { money: 'Деньги', wood: 'Дерево', stone: 'Камень', food: 'Еда', iron: 'Железо', gold: 'Золото', oil: 'Нефть', asphalt: 'Асфальт', horses: 'Лошади' };
 const GROUP_COL = { kids: '#f5b041', none: '#95a5a6', school: '#5dade2', higher: '#58d68d', old: '#af7ac5' };
 const num = v => Math.abs(v) < 0.05 ? '0' : (v > 0 ? '+' : '−') + Math.abs(v).toFixed(1);
 function tipHtml(k) {
@@ -833,21 +886,24 @@ const DESC = {
   buy: 'Покупка земли рядом с вашей. Зажмите кнопку мыши и выделите прямоугольник.',
   clear: 'Убирает лес и камни и даёт немного дерева или камня. Можно выделить прямоугольником.',
   bulldoze: 'Сносит постройку, ЛЭП или трубу и возвращает половину стоимости. Также правая кнопка мыши.',
-  road: 'Связывает город: почти всем зданиям нужна дорога рядом, по дорогам ездят машины и грузовики.',
+  path: 'Простая дорога для первых эпох. Грузы и люди по ней идут вдвое медленнее, чем по асфальту.',
+  road: 'Асфальтовая дорога: вдвое быстрее тропинки. Стоит асфальт с НПЗ; кладётся и поверх тропинки.',
+  well: 'Добывает нефть. Ставится прямо на месторождение нефти.',
+  refinery: 'Перерабатывает нефть в асфальт для дорог. Шумит и загрязняет.',
   power: 'Несёт электричество от электростанции. Здания тоже передают его соседям.',
   pipe: 'Несёт воду от водокачки. Здания тоже передают её соседям.',
-  stop: 'Автобус возит жителей на работу между остановками на одной дороге.',
+  stop: 'Возит жителей на работу между остановками одной дороги. До автобусов это конка: нужна лошадь со склада.',
   zres: 'Участок под жильё: дома вырастают сами, когда в городе есть работа. Выделяется прямоугольником.',
   zoff: 'Участок под офисы: приносят деньги, но работать в них могут только жители с высшим образованием.',
   zind: 'Участок под заводы: выпускают товары из сырья, шумят и загрязняют округу.',
   house: 'Жильё до 8 человек. Чем больше потребностей жителей выполнено, тем больше людей в нём живёт.',
   shop: 'Продаёт товары, которые привозят со склада, и приносит деньги. Нужен жителям в радиусе 5 клеток.',
   park: 'Радует жителей в радиусе 4 клеток. Не требует дороги и сетей.',
-  farm: 'Выращивает еду; грузовики отвозят её на склад. Нужна вода.',
+  farm: 'Еда или лошади: кликните инструментом «Информация», чтобы выбрать культуры или животноводство.',
   sawmill: 'Заготавливает дерево. Ставится рядом с лесом.',
   quarry: 'Добывает камень. Ставится рядом с камнями, шумит.',
   mine: 'Добывает железо или золото. Ставится прямо на месторождение.',
-  depot: 'Сюда грузовики везут сырьё и товары, а отсюда товары едут в магазины.',
+  depot: 'Сюда везут сырьё и товары, отсюда товары едут в магазины. До двигателя возят телеги: каждой нужна лошадь.',
   kinder: 'Места для 30 детей. Повышает рождаемость.',
   school: 'Места для 40 детей: они вырастают со школьным образованием.',
   hospital: 'Обслуживает 150 жителей и вдвое снижает смертность.',
@@ -863,7 +919,7 @@ function toolTip(k) {
   if (b.upkeep) rows.push(`Содержание: ${b.upkeep}${ic('money')} за тик`);
   if (b.jobs) rows.push(`Рабочих мест: ${b.jobs}`);
   if (b.home) rows.push(`Жителей: до ${b.home}`);
-  const lock = me && (b.lvl || 0) > (me.level || 0) ? `<div class="down">${ic('lock')} Откроется на уровне «${LEVELS[b.lvl].name}»</div>` : '';
+  const lock = me && !Game.hasTech(me, b.tech) ? `<div class="down">${ic('lock')} Нужно исследование «${Game.techOf(b.tech).name}» (${LEVELS[Game.techOf(b.tech).era].name})</div>` : '';
   return `<b>${ic(b.icon || k)} ${b.label}</b><br>${DESC[k] || ''}` + (rows.length ? '<hr>' + rows.join('<br>') : '') + lock;
 }
 $('tools').onmouseover = e => {
@@ -891,21 +947,22 @@ let lastPhase = '', lastLevel = '';
 function locks() {
   const me = st && st.players[name];
   document.querySelectorAll('[data-tool]').forEach(el => {
-    const l = TOOLS[el.dataset.tool].lvl || 0, off = !!me && l > (me.level || 0);
+    const off = !!me && !Game.hasTech(me, TOOLS[el.dataset.tool].tech);
     el.classList.toggle('locked', off);
   });
 }
 function levelText(me) {
   const lv = Game.levelOf(me), next = LEVELS[(me.level || 0) + 1];
   let h = `${ic(lv.icon)} <b>${lv.name}</b> · земли до ${lv.area} кл.`;
-  if (!next) return h + '<br>Высший уровень!';
-  const opens = Object.values(B).filter(b => b.lvl === (me.level || 0) + 1).map(b => b.label.replace(/ \(.*\)/, '').toLowerCase());
+  if (!next) return h + '<br>Последняя эпоха!';
+  const era = TECH.filter(t => t.era === (me.level || 0)), done = era.filter(t => Game.hasTech(me, t.id)).length;
+  const opens = TECH.filter(t => t.era === (me.level || 0) + 1).map(t => t.name);
   const ok = (v, need) => `<span class="${v >= need ? 'up' : 'down'}">${Math.floor(v)}/${need}</span>`;
   const rare = Object.entries(next.rare || {});
-  h += `<br>Дальше: ${ic(next.icon)} ${next.name} — ${ic('pop')} ${ok(me.pop, next.pop)} · ${ic('money')} ${ok(me.res.money, next.cost)}` +
+  h += `<br>Дальше: ${ic(next.icon)} ${next.name} — ${ic('research')} ${ok(done, era.length)} · ${ic('pop')} ${ok(me.pop, next.pop)} · ${ic('money')} ${ok(me.res.money, next.cost)}` +
     rare.map(([k, v]) => ` · ${ic(RES[k])} ${ok(me.res[k] || 0, v)}`).join('') +
-    `<br><small>Откроет: до ${next.area} кл. земли${opens.length ? ', ' + opens.join(', ') : ''}</small>`;
-  return h + `<button id="upBtn"${Game.upgradeBlock(me) ? ' disabled' : ''}>${ic('upgrade')} Стать: ${next.name} (${next.cost}${ic('money')}${rare.map(([k, v]) => ' ' + v + ic(RES[k])).join('')})</button>`;
+    `<br><small>Откроет: до ${next.area} кл. земли${opens.length ? '; исследования ' + opens.join(', ') : ''}</small>`;
+  return h + `<button id="upBtn"${Game.upgradeBlock(me) ? ' disabled' : ''}>${ic('upgrade')} Новая эпоха: ${next.name} (${next.cost}${ic('money')}${rare.map(([k, v]) => ' ' + v + ic(RES[k])).join('')})</button>`;
 }
 $('level').onclick = e => { if (e.target.closest('#upBtn')) doAct('upgrade', 0); };
 $('phase').onclick = e => {
@@ -916,7 +973,7 @@ function render() {
   const me = st.players[name], f = Math.floor;
   const ph = phaseText(me);
   if (ph !== lastPhase) $('phase').innerHTML = lastPhase = ph; // rebuild only on change so the start button isn't swapped mid-click
-  document.querySelector('[data-tool=buy] small').innerHTML = !me ? '' : Game.landOf(st, name) >= Game.levelOf(me).area ? ic('lock') + ' нужен новый уровень' : Game.landPrice(st, name) + ic('money') + ' за клетку';
+  document.querySelector('[data-tool=buy] small').innerHTML = !me ? '' : Game.landOf(st, name) >= Game.levelOf(me).area ? (Game.hasTech(me, 'explore') ? ic('lock') + ' нужна новая эпоха' : ic('lock') + ' нужна «Разведка»') : Game.landPrice(st, name) + ic('money') + ' за клетку';
   locks();
   $('players').innerHTML = st.online.map(p => `<div style="color:${p.color}">● ${esc(p.name)}${st.players[p.name] ? ` — ${ic(Game.levelOf(st.players[p.name]).icon)} ${ic('pop')} ${st.players[p.name].pop}` : ''}</div>`).join('');
   $('log').innerHTML = st.log.map(esc).join('<br>');
@@ -934,10 +991,10 @@ function render() {
     `<span data-res="pop">${ic('pop')} ${me.pop}${d2(me.growth || 0)}</span><span data-res="goods">${ic('depot')} ${f(Object.keys(PRODUCTS).reduce((n, g) => n + (r[g] || 0), 0))}</span><span title="Рабочие места">${ic('jobs')} ${me.jobs}</span><span title="Земля, клеток">${ic('land')} ${Game.landOf(st, name)}</span>` +
     (me.fed ? '' : '<span style="color:#f77">Голод! Налоги падают</span>');
   if (tipKey) showTip();
-  eduChart(me); factoryPanel();
+  eduChart(me); factoryPanel(); researchPanel(me);
 }
 const esc = s => s.replace(/[&<>"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[ch]);
-const TERR = { grass: 'Трава', tree: 'Лес', rock: 'Камень', lake: 'Озеро', iron: 'Месторождение железа', gold: 'Месторождение золота' };
+const TERR = { grass: 'Трава', tree: 'Лес', rock: 'Камень', lake: 'Озеро', iron: 'Месторождение железа', gold: 'Месторождение золота', oil: 'Месторождение нефти' };
 const POLLUTES = ['ind', 'plant', 'quarry']; // the 'quiet' need; wider pollution is Game.pollution
 // info window for the hovered tile, kept next to the cursor and rebuilt on every state update
 function card(i) {
@@ -978,7 +1035,13 @@ function card(i) {
     rows.push(`${ic('prod')} Запас: ${Math.floor((st.stock || {})[i] || 0)} из ${Game.LOAD} — полный кузов уезжает на склад`);
     if ((st.undelivered || []).includes(i)) rows.push(ic('warn') + ' Нет склада на той же дороге — товары не вывозятся');
   }
-  if (t === 'iron' || t === 'gold') rows.push(ic('mine') + ` Постройте здесь рудник (с уровня «${LEVELS[B.mine.lvl].name}»)`);
+  if (t === 'iron' || t === 'gold') rows.push(ic('mine') + ` Постройте здесь рудник (исследование «${Game.techOf(B.mine.tech).name}»)`);
+  if (t === 'oil') rows.push(ic('oilwell') + ` Постройте здесь нефтяную вышку (исследование «${Game.techOf(B.well.tech).name}»)`);
+  if (t === 'farm') rows.push(`${ic('farm')} ${Game.FARM[(st.spec || {})[i] || 'crops'].label}` + (owner === name ? ' <small>— кликните «Информацией», чтобы сменить</small>' : ''));
+  if (t === 'path') rows.push('Грузы и люди идут здесь вдвое медленнее, чем по асфальту');
+  if (t === 'refinery') rows.push(`${ic('oil')} Берёт нефть со склада, делает асфальт; запас ${Math.floor((st.stock || {})[i] || 0)} из ${Game.LOAD}`);
+  if (t === 'depot' && op) { const busy = (st.ships || []).filter(sh => sh.who === owner && sh.horse).length; rows.push(`${ic('horses')} Лошадей: ${Math.floor(op.res.horses || 0)}, в пути с телегами: ${busy}` + (Game.hasTech(op, 'engine') ? ' — грузы возят грузовики' : '')); }
+  if ((st.noHorse || []).includes(i)) rows.push(ic('warn') + ' Груз ждёт: нет свободной лошади для телеги');
   if (t === 'stop') rows.push(ic('bus') + ' Возит на работу жителей в 3 клетках от неё, если на той же дороге есть остановка в 3 клетках от работы');
   const u = [st.util[i] & POWER && ic('power') + ' ЛЭП', st.util[i] & WATER && ic('pipe') + ' водопровод'].filter(Boolean);
   if (u.length) rows.push('Проложено: ' + u.join(', '));
@@ -988,9 +1051,12 @@ function card(i) {
 let selFactory = -1, lastFactory = '';
 function factoryPanel() {
   const box = $('factory');
-  if (selFactory < 0 || !st || st.grid[selFactory] !== 'ind' || Game.ownerOf(st, selFactory) !== name) { box.hidden = true; selFactory = -1; lastFactory = ''; return; }
-  const cur = (st.spec || {})[selFactory] || 'clothes';
-  const html = `<b>${ic('ind')} Завод (${selFactory % W}, ${(selFactory / W) | 0})</b> <button data-close style="width:auto;display:inline-block;float:right;padding:0 8px">×</button><br>Что выпускать:` +
+  const kind = selFactory >= 0 && st ? st.grid[selFactory] : '';
+  if ((kind !== 'ind' && kind !== 'farm') || Game.ownerOf(st, selFactory) !== name) { box.hidden = true; selFactory = -1; lastFactory = ''; return; }
+  const cur = (st.spec || {})[selFactory] || (kind === 'farm' ? 'crops' : 'clothes');
+  const head = `<b>${ic(kind)} ${kind === 'farm' ? 'Ферма' : 'Завод'} (${selFactory % W}, ${(selFactory / W) | 0})</b> <button data-close style="width:auto;display:inline-block;float:right;padding:0 8px">×</button><br>`;
+  const html = kind === 'farm' ? head + 'Специализация:' + Object.entries(Game.FARM).map(([g, f]) =>
+    `<button data-spec="${g}" class="${g === cur ? 'cur' : ''}">${ic(g === 'crops' ? 'farm' : 'horses')} ${f.label} <small>${f.food}${ic('food')} за тик${g === 'livestock' ? ` и лошади, до ${Game.HORSES_PER_FARM} на ферму` : ''}</small></button>`).join('') : head + 'Что выпускать:' +
     Object.entries(PRODUCTS).map(([g, p]) => `<button data-spec="${g}" class="${g === cur ? 'cur' : ''}">${ic(g)} ${p.label} <small>${Object.entries(p.input).map(([k, v]) => v + ic(RES[k])).join(' ') || 'без сырья'} → ${p.price}${ic('money')}</small></button>`).join('');
   if (html !== lastFactory) box.innerHTML = lastFactory = html; // rebuild only on change so a click isn't lost
   box.hidden = false;
@@ -1000,6 +1066,27 @@ $('factory').onclick = e => {
   if (b.dataset.close !== undefined) { selFactory = -1; factoryPanel(); return; }
   if (b.dataset.spec) msg({ type: 'spec', i: selFactory, v: b.dataset.spec });
 };
+
+// research tree: the current era's studies can be picked; later eras are shown greyed out
+$('resBtn').onclick = () => { $('research').hidden = !$('research').hidden; $('resBtn').classList.toggle('sel', !$('research').hidden); lastResearch = ''; if (st) researchPanel(st.players[name]); };
+let lastResearch = '';
+function researchPanel(me) {
+  const box = $('research');
+  if (box.hidden || !me) return;
+  let html = `<b>${ic('research')} Исследования</b> <small>${(me.rp || 0).toFixed(1)} очк. за тик</small>`;
+  for (let e = 0; e < Game.TECH_COST.length; e++) {
+    html += `<div style="margin-top:6px"><b>${LEVELS[e].name}</b> <small>${Game.TECH_COST[e]} очк.</small></div>`;
+    for (const t of TECH.filter(x => x.era === e)) {
+      const done = Game.hasTech(me, t.id), cur = me.research === t.id, pts = (me.rpts || {})[t.id] || 0;
+      const before = TECH.find(x => x.branch === t.branch && x.era === t.era - 1), open = !done && e <= (me.level || 0) && (!before || Game.hasTech(me, before.id));
+      html += `<div class="tech ${done ? 'done' : cur ? 'cur' : open ? '' : 'off'}"${open && !cur ? ` data-tech="${t.id}" style="cursor:pointer"` : ''}>` +
+        `${done ? ic('ok') : cur ? ic('research') : ''} <b>${t.name}</b> <small>· ${Game.BRANCHES[t.branch]}</small><br><small>${t.desc}</small>` +
+        (cur || (pts && !done) ? `<div class="bar"><i style="width:${Math.min(100, pts / Game.TECH_COST[e] * 100)}%"></i></div>` : '') + '</div>';
+    }
+  }
+  if (html !== lastResearch) box.innerHTML = lastResearch = html; // rebuild only on change so a click isn't lost
+}
+$('research').onclick = e => { const t = e.target.closest('[data-tech]'); if (t) msg({ type: 'research', v: t.dataset.tech }); };
 
 // stacked chart of the population groups over time (kept by the server every 5 ticks)
 $('eduBtn').onclick = () => { $('edu').hidden = !$('edu').hidden; $('eduBtn').classList.toggle('sel', !$('edu').hidden); if (st) eduChart(st.players[name]); };
@@ -1052,7 +1139,7 @@ c.onmousedown = e => {
   const t = e.button === 2 ? 'bulldoze' : tool;
   last = i;
   if (!st.players[name] && st.phase !== 'lobby' && e.button === 0) return doAct('claim', i); // no land yet: a click takes the start square around it
-  if (t === 'info') { if (st.grid[i] === 'ind' && Game.ownerOf(st, i) === name) { selFactory = i; factoryPanel(); } return; }
+  if (t === 'info') { if ((st.grid[i] === 'ind' || st.grid[i] === 'farm') && Game.ownerOf(st, i) === name) { selFactory = i; factoryPanel(); } return; }
   if ((B[t] && B[t].zone) || t === 'clear' || t === 'buy') { sel = i; draw(); return; } // zones, clearing and land: select a rectangle, applied on release
   drag = t; doAct(t, i);
 };
