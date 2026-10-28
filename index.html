@@ -202,6 +202,8 @@
   .hrs { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin: 6px 0; }
   .hrs button { width: 28px; margin: 0; padding: 2px 0; }
   .hrs small { flex-basis: 100%; color: var(--text3); }
+  #logHint { position: absolute; left: 50%; transform: translateX(-50%); bottom: 96px; z-index: 7; max-width: min(520px, calc(100% - 24px)); background: var(--bg1); border: 1px solid var(--line, rgba(255,255,255,.12)); border-radius: var(--r3); padding: 8px 12px; font-size: 13px; color: var(--text2); box-shadow: var(--sh2); text-align: center; pointer-events: none; }
+  #logHint b { color: var(--text); }
   #notes { position: absolute; top: 12px; left: 12px; width: min(340px, calc(100% - 24px)); z-index: 8; display: flex; flex-direction: column; gap: 8px; pointer-events: none; max-height: calc(100% - 120px); overflow: hidden; }
   #notes > * { pointer-events: auto; }
   #evs { display: flex; flex-direction: column; gap: 8px; }
@@ -252,21 +254,22 @@
   <div class="hrow">
     <span class="logo">Город вместе</span>
     <span id="tickN" class="date"></span>
-    <div id="speed" class="hgroup" aria-label="Скорость игры"><button data-v="0" title="Пауза (пробел)"><img class="ic" src="icons/pause.png?v=55" alt="Пауза"></button><button data-v="1" title="Скорость ×1"><img class="ic" src="icons/play.png?v=55" alt="×1"></button><button data-v="2" title="Скорость ×2"><img class="ic" src="icons/fast.png?v=55" alt="×2"></button><button data-v="4" title="Скорость ×4"><img class="ic" src="icons/faster.png?v=55" alt="×4"></button></div>
+    <div id="speed" class="hgroup" aria-label="Скорость игры"><button data-v="0" title="Пауза (пробел)"><img class="ic" src="icons/pause.png?v=56" alt="Пауза"></button><button data-v="1" title="Скорость ×1"><img class="ic" src="icons/play.png?v=56" alt="×1"></button><button data-v="2" title="Скорость ×2"><img class="ic" src="icons/fast.png?v=56" alt="×2"></button><button data-v="4" title="Скорость ×4"><img class="ic" src="icons/faster.png?v=56" alt="×4"></button></div>
     <div class="spacer"></div>
     <div class="hgroup acts" aria-label="Управление городом">
-      <button id="commBtn" title="Показать ЛЭП, водопровод и куда доходят электричество и вода"><img class="ic" src="icons/power.png?v=55" alt=""><span>Коммуникации</span></button>
-      <button id="polBtn" title="Показать загрязнение от заводов, станций, карьеров и рудников"><img class="ic" src="icons/pollution.png?v=55" alt=""><span>Загрязнение</span></button>
-      <button id="resBtn" title="Дерево исследований: открывает постройки и следующие эпохи"><img class="ic" src="icons/research.png?v=55" alt=""><span>Исследования</span></button>
-      <button id="mktBtn" title="Рынок: купить и продать ресурсы, цены зависят от спроса"><img class="ic" src="icons/market.png?v=55" alt=""><span>Рынок</span></button>
-      <button id="eduBtn" title="График состава населения по образованию"><img class="ic" src="icons/edu.png?v=55" alt=""><span>Образование</span></button>
+      <button id="commBtn" title="Показать ЛЭП, водопровод и куда доходят электричество и вода"><img class="ic" src="icons/power.png?v=56" alt=""><span>Коммуникации</span></button>
+      <button id="polBtn" title="Показать загрязнение от заводов, станций, карьеров и рудников"><img class="ic" src="icons/pollution.png?v=56" alt=""><span>Загрязнение</span></button>
+      <button id="logBtn" title="Логистика: куда каждое здание возит грузы; кликните здание, затем склад"><img class="ic" src="icons/depot.png?v=56" alt=""><span>Логистика</span></button>
+      <button id="resBtn" title="Дерево исследований: открывает постройки и следующие эпохи"><img class="ic" src="icons/research.png?v=56" alt=""><span>Исследования</span></button>
+      <button id="mktBtn" title="Рынок: купить и продать ресурсы, цены зависят от спроса"><img class="ic" src="icons/market.png?v=56" alt=""><span>Рынок</span></button>
+      <button id="eduBtn" title="График состава населения по образованию"><img class="ic" src="icons/edu.png?v=56" alt=""><span>Образование</span></button>
     </div>
     <div id="zoom" class="hgroup" title="Масштаб (или колесо мыши)"><button id="zout" aria-label="Уменьшить">−</button><button id="zin" aria-label="Увеличить">+</button></div>
   </div>
   <div class="hrow"><div id="res" aria-label="Ресурсы"></div></div>
 </header>
 <div id="main">
-<div id="mapcol"><div id="map"><canvas id="c"></canvas></div><div id="err" role="alert"></div><div id="notes"><div id="tut" role="dialog" aria-label="Обучение" hidden></div><div id="evs" aria-live="polite"></div></div><div id="build"><div id="items" hidden></div><div id="bbar" role="toolbar" aria-label="Строительство"></div></div></div>
+<div id="mapcol"><div id="map"><canvas id="c"></canvas></div><div id="logHint" hidden></div><div id="err" role="alert"></div><div id="notes"><div id="tut" role="dialog" aria-label="Обучение" hidden></div><div id="evs" aria-live="polite"></div></div><div id="build"><div id="items" hidden></div><div id="bbar" role="toolbar" aria-label="Строительство"></div></div></div>
 <div id="side">
   <div class="sec who"><label for="name">Мэр</label><input id="name" maxlength="20"></div>
   <div id="phase"></div>
@@ -278,18 +281,18 @@
   <div class="sec"><h4>Игроки</h4><div id="players"></div></div>
   <div class="sec"><h4>События</h4><div id="log" aria-live="polite"></div></div>
   <div class="sec"><h4>Управление</h4><div id="info">ЛКМ — строить (дороги и линии можно тянуть, зоны — выделять прямоугольником), ПКМ — выйти из строительства в «Информацию», а в «Информации» — снести. Колесо — масштаб к курсору, Shift+колесо, стрелки или WASD (с Shift быстрее) — перемещение, пробел — пауза.</div></div>
-  <button id="tutBtn" class="ghost"><img class="ic" src="icons/info.png?v=55" alt=""> Пройти обучение заново</button>
-  <button id="restart"><img class="ic" src="icons/restart.png?v=55" alt=""> Новый город</button>
+  <button id="tutBtn" class="ghost"><img class="ic" src="icons/info.png?v=56" alt=""> Пройти обучение заново</button>
+  <button id="restart"><img class="ic" src="icons/restart.png?v=56" alt=""> Новый город</button>
 </div>
 </div>
-<div id="resModal" class="modal" hidden><div class="mwin" role="dialog" aria-label="Дерево исследований"><div class="mhead"><b><img class="ic" src="icons/research.png?v=55" alt=""> Дерево исследований</b><span id="resRate"></span><button id="resClose" aria-label="Закрыть">×</button></div><div class="mbody"><div id="research" class="tree"></div></div></div></div>
-<div id="eduModal" class="modal" hidden><div class="mwin" role="dialog" aria-label="Образование"><div class="mhead"><b><img class="ic" src="icons/edu.png?v=55" alt=""> Состав населения по образованию</b><button id="eduClose" aria-label="Закрыть">×</button></div><div class="mbody" style="display:flex;gap:18px;flex-wrap:wrap;align-items:center"><canvas id="eduChart" class="chart" width="560" height="260"></canvas><div id="eduLegend"></div></div></div></div>
-<div id="mktModal" class="modal" hidden><div class="mwin" role="dialog" aria-label="Рынок"><div class="mhead"><b><img class="ic" src="icons/market.png?v=55" alt=""> Рынок</b><span>цены растут от покупок и падают от продаж, потом возвращаются</span><button id="mktClose" aria-label="Закрыть">×</button></div><div class="mbody"><div id="mkt"></div></div></div></div>
+<div id="resModal" class="modal" hidden><div class="mwin" role="dialog" aria-label="Дерево исследований"><div class="mhead"><b><img class="ic" src="icons/research.png?v=56" alt=""> Дерево исследований</b><span id="resRate"></span><button id="resClose" aria-label="Закрыть">×</button></div><div class="mbody"><div id="research" class="tree"></div></div></div></div>
+<div id="eduModal" class="modal" hidden><div class="mwin" role="dialog" aria-label="Образование"><div class="mhead"><b><img class="ic" src="icons/edu.png?v=56" alt=""> Состав населения по образованию</b><button id="eduClose" aria-label="Закрыть">×</button></div><div class="mbody" style="display:flex;gap:18px;flex-wrap:wrap;align-items:center"><canvas id="eduChart" class="chart" width="560" height="260"></canvas><div id="eduLegend"></div></div></div></div>
+<div id="mktModal" class="modal" hidden><div class="mwin" role="dialog" aria-label="Рынок"><div class="mhead"><b><img class="ic" src="icons/market.png?v=56" alt=""> Рынок</b><span>цены растут от покупок и падают от продаж, потом возвращаются</span><button id="mktClose" aria-label="Закрыть">×</button></div><div class="mbody"><div id="mkt"></div></div></div></div>
 <div id="chartModal" class="modal" hidden><div class="mwin" role="dialog" aria-label="График ресурса"><div class="mhead"><b id="chartTitle" style="font-size:16px"></b><button id="chartClose" aria-label="Закрыть">×</button></div><div class="mbody"><canvas id="resChart" class="chart" width="600" height="260"></canvas><div id="chartNote"></div></div></div></div>
 <div id="toast" role="status" hidden></div>
 <div id="netbox"><div class="box" id="netStep"></div></div>
 <!-- ?v= must change with every release: GitHub Pages lets browsers cache files for 10 minutes, and a new page with an old game.js breaks -->
-<script src="game.js?v=55"></script>
+<script src="game.js?v=56"></script>
 <script>
 // W, H, B, NEED_TEXT, POWER, WATER are globals from game.js
 // show script errors instead of a silently frozen game (e.g. a stale cached game.js)
@@ -311,7 +314,7 @@ $('name').onchange = () => {
   if (net) net.rename();
 };
 
-const ic = n => `<img class="ic" src="icons/${n}.png?v=55" alt="">`; // emoji don't render in every browser, so icons are SVG files
+const ic = n => `<img class="ic" src="icons/${n}.png?v=56" alt="">`; // emoji don't render in every browser, so icons are SVG files
 const RES = { money: 'money', wood: 'wood', stone: 'stone', food: 'food', iron: 'ironore', gold: 'goldore', ironbar: 'iron', goldbar: 'gold', oil: 'oil', asphalt: 'asphalt', horses: 'horses' }; // iron/gold are ore, the bar icons go to the bars
 const costText = c => Object.entries(c).map(([k, v]) => v + ic(RES[k])).join(' ');
 const TOOLS = { info: { label: 'Информация', icon: 'info', cost: {} }, buy: { label: 'Купить землю', icon: 'buy', cost: {}, tech: 'explore' }, clear: { label: 'Расчистить', icon: 'clear', cost: {}, note: 'лес 5' + ic('money') + ', камень 10' + ic('money') }, ...B, bulldoze: { label: 'Снести', icon: 'bulldoze', cost: { money: 2 } } };
@@ -495,9 +498,9 @@ const nbr = (i, dx, dy) => { const x = i % W + dx, y = ((i / W) | 0) + dy; retur
 // bottom vertex, the diamond is 256 px wide). Whatever has no texture is drawn by code as before.
 const TEX = {}, texCache = new Map();
 let SPR = {}, texReady = false;
-fetch('textures/sprites.json?v=55').then(r => r.json()).then(m => {
+fetch('textures/sprites.json?v=56').then(r => r.json()).then(m => {
   SPR = m;
-  return Promise.all(Object.keys(m).map(n => new Promise(ok => { const im = new Image(); im.onload = () => { TEX[n] = im; ok(); }; im.onerror = ok; im.src = `textures/${n}.png?v=55`; })));
+  return Promise.all(Object.keys(m).map(n => new Promise(ok => { const im = new Image(); im.onload = () => { TEX[n] = im; ok(); }; im.onerror = ok; im.src = `textures/${n}.png?v=56`; })));
 }).then(() => {
   if (TEX.prop_puddle) { let k = 1; while (SPR['oil_' + k]) k++; TEX['oil_' + k] = TEX.prop_puddle; SPR['oil_' + k] = SPR.prop_puddle; } // variants count up from 1
   if (TEX.road_b && TEX.road_one) buildRoads();
@@ -564,8 +567,8 @@ function buildRoads() {
   }
 }
 const VEH = {}, VSZ = {};
-fetch('textures/vehicles.json?v=55').then(r => r.json()).then(m => Object.keys(m).forEach(n => {
-  const im = new Image(); im.onload = () => { VEH[n] = im; VSZ[n] = m[n]; }; im.src = `textures/veh_${n}.png?v=55`;
+fetch('textures/vehicles.json?v=56').then(r => r.json()).then(m => Object.keys(m).forEach(n => {
+  const im = new Image(); im.onload = () => { VEH[n] = im; VSZ[n] = m[n]; }; im.src = `textures/veh_${n}.png?v=56`;
 })).catch(() => {});
 const MIRROR = { se: 'sw', sw: 'se', nw: 'ne', ne: 'nw', e: 'w', w: 'e' }, BACK = { se: 'nw', nw: 'se', sw: 'ne', ne: 'sw' };
 // draws vehicle `base` at screen point (x, y) heading (dx, dy), `wid` tiles wide on screen; false when it has no picture.
@@ -1074,17 +1077,62 @@ for (const t of ['iron', 'gold']) OBJ[t + 'mine'] = (x, y, i) => { // the deposi
 const TOP = { firewell: 0.9, firestation: 1.6, healer: 1, oilwell: 1.3, refinery: 2.3, smelter: 2.2, kinder: 0.9, school: 1.7, hospital: 1.4, uni: 1.6, house: 1.3, res: 2, off: 4, ind: 2, plant: 2.2, pump: 1.7, shop: 0.9, depot: 1, stop: 0.8, farm: 0.9, sawmill: 1, quarry: 0.5, ironmine: 1.5, goldmine: 1.5 };
 
 // communications mode: power lines, pipes and which buildings get electricity / water; hidden otherwise
-// view: '' normal, 'comm' networks, 'pol' pollution heat map
+// view: '' normal, 'comm' networks, 'pol' pollution heat map, 'log' logistics (which depot each building ships to)
 let comm = false, view = '', nets = null, polMap = null;
 function setView(v) {
   if (view === v) return;
   view = v; comm = v === 'comm';
-  $('commBtn').classList.toggle('sel', v === 'comm'); $('polBtn').classList.toggle('sel', v === 'pol');
+  $('commBtn').classList.toggle('sel', v === 'comm'); $('polBtn').classList.toggle('sel', v === 'pol'); $('logBtn').classList.toggle('sel', v === 'log');
+  logSel = -1; logHint();
   if (st) paint(true);
 }
 const setComm = on => setView(on ? 'comm' : '');
 $('commBtn').onclick = () => setView(view === 'comm' ? '' : 'comm');
 $('polBtn').onclick = () => setView(view === 'pol' ? '' : 'pol');
+$('logBtn').onclick = () => setView(view === 'log' ? '' : 'log');
+
+// Logistics mode: an arrow from each of my shipping buildings to the depot its loads go to (gold: chosen by me,
+// dashed: the nearest one, picked by the game). Click a building, then a depot, to send its loads there;
+// clicking the building again goes back to the nearest depot.
+let logSel = -1, logArrows = [];
+function logCompute() {
+  const comp = Game.roadNets(st.grid), mine = (st.route || {});
+  logArrows = [];
+  st.grid.forEach((t, i) => {
+    if (Game.ownerOf(st, i) !== name || !Game.routable(st, i)) return;
+    const r = Game.findRoute(st, comp, i, Game.depotFor(st, name, i)), set = mine[i] !== undefined;
+    if (r || set) logArrows.push([i, r ? r.dest : mine[i], set, !r]); // a chosen depot it can't reach: drawn red
+  });
+}
+function logHint() {
+  const h = $('logHint');
+  h.hidden = view !== 'log';
+  if (h.hidden) return;
+  h.innerHTML = logSel < 0 ? '<b>Логистика.</b> Кликните здание, чтобы выбрать, на какой склад ему возить грузы.'
+    : `<b>${esc(short(st.grid[logSel]))}:</b> кликните склад, куда возить. Клик по этому же зданию — снова к ближайшему складу, правая кнопка — отмена.`;
+}
+function logClick(i) {
+  const t = st.grid[i], own = Game.ownerOf(st, i) === name;
+  if (logSel >= 0 && t === 'depot' && own) { msg({ type: 'route', i: logSel, d: i }); logSel = -1; }
+  else if (logSel >= 0 && i === logSel) { msg({ type: 'route', i, d: -1 }); logSel = -1; }
+  else logSel = own && Game.routable(st, i) ? i : -1;
+  logHint(); draw();
+}
+function drawLogistics() {
+  gx = ctx;
+  const w = Math.max(2, S / 10), dia = (i, col) => { const x = i % W, y = (i / W) | 0; ctx.strokeStyle = col; ctx.lineWidth = Math.max(2, S / 14); ctx.beginPath(); [P(x, y), P(x + 1, y), P(x + 1, y + 1), P(x, y + 1)].forEach(([a, b], k) => (k ? ctx.lineTo(a, b) : ctx.moveTo(a, b))); ctx.closePath(); ctx.stroke(); };
+  if (logSel >= 0) { st.grid.forEach((t, i) => { if (t === 'depot' && Game.ownerOf(st, i) === name) dia(i, 'rgba(120,230,140,.9)'); }); dia(logSel, '#ffd34d'); }
+  for (const [i, d, set, bad] of logArrows) {
+    const [ax, ay] = P(i % W + 0.5, (i / W | 0) + 0.5, 0.5), [bx, by] = P(d % W + 0.5, (d / W | 0) + 0.5, 0.5);
+    const len = Math.hypot(bx - ax, by - ay); if (len < 1) continue;
+    const ux = (bx - ax) / len, uy = (by - ay) / len, hx = bx - ux * S * 0.35, hy = by - uy * S * 0.35, hl = Math.max(8, S * 0.3);
+    const col = bad ? '#ff6b5a' : set ? '#ffd34d' : 'rgba(255,255,255,.75)';
+    ctx.strokeStyle = col; ctx.lineWidth = i === logSel ? w * 1.6 : w; ctx.setLineDash(set ? [] : [S / 4, S / 6]); ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(hx - ux * hl * 0.6, hy - uy * hl * 0.6); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle = col; ctx.beginPath(); ctx.moveTo(hx, hy); ctx.lineTo(hx - ux * hl - uy * hl * 0.55, hy - uy * hl + ux * hl * 0.55); ctx.lineTo(hx - ux * hl + uy * hl * 0.55, hy - uy * hl - ux * hl * 0.55); ctx.closePath(); ctx.fill();
+    dot(col, [ax, ay], w * 1.2);
+  }
+}
 
 function utils(i) {
   const g = st.grid, x = i % W, y = (i / W) | 0;
@@ -1192,6 +1240,7 @@ function paint(full = false) {
   for (let i = 0; i < n; i++) sig[i] = st.grid[i] + '|' + st.util[i] + '|' + st.status[i] + '|' + st.owner[i] + '|' + ((st.hl || {})[i] ?? '') + '|' + ((st.spec || {})[i] ?? '') + '|' + ((st.bl || {})[i] ?? '');
   if (comm) nets = Game.networks(st);
   if (view === 'pol') polMap = Game.pollution(st);
+  if (view === 'log') logCompute();
   let dirty = [];
   if (!full && painted) {
     const d = new Set();
@@ -1256,6 +1305,7 @@ function draw() {
   drawDepositFx(vx, vy, vw, vh, performance.now());
   drawFires(vx, vy, vw, vh, performance.now());
   drawScene(vx, vy, vw, vh);
+  if (view === 'log') drawLogistics();
   if (sel >= 0) {
     const clr = tool === 'clear', buy = tool === 'buy', imp = tool === 'improve', [x0, y0, x1, y1] = selRect(), col = imp ? '130,230,150' : buy ? '255,225,80' : clr ? '235,140,60' : ZCOL[B[tool].zone];
     const price = buy && st.players[name] ? Game.landPrice(st, name) : 0;
@@ -1912,6 +1962,7 @@ function card(i) {
     if (owner === name) rows.push('<small>Кликните «Информацией», чтобы выбрать металл</small>'); }
   if (t === 'refinery') rows.push(`${ic('oil')} Берёт нефть со склада, делает асфальт; запас ${Math.floor((st.stock || {})[i] || 0)} из ${Game.LOAD}`);
   if ((t === 'depot' || t === 'farm') && op) rows.push(horseText(owner));
+  if (Game.routable(st, i) && (st.route || {})[i] !== undefined) { const d = st.route[i]; rows.push(`${ic('depot')} Возит на выбранный склад (${d % W}, ${(d / W) | 0})` + ((st.undelivered || []).includes(i) ? ' — <span class="down">он не на той же дороге или не работает</span>' : '')); }
   if ((st.full || []).includes(i)) rows.push(ic('warn') + ' Склады полны — груз ждёт. Постройте ещё склад или продайте излишки на рынке');
   if (t === 'depot') rows.push(`${ic('depot')} Склады города вмещают по ${Game.capOf(st, owner)} каждого ресурса (${Game.BASE_CAP} город + склады по уровню, этот — ${Game.depotCap(st, i)})`);
   if ((st.noHorse || []).includes(i)) rows.push(ic('warn') + ' Груз ждёт: ' + (st.players[name] && st.players[name].fed === false ? 'лошади голодают и возят только еду' : (st.hrs || {})[i] ? 'все лошади этого здания в пути' : 'зданию не назначены лошади — назначьте их в его окне'));
@@ -1990,7 +2041,7 @@ function techToast(me) {
   knownTech = new Set(now);
   if (!fresh.length) return;
   const t = Game.techOf(fresh[fresh.length - 1]);
-  $('toast').innerHTML = `<img class="ic big" src="icons/${TECH_ICON[t.id]}.png?v=55" alt="" style="width:30px;height:30px"><div><b>Исследование завершено: ${t.name}</b><br><small>${t.desc}</small></div><button data-next>${ic('research')} Выбрать следующее</button>`;
+  $('toast').innerHTML = `<img class="ic big" src="icons/${TECH_ICON[t.id]}.png?v=56" alt="" style="width:30px;height:30px"><div><b>Исследование завершено: ${t.name}</b><br><small>${t.desc}</small></div><button data-next>${ic('research')} Выбрать следующее</button>`;
   $('toast').hidden = false;
   clearTimeout(toastTimer); toastTimer = setTimeout(() => { $('toast').hidden = true; }, 8000);
 }
@@ -2022,7 +2073,7 @@ function eventToast() {
   const html = evCards.map((e, n) => { // only the newest card explains what helps, so a few fit under the tutorial
     const left = e.kind === 'sick' ? `Ещё ${me.sick} тиков · спасают ${Math.round((me.cure || 0) * 100)}% больных` : e.kind === 'drought' ? `Ещё ${me.drought} тиков` : '';
     const full = e.kind === 'sick' ? 25 : e.kind === 'drought' ? 30 : 0, rest = e.kind === 'sick' ? me.sick : me.drought;
-    return `<div class="ev${e.kind === 'good' ? ' good' : ''}" data-ev="${e.id}"><img src="icons/${e.pic}.png?v=55" alt=""><div class="body"><b>${e.title}</b><p>${esc(e.text)}</p>` +
+    return `<div class="ev${e.kind === 'good' ? ' good' : ''}" data-ev="${e.id}"><img src="icons/${e.pic}.png?v=56" alt=""><div class="body"><b>${e.title}</b><p>${esc(e.text)}</p>` +
       (e.help && !n ? `<p>${e.help}</p>` : '') + (left ? `<p><small>${left}</small></p><div class="bar"><i style="width:${Math.min(100, rest / full * 100)}%"></i></div>` : '') +
       (e.tile >= 0 ? `<div class="acts"><button data-goto="${e.tile}">Показать на карте</button></div>` : '') + `</div><button data-x aria-label="Закрыть">×</button></div>`;
   }).join('');
@@ -2066,7 +2117,7 @@ function researchPanel(me) {
     }
     const why = done ? 'Изучено' : cur ? 'Изучается' : open ? 'Нажмите, чтобы изучать' : t.era > (me.level || 0) ? `Откроется в эпоху «${LEVELS[t.era].name}»` : `Сначала изучите ${miss.map(r => `«${r.name}»`).join(' и ')}`;
     nodes += `<div class="node ${done ? 'done' : cur ? 'cur' : open ? 'open' : 'off'}${t.side ? ' side' : ''}" style="left:${x}px;top:${y}px" title="${why}${t.side ? ' · необязательное: для новой эпохи не нужно' : ''}"${open ? ` data-tech="${t.id}"` : ''}>` +
-      `<img class="big" src="icons/${TECH_ICON[t.id]}.png?v=55" alt=""><div><b>${done ? ic('ok') + ' ' : ''}${t.name}</b><span>${t.desc}</span></div>` +
+      `<img class="big" src="icons/${TECH_ICON[t.id]}.png?v=56" alt=""><div><b>${done ? ic('ok') + ' ' : ''}${t.name}</b><span>${t.desc}</span></div>` +
       (cur || (pts && !done) ? `<div class="bar"><i style="width:${Math.min(100, pts / Game.TECH_COST[t.era] * 100)}%"></i></div>` : '') +
       (cur ? `<i class="left">${ticksLeft(me, t)}</i>` : '') + '</div>';
   }
@@ -2135,6 +2186,11 @@ const tileAt = e => {
 };
 c.oncontextmenu = e => e.preventDefault();
 c.onmousedown = e => {
+  if (view === 'log' && st && st.players[name]) { // logistics: clicks pick a building and its depot instead of building
+    if (e.button === 2) { logSel = -1; logHint(); draw(); return; }
+    const i = tileAt(e); if (i >= 0 && e.button === 0) logClick(i);
+    return;
+  }
   if (e.button === 2 && tool !== 'info') { sel = -1; document.querySelector('[data-tool=info]').click(); draw(); return; }
   const i = tileAt(e); if (i < 0) return;
   const t = e.button === 2 ? 'bulldoze' : tool;

@@ -216,6 +216,18 @@ assert.ok(DP.flow.food.some(([what, v]) => what.startsWith('Привезли') &
 assert.ok(!d.ships.some(x => x.id === sh.id));
 DP.tech.logistics = true; d.stock[3] = G.LOAD; G.tick(d); // logistics: 3 cost units a tick
 assert.strictEqual(d.ships[d.ships.length - 1].at - d.ships[d.ships.length - 1].t0, 3, '7 tiles at 3 per tick');
+// logistics: a building's loads go to the depot the player chose, not the nearest one
+assert.strictEqual(G.act(d, 'D', 'depot', 11), null);
+assert.strictEqual(G.setRoute(d, 'D', 3, 4), 'возить можно только на свой склад');
+assert.strictEqual(G.setRoute(d, 'D', 10, 11), 'это здание ничего не возит');
+assert.strictEqual(G.setRoute(d, 'D', 3, 11), null);
+d.ships = []; d.stock[3] = G.LOAD; G.tick(d);
+assert.strictEqual(d.ships[0].dest, 11, 'the farm ships to its chosen depot');
+assert.strictEqual(G.setRoute(d, 'D', 3, -1), null);
+d.ships = []; d.stock[3] = G.LOAD; G.tick(d);
+assert.strictEqual(d.ships[0].dest, 10, 'no choice: the nearest depot');
+G.setRoute(d, 'D', 3, 11); d.grid[11] = 'grass'; G.tick(d);
+assert.ok(!(d.route || {})[3], 'the chosen depot is gone: the choice goes too');
 // depots: the town holds BASE_CAP of each resource, every depot DEPOT_CAP more; a load that doesn't fit waits
 assert.strictEqual(G.capOf(d, 'D'), G.BASE_CAP + G.DEPOT_CAP);
 d.ships = []; DP.res.food = G.capOf(d, 'D') - 4; d.stock[3] = G.LOAD; G.tick(d);

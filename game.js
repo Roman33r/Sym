@@ -436,6 +436,20 @@ const depotCap = (s, d) => Math.round(DEPOT_CAP * prodK(s, d));
 const capOf = (s, who) => BASE_CAP + s.grid.reduce((n, t, d) => n + (isDepot(s, who)(d) ? depotCap(s, d) : 0), 0);
 // every truck on the road burns TRUCK_OIL a tick; with no oil in stock the loads go by the buildings' horses again
 const TRUCK_OIL = 0.1;
+// Logistics: the player may send a building's loads to one depot of their choice (s.route: building → depot);
+// without a choice the nearest depot on the same roads takes them. Shops are supplied from their chosen depot.
+const routable = (s, i) => !!UPGRADE[s.grid[i]] && s.grid[i] !== 'depot';
+const depotFor = (s, who, i) => { const d = (s.route || {})[i]; return d === undefined ? isDepot(s, who) : k => k === d && isDepot(s, who)(k); };
+function setRoute(s, who, i, d) {
+  if (!Number.isInteger(i) || i < 0 || i >= W * H || !Number.isInteger(d) || d < -1 || d >= W * H) return 'неверная клетка';
+  if (ownerOf(s, i) !== who) return 'это не ваш участок';
+  if (!routable(s, i)) return 'это здание ничего не возит';
+  const r = s.route = s.route || {};
+  if (d === -1) { delete r[i]; return null; }
+  if (s.grid[d] !== 'depot' || ownerOf(s, d) !== who) return 'возить можно только на свой склад';
+  r[i] = d;
+  return null;
+}
 const isDepot = (s, who) => d => s.grid[d] === 'depot' && !s.status[d] && ownerOf(s, d) === who;
 // nearest tile passing isDest that shares a road network with tile i: { from, to, dest, dist } (from/to are road tiles)
 function findRoute(s, comp, i, isDest) {
@@ -465,7 +479,7 @@ function sendTruck(s, who, res, route, kind, horse, own, src) {
 }
 // load from producer i to the nearest depot; vehicle() gives 'truck' or 'horse', or false when no horse is free; fits: the depots have room
 function ship(s, comp, who, i, res, vehicle, fits = true) {
-  const r = findRoute(s, comp, i, isDepot(s, who));
+  const r = findRoute(s, comp, i, depotFor(s, who, i));
   if (!r) return 'depot';
   if (!fits) return 'full';
   const v = vehicle(i, res);
@@ -715,8 +729,8 @@ function tick(s) {
       if (have >= LOAD || s.ships.some(sh => sh.kind === 'shop' && sh.dest === i)) return;
       const best = Object.keys(PRODUCTS).filter(k => R[k] >= LOAD).sort((a, b) => R[b] - R[a])[0];
       if (!best) return;
-      const route = findRoute(s, comp, i, isDepot(s, who));
-      if (!route) return;
+      const route = findRoute(s, comp, i, depotFor(s, who, i));
+      if (!route) { undelivered.push(i); return; }
       const v = vehicle(i); if (!v) { noHorse.push(i); return; }
       sendTruck(s, who, best, { from: route.to, to: route.from, dest: i, dist: route.dist }, 'shop', v === 'horse', false, i); // depot → shop
       add(best, 'Отправлено в магазины', -LOAD);
@@ -758,6 +772,7 @@ function tick(s) {
   for (const i in s.bl) if (!UPGRADE[s.grid[i]]) delete s.bl[i];
   for (const i in s.fire) if (!flammable(s.grid[i])) delete s.fire[i];
   for (const i in s.shopStock) if (s.grid[i] !== 'shop') delete s.shopStock[i];
+  for (const i in s.route || {}) { const d = s.route[i]; if (!routable(s, +i) || s.grid[d] !== 'depot' || ownerOf(s, d) !== ownerOf(s, +i)) delete s.route[i]; } // a building or its depot gone
   for (const i in s.hrs || {}) if (!takesHorses(s, +i) || !s.players[ownerOf(s, +i)]) delete s.hrs[i]; // building gone: its horses are free again
   s.ships = s.ships.filter(sh => isRoad(s.grid[sh.from]) && isRoad(s.grid[sh.to])); // a removed road loses the load
   s.undelivered = undelivered; s.starved = starved; s.noHorse = noHorse; s.full = full;
@@ -907,6 +922,7 @@ function room(s) {
       return err;
     }
     if (m.type === 'horses') return setHorses(s, who, m.i, m.v);
+    if (m.type === 'route') return setRoute(s, who, m.i, m.d);
     if (m.type === 'research') {
       const err = setResearch(s, who, String(m.v));
       if (!err) r.say(`${who}: исследует «${techOf(m.v).name}»`);
@@ -934,5 +950,5 @@ function room(s) {
   return r;
 }
 
-const api = { W, H, B, NEED_TEXT, WANT_TEXT, POWER, WATER, START, LEVELS, levelOf, upgradeBlock, PRICES, SELL, RES_TEXT, trade, priceOf, mkOf, hasMarket, HIST_RES, CLEAR, startCorner, landOf, landPrice, newGame, start, nextTurn, compute, tick, act, actArea, wants, happiness, residents, commute, ownerOf, room, SPEEDS, LOAD, roadNets, networks, PRODUCTS, SMELT, GROUPS, SEATS, pollution, setSpec, popOf, demographics, TECH, TECH_COST, BRANCHES, techOf, hasTech, setResearch, allTech, FARM, HORSES_PER_FARM, horsesPerFarm, UTIL_ERA, isRoad, EVENT_P, FIRE_T, FIRE_PUT, FIRE_COVER, setEvents, startFire, disaster, cureOf, covered, slowAt, wornAt, ROAD_UPKEEP, PROD_K, UPGRADE, blOf, prodK, upCost, canImprove, improveCost, horseUse, setHorses, HORSE_FOOD, BASE_CAP, DEPOT_CAP, depotCap, capOf, TRUCK_OIL, takesHorses, HOME_TIERS, tierOf, homeCap, maxTier };
+const api = { W, H, B, NEED_TEXT, WANT_TEXT, POWER, WATER, START, LEVELS, levelOf, upgradeBlock, PRICES, SELL, RES_TEXT, trade, priceOf, mkOf, hasMarket, HIST_RES, CLEAR, startCorner, landOf, landPrice, newGame, start, nextTurn, compute, tick, act, actArea, wants, happiness, residents, commute, ownerOf, room, SPEEDS, LOAD, roadNets, networks, PRODUCTS, SMELT, GROUPS, SEATS, pollution, setSpec, popOf, demographics, TECH, TECH_COST, BRANCHES, techOf, hasTech, setResearch, allTech, FARM, HORSES_PER_FARM, horsesPerFarm, UTIL_ERA, isRoad, EVENT_P, FIRE_T, FIRE_PUT, FIRE_COVER, setEvents, startFire, disaster, cureOf, covered, slowAt, wornAt, ROAD_UPKEEP, PROD_K, UPGRADE, blOf, prodK, upCost, canImprove, improveCost, horseUse, setHorses, setRoute, routable, depotFor, findRoute, HORSE_FOOD, BASE_CAP, DEPOT_CAP, depotCap, capOf, TRUCK_OIL, takesHorses, HOME_TIERS, tierOf, homeCap, maxTier };
 if (typeof module !== 'undefined') module.exports = api; else window.Game = api;
