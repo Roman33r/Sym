@@ -1,6 +1,7 @@
 // Run: node game.test.js
 const assert = require('assert');
 const G = require('./game');
+G.setEvents(false); // random fires and disasters would make the checks below flaky; events are tested at the end
 const s = G.newGame(1);
 s.grid.fill('grass');
 const W = G.W;
@@ -421,4 +422,42 @@ Object.assign(TP.tech, { trade: true, mechanics: true, schools: true, architectu
 assert.strictEqual(G.upgradeBlock(TP), null, 'no side study is needed for the next era');
 assert.strictEqual(G.horsesPerFarm(TP), 2); TP.tech.breeding = true; assert.strictEqual(G.horsesPerFarm(TP), 3, 'breeding: three horses a farm');
 assert.ok(G.TECH.every(t => t.req.every(r => G.techOf(r) && G.techOf(r).era <= t.era)), 'every study needs only known, not later ones');
+
+// events: a fire burns a building down unless a well (or a fire station) is near; epidemics kill fewer with healers
+const ev = G.newGame(17);
+ev.grid.fill('grass');
+G.start(ev, ['E']); G.act(ev, 'E', 'claim', 0);
+const EP = ev.players.E;
+EP.res = { ...EP.res, money: 1e5, wood: 1e3, stone: 1e3, iron: 1e3 }; EP.tech = G.allTech();
+G.act(ev, 'E', 'path', W + 1); G.act(ev, 'E', 'farm', 1); G.act(ev, 'E', 'sawmill', 11);
+ev.events = []; G.startFire(ev, 1);
+assert.ok(G.compute(ev)[1].includes('f'), 'a burning building does not work');
+for (let k = 0; k < G.FIRE_T; k++) G.tick(ev);
+assert.strictEqual(ev.grid[1], 'grass', 'no well: the farm burned down');
+assert.strictEqual(G.act(ev, 'E', 'firewell', 9), null);
+ev.events = []; G.startFire(ev, 11); G.tick(ev); G.tick(ev);
+assert.ok(ev.grid[11] === 'sawmill' && !(11 in ev.fire), 'the well put it out in two ticks');
+assert.strictEqual(G.act(ev, 'E', 'firestation', 1), null); // next to the path
+assert.ok(G.covered(ev, 7 * W + 7) && !G.covered(ev, 11 * W + 11), 'a fire station reaches 7 tiles');
+// epidemics: healers and hospitals save a share of the sick
+assert.strictEqual(G.cureOf({}, 100), 0);
+assert.strictEqual(G.cureOf({ healer: 1 }, 40), 0.5, 'a healer saves half of his 40');
+assert.strictEqual(G.cureOf({ hospital: 1 }, 150), 0.9, 'a hospital saves 90% of its 150');
+EP.demo = { kids: 0, none: 100, school: 0, higher: 0, old: 0 }; EP.sick = 5; G.tick(ev);
+assert.ok(EP.died > 0 && EP.sick === 4, 'the epidemic kills and wears off');
+// drought: farms give half; irrigation makes it a quarter less instead
+const fd = (dr, irr) => { const f = G.newGame(18); f.grid.fill('grass'); G.start(f, ['F']); G.act(f, 'F', 'claim', 0); const P3 = f.players.F;
+  P3.res = { ...P3.res, money: 1e4, wood: 100 }; P3.tech = G.allTech(); if (!irr) delete P3.tech.irrigation; P3.demo = { kids: 0, none: 40, school: 0, higher: 0, old: 0 };
+  G.act(f, 'F', 'path', W + 2); G.act(f, 'F', 'path', W + 3); G.act(f, 'F', 'farm', 2); G.act(f, 'F', 'house', 3); f.hl[3] = 0; f.bl[2] = 0;
+  P3.drought = dr ? 10 : 0; f.stock = {}; G.tick(f); return f.stock[2]; };
+assert.ok(Math.abs(fd(true, false) / fd(false, false) - 0.5) < 0.01, 'a drought halves the food');
+assert.ok(Math.abs(fd(true, true) / fd(false, true) - 0.75) < 0.01, 'with irrigation only a quarter is lost');
+// a disaster takes one or two buildings, sturdy buildings at most one
+const dz = G.newGame(19); dz.grid.fill('grass'); G.start(dz, ['Z']); G.act(dz, 'Z', 'claim', 0); const ZP = dz.players.Z;
+ZP.res = { ...ZP.res, money: 1e5, wood: 1e3, stone: 1e3 }; ZP.tech = {};
+for (let k = 0; k < 6; k++) dz.grid[k] = 'farm';
+dz.events = []; G.disaster(dz, 'Z', ZP, () => 0.1); // the roll asks for two
+assert.strictEqual(dz.grid.slice(0, 6).filter(t => t === 'farm').length, 4, 'two buildings fell');
+ZP.tech.seismic = true; G.disaster(dz, 'Z', ZP, () => 0.9);
+assert.strictEqual(dz.grid.slice(0, 6).filter(t => t === 'farm').length, 3, 'sturdy: at most one');
 console.log('ok');

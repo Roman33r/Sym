@@ -26,6 +26,10 @@ const B = {
   stop:    { cost: { money: 40 }, needs: 'r', tech: 'post', upkeep: 1, label: 'Остановка (автобус до работы)', icon: 'stop' },
   market:  { cost: { money: 120, wood: 30, stone: 10 }, needs: 'r', tech: 'trade', jobs: 4, label: 'Рынок (покупка и продажа ресурсов)', icon: 'market' },
   depot:   { cost: { money: 80, wood: 10 }, needs: 'r', label: 'Склад (сюда грузовики везут товары)', icon: 'depot' },
+  // against fires: a well puts out fires within 3 tiles, a fire station within 7 (see FIRE_COVER)
+  firewell: { cost: { money: 25, stone: 5 }, label: 'Колодец (тушит пожары в 3 клетках)', icon: 'pipe' },
+  firestation: { cost: { money: 220, stone: 30, iron: 5 }, needs: 'r', tech: 'firefighting', jobs: 4, upkeep: 3, label: 'Пожарная станция (тушит в 7 клетках)', icon: 'warn' },
+  healer:  { cost: { money: 60, wood: 15 }, needs: 'r', tech: 'herbalism', jobs: 1, upkeep: 1, label: 'Дом знахаря (лечит 40 жителей)', icon: 'hospital' },
   // services: see SEATS for how many each serves
   kinder:  { cost: { money: 120, wood: 20 }, needs: 'rpw', tech: 'schools', jobs: 3, upkeep: 2, label: 'Детский сад (30 детей)', icon: 'kinder' },
   school:  { cost: { money: 200, stone: 20 }, needs: 'rpw', tech: 'schools', jobs: 4, upkeep: 3, label: 'Школа (40 учеников)', icon: 'school' },
@@ -40,7 +44,7 @@ const B = {
   refinery: { cost: { money: 400, stone: 40, iron: 10 }, needs: 'rp', tech: 'refining', jobs: 6, upkeep: 2, label: 'НПЗ (нефть → асфальт)', icon: 'refinery' },
   goldmine: { cost: { money: 150, wood: 20 }, needs: 'rp', grown: true, ore: 'gold', jobs: 5, prod: { gold: 0.4 }, label: 'Золотой прииск', icon: 'mine' },
 };
-const NEED_TEXT = { h: 'нет свободной лошади на складе', r: 'нет дороги рядом', p: 'нет электричества', w: 'нет воды', t: 'нет леса рядом', k: 'нет камня рядом', l: 'нет озера рядом' };
+const NEED_TEXT = { f: 'горит!', h: 'нет свободной лошади на складе', r: 'нет дороги рядом', p: 'нет электричества', w: 'нет воды', t: 'нет леса рядом', k: 'нет камня рядом', l: 'нет озера рядом' };
 const RES_TEXT = { money: 'денег', wood: 'дерева', stone: 'камня', food: 'еды', iron: 'железа', gold: 'золота', oil: 'нефти', asphalt: 'асфальта', horses: 'лошадей' };
 const isRoad = t => t === 'road' || t === 'path' || t === 'cobble'; // a path is a road too, only slower
 // paved roads cost upkeep per tile and tick; a player who can't pay has worn roads, as slow as a path
@@ -107,7 +111,7 @@ const TECH = [
   { id: 'post', era: 1, branch: 'social', name: 'Почта и конка', desc: 'остановка конки: лошадь возит людей на работу' },
   { id: 'geology', era: 2, branch: 'world', name: 'Геология', desc: 'нефтяная вышка' },
   { id: 'electricity', era: 2, branch: 'science', name: 'Электричество', desc: 'электростанция и ЛЭП' },
-  { id: 'medicine', era: 2, branch: 'edu', name: 'Медицина', desc: 'больница' },
+  { id: 'medicine', era: 2, branch: 'edu', name: 'Медицина', desc: 'больница: лечит лучше знахаря' },
   { id: 'industry', era: 2, branch: 'art', name: 'Промышленность', desc: 'промзона и заводы' },
   { id: 'plumbing', era: 2, branch: 'social', name: 'Водопровод', desc: 'водокачка и трубы' },
   { id: 'refining', era: 3, branch: 'world', name: 'Нефтепереработка', desc: 'НПЗ и асфальтовые дороги' },
@@ -121,8 +125,12 @@ const TECH = [
   { id: 'skyscrapers', era: 4, branch: 'art', name: 'Небоскрёбы', desc: 'жилая башня на 40 жителей' },
   { id: 'ecology', era: 4, branch: 'social', name: 'Экология', desc: 'ваши заводы и станции загрязняют вдвое меньше' },
   // side branches (lane 1, 2 under the main line): not needed for the next era, each gives a bonus
+  { id: 'herbalism', era: 0, branch: 'social', lane: 1, side: true, req: [], name: 'Травничество', desc: 'дом знахаря: лечит болезни' },
+  { id: 'firefighting', era: 2, branch: 'social', lane: 2, side: true, req: ['post'], name: 'Пожарное дело', desc: 'пожарная станция: тушит в 7 клетках' },
+  { id: 'quarantine', era: 3, branch: 'edu', lane: 1, side: true, req: ['medicine', 'printing'], name: 'Карантин', desc: 'эпидемии вдвое короче' },
+  { id: 'seismic', era: 3, branch: 'art', lane: 1, side: true, req: ['industry', 'masonry'], name: 'Прочные постройки', desc: 'стихийные бедствия рушат вдвое меньше' },
   { id: 'forestry', era: 1, branch: 'world', lane: 1, side: true, req: ['explore'], name: 'Лесное хозяйство', desc: 'лесопилки дают на 30% больше дерева' },
-  { id: 'irrigation', era: 1, branch: 'science', lane: 1, side: true, req: ['agriculture'], name: 'Орошение', desc: 'фермы дают на 25% больше еды' },
+  { id: 'irrigation', era: 1, branch: 'science', lane: 1, side: true, req: ['agriculture'], name: 'Орошение', desc: 'фермы +25% еды, засуха вдвое слабее' },
   { id: 'breeding', era: 1, branch: 'science', lane: 2, side: true, req: ['agriculture'], name: 'Коневодство', desc: 'до 3 лошадей на ферму, растут вдвое быстрее' },
   { id: 'masonry', era: 1, branch: 'art', lane: 1, side: true, req: ['crafts'], name: 'Каменотёсы', desc: 'каменоломни дают на 30% больше камня' },
   { id: 'banking', era: 2, branch: 'world', lane: 1, side: true, req: ['trade'], name: 'Банки', desc: 'налоги на 20% выше' },
@@ -306,6 +314,7 @@ function compute(s) {
     const o = ownerOf(s, i), left = horses[o] ?? Math.floor(p.res.horses || 0);
     if (left < 1) st[i] += 'h'; else horses[o] = left - 1;
   });
+  for (const i in s.fire || {}) if (st[i] !== undefined && B[g[i]]) st[i] += 'f';
   return st;
 }
 
@@ -435,9 +444,59 @@ function ship(s, comp, who, i, res, vehicle) {
   return true;
 }
 
+// Events: rare fires, epidemics, droughts and disasters, at most one new one per player at a time of each kind.
+// Chances are per player and tick (a tick is half a second at ×1), none in the first EVENT_CALM ticks of a game.
+// A fire burns FIRE_T ticks and then destroys the building, sometimes catching a neighbour; a well or a fire station
+// nearby puts it out in two ticks. An epidemic kills a share of the residents each tick unless healers and hospitals
+// treat them; a drought halves the farms' food; a disaster destroys one or two buildings.
+const EVENT_P = { fire: 0.001, sick: 0.0006, drought: 0.0006, disaster: 0.0003 }, EVENT_CALM = 120, FIRE_T = 8;
+const FIRE_COVER = { firewell: 3, firestation: 7 };
+let eventsOn = true; // tests switch the random part off
+const setEvents = on => { eventsOn = on; };
+const flammable = t => !!B[t] && !isRoad(t) && !B[t].zone && !FIRE_COVER[t] && t !== 'park' && t !== 'power' && t !== 'pipe';
+const covered = (s, i) => Object.entries(FIRE_COVER).some(([t, r]) => near(s.grid, i, t, r));
+function startFire(s, i) { (s.fire = s.fire || {})[i] = FIRE_T; s.events.push(`${ownerOf(s, i)}: пожар! Горит ${short(s.grid[i]).toLowerCase()} (${i % W}, ${i / W | 0})`); }
+function burnDown(s, i) { s.events.push(`${ownerOf(s, i)}: сгорело здание «${short(s.grid[i])}»`); s.grid[i] = (B[s.grid[i]] && B[s.grid[i]].ore) || 'grass'; }
+// what to destroy, for a fire or a disaster: the player's flammable buildings
+const buildingsOf = (s, who) => s.grid.reduce((a, t, i) => (flammable(t) && ownerOf(s, i) === who ? (a.push(i), a) : a), []);
+function events(s) {
+  s.fire = s.fire || {};
+  for (const i in s.fire) {
+    const left = --s.fire[i];
+    if (!flammable(s.grid[i])) { delete s.fire[i]; continue; }
+    if (covered(s, i)) { if (left <= FIRE_T - 2) { delete s.fire[i]; s.events.push(`${ownerOf(s, i)}: пожар потушен`); } continue; }
+    if (left <= 0) { delete s.fire[i]; burnDown(s, i); continue; }
+    if (eventsOn && Math.random() < 0.06) { // the flames reach a neighbour
+      const j = nb(+i).find(k => flammable(s.grid[k]) && !(k in s.fire));
+      if (j !== undefined) startFire(s, j);
+    }
+  }
+  for (const [who, p] of Object.entries(s.players)) {
+    if (p.sick > 0) p.sick--; if (p.drought > 0) p.drought--;
+    if (!eventsOn || s.tick < EVENT_CALM) continue;
+    const bs = () => buildingsOf(s, who);
+    if (Math.random() < EVENT_P.fire) { const b = bs(); if (b.length) startFire(s, b[Math.random() * b.length | 0]); }
+    if (!p.sick && p.pop > 20 && Math.random() < EVENT_P.sick) { p.sick = hasTech(p, 'quarantine') ? 12 : 25; s.events.push(`${who}: эпидемия! Нужны знахари и больницы`); }
+    if (!p.drought && Math.random() < EVENT_P.drought) { p.drought = 30; s.events.push(`${who}: засуха — фермы дают меньше еды`); }
+    if (Math.random() < EVENT_P.disaster) disaster(s, who, p);
+  }
+}
+function disaster(s, who, p, roll = Math.random) {
+  const b = buildingsOf(s, who);
+  let n = Math.min(b.length, roll() < 0.4 ? 2 : 1);
+  if (hasTech(p, 'seismic')) n = roll() < 0.5 ? 0 : Math.min(1, n); // sturdy buildings: half the time nothing falls, never two
+  const kind = ['Буря', 'Землетрясение', 'Наводнение'][roll() * 3 | 0];
+  if (!n) { s.events.push(`${who}: ${kind.toLowerCase()} прошло без разрушений`); return; }
+  const hit = [];
+  for (let k = 0; k < n; k++) { const i = b.splice(roll() * b.length | 0, 1)[0]; hit.push(short(s.grid[i])); s.grid[i] = (B[s.grid[i]] && B[s.grid[i]].ore) || 'grass'; }
+  s.events.push(`${who}: ${kind.toLowerCase()} разрушило: ${hit.join(', ')}`);
+}
+// share of the sick that healers and hospitals save this tick: a hospital place saves 90%, a healer's 50%
+const cureOf = (cnt, pop) => Math.min(1, ((cnt.hospital || 0) * SEATS.hospital * 0.9 + (cnt.healer || 0) * SEATS.healer * 0.5) / Math.max(1, pop));
+
 // Residents by age and education; schools, kindergartens, hospitals and universities change how the groups move.
 const GROUPS = { kids: 'Дети', none: 'Без образования', school: 'Школьное образование', higher: 'Высшее образование', old: 'Пенсионеры' };
-const SEATS = { kinder: 30, school: 40, hospital: 150, uni: 1.5 }; // kids / pupils / patients per building; uni: graduates per tick
+const SEATS = { kinder: 30, school: 40, hospital: 150, healer: 40, uni: 1.5 }; // kids / pupils / patients per building; uni: graduates per tick
 const popOf = d => d.kids + d.none + d.school + d.higher + d.old;
 const newDemo = () => ({ kids: 0, none: 0, school: 0, higher: 0, old: 0 });
 // one tick of births, newcomers, growing up, studying, ageing and deaths; cap is how many the homes can hold
@@ -501,6 +560,7 @@ function tick(s) {
   s.ships = s.ships || []; s.stock = s.stock || {}; s.shipSeq = s.shipSeq || 0; s.spec = s.spec || {}; s.shopStock = s.shopStock || {};
   const undelivered = [], starved = [], noHorse = [];
   s.breed = s.breed || {}; s.bl = s.bl || {}; s.events = [];
+  events(s);
   for (const k in s.mk || {}) s.mk[k] += (1 - s.mk[k]) * 0.02; // prices drift back to the base
   if (!s.hl) { // saves from before home tiers: houses were half-timbered, zone homes take the owner's era
     s.hl = {};
@@ -528,7 +588,13 @@ function tick(s) {
       if (!cnt.uni) { (cnt.school ? (d.school += d.higher) : (d.none += d.higher)); d.higher = 0; }
       if (!cnt.school) { d.none += d.school; d.school = 0; }
     }
-    const before0 = popOf(d), cov = demographics(d, cap, cnt, hap, hasTech(p, 'elearning') ? 2 : 1), pop = Math.round(popOf(d));
+    const before0 = popOf(d), cov = demographics(d, cap, cnt, hap, hasTech(p, 'elearning') ? 2 : 1);
+    if (p.sick > 0) { // an epidemic: up to 1.5% of the residents a tick, fewer with healers and hospitals
+      const k = 0.015 * (1 - cureOf(cnt, popOf(d)));
+      p.died = Math.round(popOf(d) * k * 10) / 10;
+      for (const g in d) d[g] -= d[g] * k * (g === 'old' ? 2 : 1); // the old suffer most
+    } else p.died = 0;
+    const pop = Math.round(popOf(d));
     // who can work where: offices need a degree, every other job takes anyone; only people who can get to work count
     const r = cap ? reachCap / cap : 0, jobs = Object.entries(cnt).reduce((n, [t, c]) => n + c * (B[t].jobs || 0), 0);
     const offJobs = (cnt.off || 0) * B.off.jobs, otherJobs = jobs - offJobs;
@@ -572,7 +638,7 @@ function tick(s) {
         R.oil -= made; used.oil = (used.oil || 0) + made;
       } else if (t === 'farm') {
         const f = FARM[s.spec[i] || 'crops'];
-        res = 'food'; made = f.food * wrOther * prodK(s, i) * (hasTech(p, 'irrigation') ? 1.25 : 1);
+        res = 'food'; made = f.food * wrOther * prodK(s, i) * (hasTech(p, 'irrigation') ? 1.25 : 1) * (p.drought > 0 ? (hasTech(p, 'irrigation') ? 0.75 : 0.5) : 1);
         if (s.spec[i] === 'livestock') { // horses grow slowly; each livestock farm keeps at most horsesPerFarm
           const herd = s.grid.reduce((n, x, k) => n + (x === 'farm' && own[k] === who && s.spec[k] === 'livestock'), 0) * horsesPerFarm(p);
           s.breed[i] = Math.min(1, (s.breed[i] || 0) + 0.04 * wrOther * (hasTech(p, 'breeding') ? 2 : 1));
@@ -637,13 +703,14 @@ function tick(s) {
       p.hist.push({ t: s.tick, ...Object.fromEntries(Object.keys(GROUPS).map(g => [g, Math.round(d[g] * 10) / 10])), r: Object.fromEntries(HIST_RES.map(k => [k, Math.round((R[k] || 0) * 10) / 10])) });
       if (p.hist.length > 120) p.hist.shift();
     }
-    Object.assign(p, { pop, cap, growth: popOf(d) - before0, jobs, workers: Math.round(fo + Math.max(0, fOther)), wr: { off: wrOff, other: wrOther }, cov, fed, flow, needs, happy: hap });
+    Object.assign(p, { cure: cureOf(cnt, popOf(d)), pop, cap, growth: popOf(d) - before0, jobs, workers: Math.round(fo + Math.max(0, fOther)), wr: { off: wrOff, other: wrOther }, cov, fed, flow, needs, happy: hap });
   }
   for (const i in s.stock) if (!B[s.grid[i]] || !(B[s.grid[i]].prod || s.grid[i] === 'ind' || s.grid[i] === 'refinery')) delete s.stock[i]; // building gone
   for (const i in s.spec) if (s.grid[i] !== 'ind' && s.grid[i] !== 'farm') delete s.spec[i];
   for (const i in s.breed) if (s.grid[i] !== 'farm') delete s.breed[i];
   for (const i in s.hl) if (!B[s.grid[i]] || !B[s.grid[i]].home) delete s.hl[i];
   for (const i in s.bl) if (!UPGRADE[s.grid[i]]) delete s.bl[i];
+  for (const i in s.fire) if (!flammable(s.grid[i])) delete s.fire[i];
   for (const i in s.shopStock) if (s.grid[i] !== 'shop') delete s.shopStock[i];
   s.ships = s.ships.filter(sh => isRoad(s.grid[sh.from]) && isRoad(s.grid[sh.to])); // a removed road loses the load
   s.undelivered = undelivered; s.starved = starved; s.noHorse = noHorse;
@@ -819,5 +886,5 @@ function room(s) {
   return r;
 }
 
-const api = { W, H, B, NEED_TEXT, WANT_TEXT, POWER, WATER, START, LEVELS, levelOf, upgradeBlock, PRICES, SELL, RES_TEXT, trade, priceOf, mkOf, hasMarket, HIST_RES, CLEAR, startCorner, landOf, landPrice, newGame, start, nextTurn, compute, tick, act, actArea, wants, happiness, residents, commute, ownerOf, room, SPEEDS, LOAD, roadNets, networks, PRODUCTS, GROUPS, SEATS, pollution, setSpec, popOf, demographics, TECH, TECH_COST, BRANCHES, techOf, hasTech, setResearch, allTech, FARM, HORSES_PER_FARM, horsesPerFarm, UTIL_ERA, isRoad, slowAt, wornAt, ROAD_UPKEEP, PROD_K, UPGRADE, blOf, prodK, upCost, canImprove, improveCost, horseUse, HOME_TIERS, tierOf, homeCap, maxTier };
+const api = { W, H, B, NEED_TEXT, WANT_TEXT, POWER, WATER, START, LEVELS, levelOf, upgradeBlock, PRICES, SELL, RES_TEXT, trade, priceOf, mkOf, hasMarket, HIST_RES, CLEAR, startCorner, landOf, landPrice, newGame, start, nextTurn, compute, tick, act, actArea, wants, happiness, residents, commute, ownerOf, room, SPEEDS, LOAD, roadNets, networks, PRODUCTS, GROUPS, SEATS, pollution, setSpec, popOf, demographics, TECH, TECH_COST, BRANCHES, techOf, hasTech, setResearch, allTech, FARM, HORSES_PER_FARM, horsesPerFarm, UTIL_ERA, isRoad, EVENT_P, FIRE_T, FIRE_COVER, setEvents, startFire, disaster, cureOf, covered, slowAt, wornAt, ROAD_UPKEEP, PROD_K, UPGRADE, blOf, prodK, upCost, canImprove, improveCost, horseUse, HOME_TIERS, tierOf, homeCap, maxTier };
 if (typeof module !== 'undefined') module.exports = api; else window.Game = api;
