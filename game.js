@@ -3,7 +3,7 @@ const W = 120, H = 84;
 // needs: r = road nearby, p = power, w = water, t = forest within 2, k = rock within 2, l = lake adjacent
 const B = {
   path:    { cost: { money: 1 }, label: 'Тропинка (грузы идут вдвое медленнее)', icon: 'path' },
-  cobble:  { cost: { money: 3, stone: 2 }, tech: 'architecture', label: 'Брусчатка (содержание — камень)', icon: 'stone' },
+  cobble:  { cost: { money: 3, stone: 2 }, tech: 'architecture', label: 'Брусчатка (содержание — камень)', icon: 'cobble' },
   road:    { cost: { money: 5, asphalt: 1 }, tech: 'refining', label: 'Асфальтовая дорога (содержание — нефть)', icon: '' },
   power:   { cost: { money: 5, wood: 1 }, tech: 'electricity', label: 'ЛЭП', icon: '' },
   pipe:    { cost: { money: 5, stone: 1 }, tech: 'plumbing', label: 'Водопровод', icon: '' },
@@ -27,9 +27,9 @@ const B = {
   market:  { cost: { money: 120, wood: 30, stone: 10 }, needs: 'r', tech: 'trade', jobs: 4, label: 'Рынок (покупка и продажа ресурсов)', icon: 'market' },
   depot:   { cost: { money: 80, wood: 10 }, needs: 'r', label: 'Склад (сюда грузовики везут товары)', icon: 'depot' },
   // against fires: a well puts out fires within 3 tiles, a fire station within 7 (see FIRE_COVER)
-  firewell: { cost: { money: 25, stone: 5 }, label: 'Колодец (тушит пожары в 3 клетках)', icon: 'pipe' },
-  firestation: { cost: { money: 220, stone: 30, iron: 5 }, needs: 'r', tech: 'firefighting', jobs: 4, upkeep: 3, label: 'Пожарная станция (тушит в 7 клетках)', icon: 'warn' },
-  healer:  { cost: { money: 60, wood: 15 }, needs: 'r', tech: 'herbalism', jobs: 1, upkeep: 1, label: 'Дом знахаря (лечит 40 жителей)', icon: 'hospital' },
+  firewell: { cost: { money: 25, stone: 5 }, label: 'Колодец (тушит пожары в 3 клетках)', icon: 'firewell' },
+  firestation: { cost: { money: 220, stone: 30, iron: 5 }, needs: 'r', tech: 'firefighting', jobs: 4, upkeep: 3, label: 'Пожарная станция (тушит в 7 клетках)', icon: 'firestation' },
+  healer:  { cost: { money: 60, wood: 15 }, needs: 'r', tech: 'herbalism', jobs: 1, upkeep: 1, label: 'Дом знахаря (лечит 40 жителей)', icon: 'healer' },
   // services: see SEATS for how many each serves
   kinder:  { cost: { money: 120, wood: 20 }, needs: 'rpw', tech: 'schools', jobs: 3, upkeep: 2, label: 'Детский сад (30 детей)', icon: 'kinder' },
   school:  { cost: { money: 200, stone: 20 }, needs: 'rpw', tech: 'schools', jobs: 4, upkeep: 3, label: 'Школа (40 учеников)', icon: 'school' },
