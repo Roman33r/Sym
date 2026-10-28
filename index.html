@@ -92,13 +92,13 @@
 <body>
 <header id="top">
   <span class="logo">Город вместе</span>
-  <div id="speed"><button data-v="0" title="Пауза"><img class="ic" src="icons/pause.png?v=22" alt="Пауза"></button><button data-v="1" title="Скорость ×1"><img class="ic" src="icons/play.png?v=22" alt="×1"></button><button data-v="2" title="Скорость ×2"><img class="ic" src="icons/fast.png?v=22" alt="×2"></button><button data-v="4" title="Скорость ×4"><img class="ic" src="icons/faster.png?v=22" alt="×4"></button></div>
+  <div id="speed"><button data-v="0" title="Пауза"><img class="ic" src="icons/pause.png?v=23" alt="Пауза"></button><button data-v="1" title="Скорость ×1"><img class="ic" src="icons/play.png?v=23" alt="×1"></button><button data-v="2" title="Скорость ×2"><img class="ic" src="icons/fast.png?v=23" alt="×2"></button><button data-v="4" title="Скорость ×4"><img class="ic" src="icons/faster.png?v=23" alt="×4"></button></div>
   <span id="tickN" class="date"></span>
-  <button id="commBtn" title="Показать ЛЭП, водопровод и куда доходят электричество и вода" style="width:auto"><img class="ic" src="icons/power.png?v=22" alt=""> Коммуникации</button>
-  <button id="polBtn" title="Показать загрязнение от заводов, станций, карьеров и рудников" style="width:auto"><img class="ic" src="icons/pollution.png?v=22" alt=""> Загрязнение</button>
-  <button id="resBtn" title="Дерево исследований: открывает постройки и следующие эпохи" style="width:auto"><img class="ic" src="icons/research.png?v=22" alt=""> Исследования</button>
-  <button id="mktBtn" title="Рынок: купить и продать ресурсы, цены зависят от спроса" style="width:auto"><img class="ic" src="icons/market.png?v=22" alt=""> Рынок</button>
-  <button id="eduBtn" title="График состава населения по образованию" style="width:auto"><img class="ic" src="icons/edu.png?v=22" alt=""> Образование</button>
+  <button id="commBtn" title="Показать ЛЭП, водопровод и куда доходят электричество и вода" style="width:auto"><img class="ic" src="icons/power.png?v=23" alt=""> Коммуникации</button>
+  <button id="polBtn" title="Показать загрязнение от заводов, станций, карьеров и рудников" style="width:auto"><img class="ic" src="icons/pollution.png?v=23" alt=""> Загрязнение</button>
+  <button id="resBtn" title="Дерево исследований: открывает постройки и следующие эпохи" style="width:auto"><img class="ic" src="icons/research.png?v=23" alt=""> Исследования</button>
+  <button id="mktBtn" title="Рынок: купить и продать ресурсы, цены зависят от спроса" style="width:auto"><img class="ic" src="icons/market.png?v=23" alt=""> Рынок</button>
+  <button id="eduBtn" title="График состава населения по образованию" style="width:auto"><img class="ic" src="icons/edu.png?v=23" alt=""> Образование</button>
   <div id="res"></div>
   <div id="zoom" title="Масштаб (или Ctrl+колесо)"><button id="zout" aria-label="Уменьшить">−</button><button id="zin" aria-label="Увеличить">+</button></div>
 </header>
@@ -116,17 +116,17 @@
   <div id="invite"></div>
   <h4>Игроки</h4><div id="players"></div>
   <h4>События</h4><div id="log"></div>
-  <button id="restart" style="margin-top:12px;text-align:center"><img class="ic" src="icons/restart.png?v=22" alt=""> Новый город</button>
+  <button id="restart" style="margin-top:12px;text-align:center"><img class="ic" src="icons/restart.png?v=23" alt=""> Новый город</button>
 </div>
 </div>
-<div id="resModal" class="modal" hidden><div class="mwin" role="dialog" aria-label="Дерево исследований"><div class="mhead"><b style="font-size:16px"><img class="ic" src="icons/research.png?v=22" alt=""> Дерево исследований</b><span id="resRate" style="color:#bbc;font-size:13px"></span><button id="resClose" aria-label="Закрыть">×</button></div><div id="research" class="tree"></div></div></div>
-<div id="eduModal" class="modal" hidden><div class="mwin" role="dialog" aria-label="Образование"><div class="mhead"><b style="font-size:16px"><img class="ic" src="icons/edu.png?v=22" alt=""> Состав населения по образованию</b><button id="eduClose" aria-label="Закрыть">×</button></div><div style="display:flex;gap:16px;flex-wrap:wrap;align-items:center"><canvas id="eduChart" width="560" height="260" style="max-width:100%;background:#161b26;border-radius:6px"></canvas><div id="eduLegend" style="font-size:14px;line-height:1.8"></div></div></div></div>
-<div id="mktModal" class="modal" hidden><div class="mwin" role="dialog" aria-label="Рынок"><div class="mhead"><b style="font-size:16px"><img class="ic" src="icons/market.png?v=22" alt=""> Рынок</b><span style="color:#bbc;font-size:13px">цены растут от покупок и падают от продаж, потом возвращаются</span><button id="mktClose" aria-label="Закрыть">×</button></div><div id="mkt"></div></div></div>
+<div id="resModal" class="modal" hidden><div class="mwin" role="dialog" aria-label="Дерево исследований"><div class="mhead"><b style="font-size:16px"><img class="ic" src="icons/research.png?v=23" alt=""> Дерево исследований</b><span id="resRate" style="color:#bbc;font-size:13px"></span><button id="resClose" aria-label="Закрыть">×</button></div><div id="research" class="tree"></div></div></div>
+<div id="eduModal" class="modal" hidden><div class="mwin" role="dialog" aria-label="Образование"><div class="mhead"><b style="font-size:16px"><img class="ic" src="icons/edu.png?v=23" alt=""> Состав населения по образованию</b><button id="eduClose" aria-label="Закрыть">×</button></div><div style="display:flex;gap:16px;flex-wrap:wrap;align-items:center"><canvas id="eduChart" width="560" height="260" style="max-width:100%;background:#161b26;border-radius:6px"></canvas><div id="eduLegend" style="font-size:14px;line-height:1.8"></div></div></div></div>
+<div id="mktModal" class="modal" hidden><div class="mwin" role="dialog" aria-label="Рынок"><div class="mhead"><b style="font-size:16px"><img class="ic" src="icons/market.png?v=23" alt=""> Рынок</b><span style="color:#bbc;font-size:13px">цены растут от покупок и падают от продаж, потом возвращаются</span><button id="mktClose" aria-label="Закрыть">×</button></div><div id="mkt"></div></div></div>
 <div id="chartModal" class="modal" hidden><div class="mwin" role="dialog" aria-label="График ресурса"><div class="mhead"><b id="chartTitle" style="font-size:16px"></b><button id="chartClose" aria-label="Закрыть">×</button></div><canvas id="resChart" width="600" height="260" style="max-width:100%;background:#161b26;border-radius:6px"></canvas><div id="chartNote" style="font-size:13px;color:#bbc;margin-top:6px"></div></div></div>
 <div id="toast" role="status" hidden></div>
 <div id="netbox"><div class="box" id="netStep"></div></div>
 <!-- ?v= must change with every release: GitHub Pages lets browsers cache files for 10 minutes, and a new page with an old game.js breaks -->
-<script src="game.js?v=22"></script>
+<script src="game.js?v=23"></script>
 <script>
 // W, H, B, NEED_TEXT, POWER, WATER are globals from game.js
 // show script errors instead of a silently frozen game (e.g. a stale cached game.js)
@@ -149,7 +149,7 @@ $('name').onchange = () => {
   if (net) net.rename();
 };
 
-const ic = n => `<img class="ic" src="icons/${n}.png?v=22" alt="">`; // emoji don't render in every browser, so icons are SVG files
+const ic = n => `<img class="ic" src="icons/${n}.png?v=23" alt="">`; // emoji don't render in every browser, so icons are SVG files
 const RES = { money: 'money', wood: 'wood', stone: 'stone', food: 'food', iron: 'iron', gold: 'gold', oil: 'oil', asphalt: 'asphalt', horses: 'horses' };
 const costText = c => Object.entries(c).map(([k, v]) => v + ic(RES[k])).join(' ');
 const TOOLS = { info: { label: 'Информация', icon: 'info', cost: {} }, buy: { label: 'Купить землю', icon: 'buy', cost: {}, tech: 'explore' }, clear: { label: 'Расчистить', icon: 'clear', cost: {}, note: 'лес 5' + ic('money') + ', камень 10' + ic('money') }, ...B, bulldoze: { label: 'Снести', icon: 'bulldoze', cost: { money: 2 } } };
@@ -289,9 +289,9 @@ const nbr = (i, dx, dy) => { const x = i % W + dx, y = ((i / W) | 0) + dy; retur
 // bottom vertex, the diamond is 256 px wide). Whatever has no texture is drawn by code as before.
 const TEX = {}, texCache = new Map();
 let SPR = {}, texReady = false;
-fetch('textures/sprites.json?v=22').then(r => r.json()).then(m => {
+fetch('textures/sprites.json?v=23').then(r => r.json()).then(m => {
   SPR = m;
-  return Promise.all(Object.keys(m).map(n => new Promise(ok => { const im = new Image(); im.onload = () => { TEX[n] = im; ok(); }; im.onerror = ok; im.src = `textures/${n}.png?v=22`; })));
+  return Promise.all(Object.keys(m).map(n => new Promise(ok => { const im = new Image(); im.onload = () => { TEX[n] = im; ok(); }; im.onerror = ok; im.src = `textures/${n}.png?v=23`; })));
 }).then(() => {
   if (TEX.road_b && TEX.road_one && TEX.path_x) buildRoads();
   texReady = true; texCache.clear();
@@ -331,13 +331,14 @@ function buildRoads() {
   }
 }
 const VEH = {}, VSZ = {};
-fetch('textures/vehicles.json?v=22').then(r => r.json()).then(m => Object.keys(m).forEach(n => {
-  const im = new Image(); im.onload = () => { VEH[n] = im; VSZ[n] = m[n]; }; im.src = `textures/veh_${n}.png?v=22`;
+fetch('textures/vehicles.json?v=23').then(r => r.json()).then(m => Object.keys(m).forEach(n => {
+  const im = new Image(); im.onload = () => { VEH[n] = im; VSZ[n] = m[n]; }; im.src = `textures/veh_${n}.png?v=23`;
 })).catch(() => {});
 const MIRROR = { se: 'sw', sw: 'se', nw: 'ne', ne: 'nw', e: 'w', w: 'e' }, BACK = { se: 'nw', nw: 'se', sw: 'ne', ne: 'sw' };
 // draws vehicle `base` at screen point (x, y) heading (dx, dy), `wid` tiles wide on screen; false when it has no picture.
-// A missing heading is taken from its mirror image, else from the opposite one.
-function vehicle(base, x, y, dx, dy, wid) {
+// A missing heading is taken from its mirror image, else from the opposite one. `prog` is the distance travelled in tiles:
+// walkers bob and lean with each step, horses bounce at a trot, motor vehicles shake a little; standing still, nothing moves.
+function vehicle(base, x, y, dx, dy, wid, prog = 0) {
   const want = base === 'ped' ? (dx > 0 || dy < 0 ? 'e' : 'w') : dx > 0 ? 'se' : dx < 0 ? 'nw' : dy > 0 ? 'sw' : 'ne';
   let n = base + '_' + want, flip = false;
   if (!VEH[n]) { n = base + '_' + MIRROR[want]; flip = true; }
@@ -352,7 +353,13 @@ function vehicle(base, x, y, dx, dy, wid) {
     if (flip) { g.translate(w, 0); g.scale(-1, 1); }
     g.drawImage(VEH[n], 0, 0, w, h); texCache.set(key, c);
   }
-  ctx.drawImage(c, Math.round(x - w / 2), Math.round(y - h * (base === 'ped' ? 1 : 0.72))); // wheels (feet) on the point
+  const ped = base === 'ped', horse = base === 'cart' || base === 'tram', fwd = (want === 'e' || want === 'se' || want === 'ne') ? 1 : -1;
+  const step = Math.sin(prog * Math.PI * (ped ? 6 : horse ? 4 : 10));
+  const bob = ped ? -Math.abs(step) * 0.07 * S : horse ? -Math.abs(step) * 0.035 * S : step * 0.012 * S;
+  const tilt = ped ? fwd * (0.05 + 0.04 * step) : horse ? fwd * 0.025 * step : 0;
+  ctx.save(); ctx.translate(x, y + bob); if (tilt) ctx.rotate(tilt); // turns about the wheels (feet)
+  ctx.drawImage(c, Math.round(-w / 2), Math.round(-h * (ped ? 1 : 0.72)));
+  ctx.restore();
   return true;
 }
 const roadMask = i => D.reduce((m, [dx, dy], k) => { const j = nbr(i, dx, dy); return m | (j >= 0 && isRoad(st.grid[j]) ? 1 << k : 0); }, 0);
@@ -1071,9 +1078,10 @@ function agentPos(a) {
 function drawAgent(a, fx, fy, dx, dy) {
   gx = ctx;
   const [vx, vy] = P(fx, fy);
-  if (a.kind === 'ped' ? vehicle('ped', vx, vy, dx, dy, 0.13) :
-    a.kind === 'truck' ? (a.ship.horse ? vehicle('cart', vx, vy, dx, dy, 0.42) : vehicle('truck', vx, vy, dx, dy, 0.42)) :
-    a.kind === 'bus' ? vehicle(a.tram ? 'tram' : 'bus', vx, vy, dx, dy, 0.5) : vehicle('car' + (a.v || 1), vx, vy, dx, dy, 0.34)) return;
+  const go = fx + fy; // grows or shrinks steadily along any road, so it counts the steps
+  if (a.kind === 'ped' ? vehicle('ped', vx, vy, dx, dy, 0.13, go) :
+    a.kind === 'truck' ? (a.ship.horse ? vehicle('cart', vx, vy, dx, dy, 0.42, go) : vehicle('truck', vx, vy, dx, dy, 0.42, go)) :
+    a.kind === 'bus' ? vehicle(a.tram ? 'tram' : 'bus', vx, vy, dx, dy, 0.5, go) : vehicle('car' + (a.v || 1), vx, vy, dx, dy, 0.34, go)) return;
   if (a.kind === 'ped') {
     const [x, y] = P(fx, fy), k = S / 20, sw = Math.sin(a.ph) * 1.2 * k;
     ctx.strokeStyle = '#2b2b33'; ctx.lineWidth = Math.max(1, k); ctx.beginPath();
@@ -1399,7 +1407,7 @@ function techToast(me) {
   knownTech = new Set(now);
   if (!fresh.length) return;
   const t = Game.techOf(fresh[fresh.length - 1]);
-  $('toast').innerHTML = `<img class="ic big" src="icons/${TECH_ICON[t.id]}.png?v=22" alt="" style="width:30px;height:30px"><div><b>Исследование завершено: ${t.name}</b><br><small>${t.desc}</small></div><button data-next>${ic('research')} Выбрать следующее</button>`;
+  $('toast').innerHTML = `<img class="ic big" src="icons/${TECH_ICON[t.id]}.png?v=23" alt="" style="width:30px;height:30px"><div><b>Исследование завершено: ${t.name}</b><br><small>${t.desc}</small></div><button data-next>${ic('research')} Выбрать следующее</button>`;
   $('toast').hidden = false;
   clearTimeout(toastTimer); toastTimer = setTimeout(() => { $('toast').hidden = true; }, 8000);
 }
@@ -1420,7 +1428,7 @@ function researchPanel(me) {
     if (before) { const [bx0, by0] = pos(before); lines += `<line x1="${bx0 + 168}" y1="${by0 + 40}" x2="${x}" y2="${y + 40}" stroke="${Game.hasTech(me, before.id) ? (done ? '#3d9a5f' : '#6a7fa8') : '#3a4256'}" stroke-width="3"${Game.hasTech(me, before.id) ? '' : ' stroke-dasharray="6 5"'}/>`; }
     const why = done ? 'Изучено' : cur ? 'Изучается' : open ? 'Нажмите, чтобы изучать' : t.era > (me.level || 0) ? `Откроется в эпоху «${LEVELS[t.era].name}»` : `Сначала изучите «${before.name}»`;
     nodes += `<div class="node ${done ? 'done' : cur ? 'cur' : open ? 'open' : 'off'}" style="left:${x}px;top:${y}px" title="${why}"${open ? ` data-tech="${t.id}"` : ''}>` +
-      `<img class="big" src="icons/${TECH_ICON[t.id]}.png?v=22" alt=""><div><b>${done ? ic('ok') + ' ' : ''}${t.name}</b><br><span style="color:#aab">${t.desc}</span></div>` +
+      `<img class="big" src="icons/${TECH_ICON[t.id]}.png?v=23" alt=""><div><b>${done ? ic('ok') + ' ' : ''}${t.name}</b><br><span style="color:#aab">${t.desc}</span></div>` +
       (cur || (pts && !done) ? `<div class="bar"><i style="width:${Math.min(100, pts / Game.TECH_COST[t.era] * 100)}%"></i></div>` : '') + '</div>';
   }
   const html = `<div style="position:relative;width:${Wt}px;height:${Ht}px"><svg width="${Wt}" height="${Ht}">${lines}</svg>${nodes}</div>`;
