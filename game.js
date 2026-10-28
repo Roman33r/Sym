@@ -34,18 +34,20 @@ const B = {
   kinder:  { cost: { money: 120, wood: 20 }, needs: 'rpw', tech: 'schools', jobs: 3, upkeep: 2, label: 'Детский сад (30 детей)', icon: 'kinder' },
   school:  { cost: { money: 200, stone: 20 }, needs: 'rpw', tech: 'schools', jobs: 4, upkeep: 3, label: 'Школа (40 учеников)', icon: 'school' },
   hospital: { cost: { money: 400, stone: 40 }, needs: 'rpw', tech: 'medicine', jobs: 6, upkeep: 5, label: 'Больница (150 жителей)', icon: 'hospital' },
-  uni:     { cost: { money: 600, stone: 60, iron: 10 }, needs: 'rpw', tech: 'universities', jobs: 6, upkeep: 6, label: 'Университет (высшее образование)', icon: 'uni' },
+  uni:     { cost: { money: 600, stone: 60, ironbar: 5 }, needs: 'rpw', tech: 'universities', jobs: 6, upkeep: 6, label: 'Университет (высшее образование)', icon: 'uni' },
   // a mine is built on an ore deposit and turns into the matching mine; demolishing it leaves the deposit
   mine:    { cost: { money: 150, wood: 20 }, tech: 'mechanics', label: 'Рудник (на месторождение)', icon: 'mine' },
   ironmine: { cost: { money: 150, wood: 20 }, needs: 'rp', grown: true, ore: 'iron', jobs: 5, prod: { iron: 1 }, label: 'Железный рудник', icon: 'mine' },
   // oil: a well goes on an oil deposit; the refinery turns oil into asphalt for roads
   well:    { cost: { money: 200, wood: 20 }, tech: 'geology', label: 'Нефтяная вышка (на месторождение нефти)', icon: 'oilwell' },
   oilwell: { cost: { money: 200, wood: 20 }, needs: 'r', grown: true, ore: 'oil', jobs: 4, prod: { oil: 0.8 }, label: 'Нефтяная вышка', icon: 'oilwell' },
-  refinery: { cost: { money: 400, stone: 40, iron: 10 }, needs: 'rp', tech: 'refining', jobs: 6, upkeep: 2, label: 'НПЗ (нефть → асфальт)', icon: 'refinery' },
+  refinery: { cost: { money: 400, stone: 40, ironbar: 5 }, needs: 'rp', tech: 'refining', jobs: 6, upkeep: 2, label: 'НПЗ (нефть → асфальт)', icon: 'refinery' },
   goldmine: { cost: { money: 150, wood: 20 }, needs: 'rp', grown: true, ore: 'gold', jobs: 5, prod: { gold: 0.4 }, label: 'Золотой прииск', icon: 'mine' },
+  // ore from the owner's stock into iron or gold bars (see SMELT), which later eras and goods need
+  smelter: { cost: { money: 350, stone: 40, wood: 20 }, needs: 'rp', tech: 'industry', jobs: 6, upkeep: 2, label: 'Металлургический завод (руда → слитки)', icon: 'smelter' },
 };
 const NEED_TEXT = { f: 'горит!', h: 'нет свободной лошади на складе', r: 'нет дороги рядом', p: 'нет электричества', w: 'нет воды', t: 'нет леса рядом', k: 'нет камня рядом', l: 'нет озера рядом' };
-const RES_TEXT = { money: 'денег', wood: 'дерева', stone: 'камня', food: 'еды', iron: 'железа', gold: 'золота', oil: 'нефти', asphalt: 'асфальта', horses: 'лошадей' };
+const RES_TEXT = { money: 'денег', wood: 'дерева', stone: 'камня', food: 'еды', iron: 'железной руды', gold: 'золотой руды', ironbar: 'железных слитков', goldbar: 'золотых слитков', oil: 'нефти', asphalt: 'асфальта', horses: 'лошадей' };
 const isRoad = t => t === 'road' || t === 'path' || t === 'cobble'; // a path is a road too, only slower
 // paved roads cost upkeep per tile and tick; a player who can't pay has worn roads, as slow as a path
 const ROAD_UPKEEP = { cobble: ['stone', 0.01], road: ['oil', 0.01] };
@@ -66,8 +68,8 @@ const LEVELS = [
   { name: 'Древность', icon: 'village', area: START * START },
   { name: 'Средневековье', icon: 'town', pop: 30, cost: 300, area: 400 },
   { name: 'Индустриальная эпоха', icon: 'ind', pop: 120, cost: 1000, rare: { iron: 20 }, area: 1000 },
-  { name: 'Новое время', icon: 'city', pop: 300, cost: 3000, rare: { iron: 50 }, area: 2500 },
-  { name: 'Современность', icon: 'metro', pop: 600, cost: 6000, rare: { iron: 100, gold: 20 }, area: 4000 },
+  { name: 'Новое время', icon: 'city', pop: 300, cost: 3000, rare: { ironbar: 25 }, area: 2500 },
+  { name: 'Современность', icon: 'metro', pop: 600, cost: 6000, rare: { ironbar: 50, goldbar: 10 }, area: 4000 },
 ];
 const UTIL_ERA = 3;
 // homes by era: built at the owner's current tier, older ones can be raised to it; the tower also needs skyscrapers
@@ -75,16 +77,16 @@ const HOME_TIERS = [
   { name: 'Хижина', cap: 4 },
   { name: 'Фахверковый дом', cap: 8, cost: { money: 40, wood: 15 } },
   { name: 'Кирпичный дом', cap: 14, cost: { money: 120, stone: 30 } },
-  { name: 'Многоэтажка', cap: 24, cost: { money: 300, stone: 40, iron: 10 } },
-  { name: 'Жилая башня', cap: 40, cost: { money: 800, stone: 60, iron: 20 }, tech: 'skyscrapers' },
+  { name: 'Многоэтажка', cap: 24, cost: { money: 300, stone: 40, ironbar: 5 } },
+  { name: 'Жилая башня', cap: 40, cost: { money: 800, stone: 60, ironbar: 10 }, tech: 'skyscrapers' },
 ];
 const tierOf = (s, i) => (s.hl || {})[i] ?? 0;
 // production buildings: built at the owner's era level, older ones can be raised to it; output grows with the level
 const PROD_K = [1, 1.4, 1.8, 2.3, 2.9];
-const UPGRADE = { farm: 1, sawmill: 1, quarry: 1, ironmine: 1, goldmine: 1, oilwell: 1, refinery: 1, ind: 1, shop: 1, depot: 1 }; // a depot's level multiplies its room instead
+const UPGRADE = { farm: 1, sawmill: 1, quarry: 1, ironmine: 1, goldmine: 1, oilwell: 1, refinery: 1, smelter: 1, ind: 1, shop: 1, depot: 1 }; // a depot's level multiplies its room instead
 const blOf = (s, i) => (s.bl || {})[i] ?? 0;
 const prodK = (s, i) => PROD_K[blOf(s, i)];
-const upCost = (t, L) => ({ money: Math.round(((B[t].cost.money || 60) + 60) * L * 0.6), ...(L < 2 ? { wood: 15 } : { stone: 12 * L }), ...(L >= 3 ? { iron: 4 * L } : {}) });
+const upCost = (t, L) => ({ money: Math.round(((B[t].cost.money || 60) + 60) * L * 0.6), ...(L < 2 ? { wood: 15 } : { stone: 12 * L }), ...(L >= 3 ? { ironbar: 2 * L } : {}) });
 // can tile i be raised one step now (homes by tier, producers by level), and what does it take to its era's top
 const canImprove = (s, i, p) => { const t = s.grid[i]; return !!p && (B[t] && B[t].home ? tierOf(s, i) < maxTier(p) : !!UPGRADE[t] && blOf(s, i) < Math.min(p.level || 0, PROD_K.length - 1)); };
 function improveCost(s, i, p) {
@@ -112,7 +114,7 @@ const TECH = [
   { id: 'geology', era: 2, branch: 'world', name: 'Геология', desc: 'нефтяная вышка' },
   { id: 'electricity', era: 2, branch: 'science', name: 'Электричество', desc: 'электростанция и ЛЭП' },
   { id: 'medicine', era: 2, branch: 'edu', name: 'Медицина', desc: 'больница: лечит лучше знахаря' },
-  { id: 'industry', era: 2, branch: 'art', name: 'Промышленность', desc: 'промзона и заводы' },
+  { id: 'industry', era: 2, branch: 'art', name: 'Промышленность', desc: 'промзона, заводы и металлургический завод' },
   { id: 'plumbing', era: 2, branch: 'social', name: 'Водопровод', desc: 'водокачка и трубы' },
   { id: 'refining', era: 3, branch: 'world', name: 'Нефтепереработка', desc: 'НПЗ и асфальтовые дороги' },
   { id: 'engine', era: 3, branch: 'science', name: 'Двигатель', desc: 'грузовики вместо телег; они жгут нефть, без неё грузы снова везут лошади' },
@@ -173,9 +175,9 @@ function setResearch(s, who, id) {
 // Market: base money price per unit to buy (PRICES) or sell (SELL); rare resources can only be sold.
 // Prices follow demand, shared by all players: buying pushes a resource's price up, selling pushes it down,
 // and every tick it drifts back towards the base (s.mk holds the factor per resource).
-const HIST_RES = ['money', 'wood', 'stone', 'food', 'iron', 'gold', 'oil', 'asphalt', 'horses'];
+const HIST_RES = ['money', 'wood', 'stone', 'food', 'iron', 'gold', 'ironbar', 'goldbar', 'oil', 'asphalt', 'horses'];
 const PRICES = { wood: 4, stone: 6, food: 3 };
-const SELL = { wood: 2, stone: 3, food: 1, iron: 15, gold: 40, oil: 8 };
+const SELL = { wood: 2, stone: 3, food: 1, iron: 15, gold: 40, ironbar: 40, goldbar: 100, oil: 8 };
 const DEMAND = 0.004, MK_MIN = 0.3, MK_MAX = 3; // 50 units bought → +20%
 const mkOf = (s, res) => (s.mk || {})[res] ?? 1;
 const priceOf = (s, p, res, sell) => { const b = (sell ? SELL : PRICES)[res]; return b ? Math.round(b * mkOf(s, res) * (sell && hasTech(p, 'globaltrade') ? 1.5 : 1) * 10) / 10 : 0; };
@@ -253,7 +255,7 @@ function claim(s, who, i) {
   const [x0, y0] = startCorner(i), tiles = rectTiles(x0, y0, x0 + START - 1, y0 + START - 1);
   if (tiles.some(k => s.owner[k])) return 'там уже чужая земля — выберите место правее, левее или дальше';
   for (const k of tiles) s.owner[k] = who;
-  s.players[who] = { res: { money: 1000, wood: 40, stone: 50, food: 50, iron: 0, gold: 0, oil: 0, asphalt: 0, horses: 0 }, demo: newDemo(), hist: [], tech: {}, rpts: {}, research: null, level: 0, pop: 0, jobs: 0, fed: true, delta: {}, color: COLORS[Object.keys(s.players).length % COLORS.length] };
+  s.players[who] = { res: { money: 1000, wood: 40, stone: 50, food: 50, iron: 0, gold: 0, ironbar: 0, goldbar: 0, oil: 0, asphalt: 0, horses: 0 }, demo: newDemo(), hist: [], tech: {}, rpts: {}, research: null, level: 0, pop: 0, jobs: 0, fed: true, delta: {}, color: COLORS[Object.keys(s.players).length % COLORS.length] };
   if (s.phase === 'draft') nextTurn(s);
   return null;
 }
@@ -384,16 +386,18 @@ const short = t => B[t].label.replace(/ \(.*\)/, '');
 // Goods don't go straight to the treasury: a producer fills its own stock, a full load leaves by truck for the
 // owner's nearest depot on the same road network and counts when it arrives (2 tiles per tick).
 // Factories make products the same way; depots then send products on to shops, which sell them for money.
-const CARGO_RES = ['food', 'wood', 'stone', 'iron', 'gold', 'oil'];
+const CARGO_RES = ['food', 'wood', 'stone', 'iron', 'gold', 'oil', 'ironbar', 'goldbar'];
 const LOAD = 8, STORE = 3 * LOAD; // a truck load; a producer with nowhere to send goods stops at STORE
 // what a factory (ind) can be set to make; input is taken from the owner's stock per unit made
 const PRODUCTS = {
   clothes:   { label: 'Одежда', input: {}, price: 3 },
   furniture: { label: 'Мебель', input: { wood: 1 }, price: 5 },
   canned:    { label: 'Консервы', input: { food: 1 }, price: 4 },
-  tools:     { label: 'Инструменты', input: { iron: 0.5 }, price: 7 },
-  jewelry:   { label: 'Украшения', input: { gold: 0.25 }, price: 14 },
+  tools:     { label: 'Инструменты', input: { ironbar: 0.25 }, price: 9 },
+  jewelry:   { label: 'Украшения', input: { goldbar: 0.2 }, price: 20 },
 };
+// what the metallurgical plant makes: one bar from `per` units of ore
+const SMELT = { ironbar: { label: 'Железные слитки', ore: 'iron', per: 2 }, goldbar: { label: 'Золотые слитки', ore: 'gold', per: 2 } };
 const PROD_TECH = { sawmill: 'forestry', quarry: 'masonry' }; // studies that make these 30% more
 const FACTORY_RATE = 1, SHOP_SALES = 2; // units per tick with a full staff
 // farm specializations; livestock farms raise horses, at most HORSES_PER_FARM each
@@ -552,7 +556,7 @@ function demographics(d, cap, cnt, hap, uniK = 1) { // uniK: online education do
 }
 
 // Pollution per tile from factories, power plants, quarries and mines, fading over 5 tiles.
-const POLLUTERS = { ind: 1, plant: 0.8, quarry: 0.5, ironmine: 0.6, goldmine: 0.6, oilwell: 0.6, refinery: 1.2 };
+const POLLUTERS = { smelter: 1.2, ind: 1, plant: 0.8, quarry: 0.5, ironmine: 0.6, goldmine: 0.6, oilwell: 0.6, refinery: 1.2 };
 function pollution(s) {
   const p = new Float32Array(W * H);
   s.grid.forEach((t, i) => {
@@ -573,7 +577,8 @@ function setSpec(s, who, i, v) {
   if (s.grid[i] === 'farm') {
     if (!FARM[v]) return 'неизвестная специализация';
     if (v === 'livestock') { const lock = techLock(s.players[who], 'agriculture'); if (lock) return lock; }
-  } else if (s.grid[i] !== 'ind') return 'выпуск настраивается только у завода или фермы';
+  } else if (s.grid[i] === 'smelter') { if (!SMELT[v]) return 'неизвестный металл'; }
+  else if (s.grid[i] !== 'ind') return 'выпуск настраивается только у завода или фермы';
   else if (!PRODUCTS[v]) return 'неизвестный товар';
   (s.spec = s.spec || {})[i] = v;
   return null;
@@ -661,7 +666,13 @@ function tick(s) {
     s.grid.forEach((t, i) => {
       if (own[i] !== who || st[i] || !B[t]) return;
       let res = null, made = 0;
-      if (t === 'refinery') { // oil from the owner's stock into asphalt
+      if (t === 'smelter') { // ore from the owner's stock into bars
+        res = s.spec[i] || 'ironbar';
+        const m = SMELT[res], full = FACTORY_RATE * wrOther * prodK(s, i) * auto;
+        made = Math.min(full, R[m.ore] / m.per);
+        if (made < full * 0.99) starved.push(i);
+        R[m.ore] -= made * m.per; used[m.ore] = (used[m.ore] || 0) + made * m.per;
+      } else if (t === 'refinery') { // oil from the owner's stock into asphalt
         res = 'asphalt';
         made = Math.min(FACTORY_RATE * wrOther * prodK(s, i) * auto, R.oil);
         if (made < FACTORY_RATE * wrOther * prodK(s, i) * auto * 0.99) starved.push(i);
@@ -740,8 +751,8 @@ function tick(s) {
     }
     Object.assign(p, { cure: cureOf(cnt, popOf(d)), pop, cap, growth: popOf(d) - before0, jobs, workers: Math.round(fo + Math.max(0, fOther)), wr: { off: wrOff, other: wrOther }, cov, fed, flow, needs, happy: hap });
   }
-  for (const i in s.stock) if (!B[s.grid[i]] || !(B[s.grid[i]].prod || s.grid[i] === 'ind' || s.grid[i] === 'refinery')) delete s.stock[i]; // building gone
-  for (const i in s.spec) if (s.grid[i] !== 'ind' && s.grid[i] !== 'farm') delete s.spec[i];
+  for (const i in s.stock) if (!B[s.grid[i]] || !(B[s.grid[i]].prod || s.grid[i] === 'ind' || s.grid[i] === 'refinery' || s.grid[i] === 'smelter')) delete s.stock[i]; // building gone
+  for (const i in s.spec) if (s.grid[i] !== 'ind' && s.grid[i] !== 'farm' && s.grid[i] !== 'smelter') delete s.spec[i];
   for (const i in s.breed) if (s.grid[i] !== 'farm') delete s.breed[i];
   for (const i in s.hl) if (!B[s.grid[i]] || !B[s.grid[i]].home) delete s.hl[i];
   for (const i in s.bl) if (!UPGRADE[s.grid[i]]) delete s.bl[i];
@@ -892,7 +903,7 @@ function room(s) {
     }
     if (m.type === 'spec') {
       const err = setSpec(s, who, m.i, String(m.v));
-      if (!err) r.say(`${who}: ${FARM[m.v] ? 'ферма — ' + FARM[m.v].label.toLowerCase() : 'завод выпускает ' + PRODUCTS[m.v].label.toLowerCase()}`);
+      if (!err) r.say(`${who}: ${FARM[m.v] ? 'ферма — ' + FARM[m.v].label.toLowerCase() : SMELT[m.v] ? 'металлургический завод выпускает ' + SMELT[m.v].label.toLowerCase() : 'завод выпускает ' + PRODUCTS[m.v].label.toLowerCase()}`);
       return err;
     }
     if (m.type === 'horses') return setHorses(s, who, m.i, m.v);
@@ -923,5 +934,5 @@ function room(s) {
   return r;
 }
 
-const api = { W, H, B, NEED_TEXT, WANT_TEXT, POWER, WATER, START, LEVELS, levelOf, upgradeBlock, PRICES, SELL, RES_TEXT, trade, priceOf, mkOf, hasMarket, HIST_RES, CLEAR, startCorner, landOf, landPrice, newGame, start, nextTurn, compute, tick, act, actArea, wants, happiness, residents, commute, ownerOf, room, SPEEDS, LOAD, roadNets, networks, PRODUCTS, GROUPS, SEATS, pollution, setSpec, popOf, demographics, TECH, TECH_COST, BRANCHES, techOf, hasTech, setResearch, allTech, FARM, HORSES_PER_FARM, horsesPerFarm, UTIL_ERA, isRoad, EVENT_P, FIRE_T, FIRE_PUT, FIRE_COVER, setEvents, startFire, disaster, cureOf, covered, slowAt, wornAt, ROAD_UPKEEP, PROD_K, UPGRADE, blOf, prodK, upCost, canImprove, improveCost, horseUse, setHorses, HORSE_FOOD, BASE_CAP, DEPOT_CAP, depotCap, capOf, TRUCK_OIL, takesHorses, HOME_TIERS, tierOf, homeCap, maxTier };
+const api = { W, H, B, NEED_TEXT, WANT_TEXT, POWER, WATER, START, LEVELS, levelOf, upgradeBlock, PRICES, SELL, RES_TEXT, trade, priceOf, mkOf, hasMarket, HIST_RES, CLEAR, startCorner, landOf, landPrice, newGame, start, nextTurn, compute, tick, act, actArea, wants, happiness, residents, commute, ownerOf, room, SPEEDS, LOAD, roadNets, networks, PRODUCTS, SMELT, GROUPS, SEATS, pollution, setSpec, popOf, demographics, TECH, TECH_COST, BRANCHES, techOf, hasTech, setResearch, allTech, FARM, HORSES_PER_FARM, horsesPerFarm, UTIL_ERA, isRoad, EVENT_P, FIRE_T, FIRE_PUT, FIRE_COVER, setEvents, startFire, disaster, cureOf, covered, slowAt, wornAt, ROAD_UPKEEP, PROD_K, UPGRADE, blOf, prodK, upCost, canImprove, improveCost, horseUse, setHorses, HORSE_FOOD, BASE_CAP, DEPOT_CAP, depotCap, capOf, TRUCK_OIL, takesHorses, HOME_TIERS, tierOf, homeCap, maxTier };
 if (typeof module !== 'undefined') module.exports = api; else window.Game = api;

@@ -93,7 +93,7 @@ G.act(t, 'A', 'road', W + 10); G.act(t, 'A', 'plant', 10); G.act(t, 'A', 'power'
 G.act(t, 'B', 'road', W + 13); G.act(t, 'B', 'house', 13); // A's line at x 11 and B's at x 12 touch across the border
 G.act(t, 'B', 'power', 12);
 assert.ok(G.compute(t)[13].includes('p'), 'power must not cross into B');
-t.players.B.res.iron = 50; t.hl[13] = 2; // a brick house is not modern: it lives without power and water in any era
+t.players.B.res.iron = 50; t.players.B.res.ironbar = 50; t.hl[13] = 2; // a brick house is not modern: it lives without power and water in any era
 assert.ok(!/[pw]/.test(G.compute(t)[13]), 'old homes need no utilities');
 assert.strictEqual(G.act(t, 'B', 'improve', 13), null);
 assert.ok(/p/.test(G.compute(t)[13]) && /w/.test(G.compute(t)[13]), 'the block of flats needs power and water');
@@ -157,9 +157,9 @@ assert.strictEqual(V.res.money, m1 + 75); assert.strictEqual(V.res.iron, 0);
 V.res.iron = 2; V.tech.globaltrade = true; v.mk = {}; // global trade sells 1.5 times dearer
 assert.strictEqual(G.trade(v, 'V', 'iron', 2, true), null);
 assert.strictEqual(V.res.money, m1 + 75 + 45);
-assert.strictEqual(G.trade(v, 'V', 'iron', 1, true), 'не хватает железа');
+assert.strictEqual(G.trade(v, 'V', 'iron', 1, true), 'не хватает железной руды');
 V.pop = 120; V.res.money = 5000;
-assert.strictEqual(G.act(v, 'V', 'upgrade', 0), 'для эпохи «Индустриальная эпоха» нужно 20 железа');
+assert.strictEqual(G.act(v, 'V', 'upgrade', 0), 'для эпохи «Индустриальная эпоха» нужно 20 железной руды');
 V.res.iron = 20;
 assert.strictEqual(G.act(v, 'V', 'upgrade', 0), null);
 assert.strictEqual(V.res.iron, 0); assert.strictEqual(V.res.money, 4000);
@@ -260,10 +260,23 @@ for (let k = 0; k < 120 && !sale; k++) {
 }
 assert.ok(toDepot && toShop && sale, `furniture reached the depot (${toDepot}), went to the shop (${toShop}) and sold (${sale})`);
 assert.ok(FP.res.wood < 500, 'the factory used wood');
+// the metallurgical plant turns ore from the stock into bars, iron or gold as set
+FP.res.oil = 99; f.ships = []; f.stock = {};
+f.grid[9] = 'grass'; assert.strictEqual(G.act(f, 'F', 'smelter', 9), null);
+assert.strictEqual(G.setSpec(f, 'F', 9, 'silverbar'), 'неизвестный металл');
+FP.res.iron = 40; FP.res.gold = 0; FP.res.ironbar = 0;
+for (let k = 0; k < 40; k++) G.tick(f);
+assert.ok(FP.res.iron < 40 && FP.flow.iron.some(([w]) => w === 'Заводы берут сырьё') || FP.res.ironbar > 0, 'iron ore goes into bars');
+assert.ok(FP.res.ironbar > 0 || f.ships.some(x => x.res === 'ironbar'), 'iron bars reach the depot');
+assert.strictEqual(G.setSpec(f, 'F', 9, 'goldbar'), null);
+FP.res.iron = 0; FP.res.gold = 10; f.stock[9] = 0;
+G.tick(f); G.tick(f);
+assert.ok(FP.res.gold < 10, 'now it takes gold');
+assert.ok(f.starved.includes(9) || FP.res.gold > 0, 'little ore: the plant runs short');
 // trucks burn oil; a level-up gives a depot more room
 assert.ok(FP.flow.oil.some(([w, v]) => w.startsWith('Грузовики') && v < 0) || FP.res.oil < 99, 'trucks burn oil');
 assert.strictEqual(G.depotCap(f, 10), G.DEPOT_CAP * G.PROD_K[G.blOf(f, 10)]);
-FP.level = 3; FP.res.iron = 99; const cap0 = G.capOf(f, 'F');
+FP.level = 3; FP.res.ironbar = 99; const cap0 = G.capOf(f, 'F');
 assert.strictEqual(G.act(f, 'F', 'improve', 10), null);
 assert.strictEqual(G.capOf(f, 'F') - cap0, Math.round(G.DEPOT_CAP * G.PROD_K[G.blOf(f, 10)]) - Math.round(G.DEPOT_CAP * G.PROD_K[G.blOf(f, 10) - 1]), 'the better depot holds more');
 assert.strictEqual(G.setHorses(f, 'F', 10, 1), 'этому зданию лошади не нужны');
@@ -355,7 +368,7 @@ h.grid[6] = 'oil';
 assert.strictEqual(G.act(h, 'H', 'well', 7), 'нефтяная вышка ставится на месторождение нефти');
 assert.strictEqual(G.act(h, 'H', 'well', 6), null);
 assert.strictEqual(h.grid[6], 'oilwell');
-HP.res.iron = 50; HP.res.oil = 30;
+HP.res.iron = 50; HP.res.ironbar = 50; HP.res.oil = 30;
 assert.strictEqual(G.act(h, 'H', 'refinery', 9), null);
 for (let k = 0; k < 10; k++) G.tick(h);
 assert.ok(HP.res.oil < 30 && h.stock[9] > 0, 'the refinery turned oil into asphalt');
@@ -368,7 +381,7 @@ const hm = G.newGame(11);
 hm.grid.fill('grass');
 G.start(hm, ['M']); G.act(hm, 'M', 'claim', 0);
 const MP = hm.players.M;
-MP.tech = G.allTech(); MP.tech.skyscrapers = false; MP.res = { ...MP.res, money: 1e5, wood: 1e3, stone: 1e3, iron: 1e3 };
+MP.tech = G.allTech(); MP.tech.skyscrapers = false; MP.res = { ...MP.res, money: 1e5, wood: 1e3, stone: 1e3, iron: 1e3, ironbar: 1e3, goldbar: 1e3 };
 assert.strictEqual(G.act(hm, 'M', 'house', 5), null);
 assert.strictEqual(G.tierOf(hm, 5), 0, 'Древность builds huts');
 assert.strictEqual(G.homeCap(hm, 5), 4);
@@ -397,7 +410,7 @@ const lv = G.newGame(13);
 lv.grid.fill('grass');
 G.start(lv, ['L']); G.act(lv, 'L', 'claim', 0);
 const LP = lv.players.L;
-LP.res = { ...LP.res, money: 1e5, wood: 1e3, stone: 1e3, iron: 1e3 }; LP.tech = G.allTech();
+LP.res = { ...LP.res, money: 1e5, wood: 1e3, stone: 1e3, iron: 1e3, ironbar: 1e3, goldbar: 1e3 }; LP.tech = G.allTech();
 assert.strictEqual(G.act(lv, 'L', 'sawmill', 2), null);
 assert.strictEqual(G.blOf(lv, 2), 0, 'built in Antiquity: level 1');
 assert.strictEqual(G.act(lv, 'L', 'improve', 2), 'уровень 2 откроется в эпоху «Средневековье»');
@@ -464,7 +477,7 @@ const ev = G.newGame(17);
 ev.grid.fill('grass');
 G.start(ev, ['E']); G.act(ev, 'E', 'claim', 0);
 const EP = ev.players.E;
-EP.res = { ...EP.res, money: 1e5, wood: 1e3, stone: 1e3, iron: 1e3 }; EP.tech = G.allTech();
+EP.res = { ...EP.res, money: 1e5, wood: 1e3, stone: 1e3, iron: 1e3, ironbar: 1e3, goldbar: 1e3 }; EP.tech = G.allTech();
 G.act(ev, 'E', 'path', W + 1); G.act(ev, 'E', 'farm', 1); G.act(ev, 'E', 'sawmill', 11);
 ev.events = []; G.startFire(ev, 1);
 assert.ok(G.compute(ev)[1].includes('f'), 'a burning building does not work');
