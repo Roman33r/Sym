@@ -246,14 +246,14 @@
   <div class="hrow">
     <span class="logo">Город вместе</span>
     <span id="tickN" class="date"></span>
-    <div id="speed" class="hgroup" aria-label="Скорость игры"><button data-v="0" title="Пауза (пробел)"><img class="ic" src="icons/pause.png?v=43" alt="Пауза"></button><button data-v="1" title="Скорость ×1"><img class="ic" src="icons/play.png?v=43" alt="×1"></button><button data-v="2" title="Скорость ×2"><img class="ic" src="icons/fast.png?v=43" alt="×2"></button><button data-v="4" title="Скорость ×4"><img class="ic" src="icons/faster.png?v=43" alt="×4"></button></div>
+    <div id="speed" class="hgroup" aria-label="Скорость игры"><button data-v="0" title="Пауза (пробел)"><img class="ic" src="icons/pause.png?v=45" alt="Пауза"></button><button data-v="1" title="Скорость ×1"><img class="ic" src="icons/play.png?v=45" alt="×1"></button><button data-v="2" title="Скорость ×2"><img class="ic" src="icons/fast.png?v=45" alt="×2"></button><button data-v="4" title="Скорость ×4"><img class="ic" src="icons/faster.png?v=45" alt="×4"></button></div>
     <div class="spacer"></div>
     <div class="hgroup acts" aria-label="Управление городом">
-      <button id="commBtn" title="Показать ЛЭП, водопровод и куда доходят электричество и вода"><img class="ic" src="icons/power.png?v=43" alt=""><span>Коммуникации</span></button>
-      <button id="polBtn" title="Показать загрязнение от заводов, станций, карьеров и рудников"><img class="ic" src="icons/pollution.png?v=43" alt=""><span>Загрязнение</span></button>
-      <button id="resBtn" title="Дерево исследований: открывает постройки и следующие эпохи"><img class="ic" src="icons/research.png?v=43" alt=""><span>Исследования</span></button>
-      <button id="mktBtn" title="Рынок: купить и продать ресурсы, цены зависят от спроса"><img class="ic" src="icons/market.png?v=43" alt=""><span>Рынок</span></button>
-      <button id="eduBtn" title="График состава населения по образованию"><img class="ic" src="icons/edu.png?v=43" alt=""><span>Образование</span></button>
+      <button id="commBtn" title="Показать ЛЭП, водопровод и куда доходят электричество и вода"><img class="ic" src="icons/power.png?v=45" alt=""><span>Коммуникации</span></button>
+      <button id="polBtn" title="Показать загрязнение от заводов, станций, карьеров и рудников"><img class="ic" src="icons/pollution.png?v=45" alt=""><span>Загрязнение</span></button>
+      <button id="resBtn" title="Дерево исследований: открывает постройки и следующие эпохи"><img class="ic" src="icons/research.png?v=45" alt=""><span>Исследования</span></button>
+      <button id="mktBtn" title="Рынок: купить и продать ресурсы, цены зависят от спроса"><img class="ic" src="icons/market.png?v=45" alt=""><span>Рынок</span></button>
+      <button id="eduBtn" title="График состава населения по образованию"><img class="ic" src="icons/edu.png?v=45" alt=""><span>Образование</span></button>
     </div>
     <div id="zoom" class="hgroup" title="Масштаб (или колесо мыши)"><button id="zout" aria-label="Уменьшить">−</button><button id="zin" aria-label="Увеличить">+</button></div>
   </div>
@@ -272,18 +272,18 @@
   <div class="sec"><h4>Игроки</h4><div id="players"></div></div>
   <div class="sec"><h4>События</h4><div id="log" aria-live="polite"></div></div>
   <div class="sec"><h4>Управление</h4><div id="info">ЛКМ — строить (дороги и линии можно тянуть, зоны — выделять прямоугольником), ПКМ — выйти из строительства в «Информацию», а в «Информации» — снести. Колесо — масштаб к курсору, Shift+колесо, стрелки или WASD (с Shift быстрее) — перемещение, пробел — пауза.</div></div>
-  <button id="tutBtn" class="ghost"><img class="ic" src="icons/info.png?v=43" alt=""> Пройти обучение заново</button>
-  <button id="restart"><img class="ic" src="icons/restart.png?v=43" alt=""> Новый город</button>
+  <button id="tutBtn" class="ghost"><img class="ic" src="icons/info.png?v=45" alt=""> Пройти обучение заново</button>
+  <button id="restart"><img class="ic" src="icons/restart.png?v=45" alt=""> Новый город</button>
 </div>
 </div>
-<div id="resModal" class="modal" hidden><div class="mwin" role="dialog" aria-label="Дерево исследований"><div class="mhead"><b><img class="ic" src="icons/research.png?v=43" alt=""> Дерево исследований</b><span id="resRate"></span><button id="resClose" aria-label="Закрыть">×</button></div><div class="mbody"><div id="research" class="tree"></div></div></div></div>
-<div id="eduModal" class="modal" hidden><div class="mwin" role="dialog" aria-label="Образование"><div class="mhead"><b><img class="ic" src="icons/edu.png?v=43" alt=""> Состав населения по образованию</b><button id="eduClose" aria-label="Закрыть">×</button></div><div class="mbody" style="display:flex;gap:18px;flex-wrap:wrap;align-items:center"><canvas id="eduChart" class="chart" width="560" height="260"></canvas><div id="eduLegend"></div></div></div></div>
-<div id="mktModal" class="modal" hidden><div class="mwin" role="dialog" aria-label="Рынок"><div class="mhead"><b><img class="ic" src="icons/market.png?v=43" alt=""> Рынок</b><span>цены растут от покупок и падают от продаж, потом возвращаются</span><button id="mktClose" aria-label="Закрыть">×</button></div><div class="mbody"><div id="mkt"></div></div></div></div>
+<div id="resModal" class="modal" hidden><div class="mwin" role="dialog" aria-label="Дерево исследований"><div class="mhead"><b><img class="ic" src="icons/research.png?v=45" alt=""> Дерево исследований</b><span id="resRate"></span><button id="resClose" aria-label="Закрыть">×</button></div><div class="mbody"><div id="research" class="tree"></div></div></div></div>
+<div id="eduModal" class="modal" hidden><div class="mwin" role="dialog" aria-label="Образование"><div class="mhead"><b><img class="ic" src="icons/edu.png?v=45" alt=""> Состав населения по образованию</b><button id="eduClose" aria-label="Закрыть">×</button></div><div class="mbody" style="display:flex;gap:18px;flex-wrap:wrap;align-items:center"><canvas id="eduChart" class="chart" width="560" height="260"></canvas><div id="eduLegend"></div></div></div></div>
+<div id="mktModal" class="modal" hidden><div class="mwin" role="dialog" aria-label="Рынок"><div class="mhead"><b><img class="ic" src="icons/market.png?v=45" alt=""> Рынок</b><span>цены растут от покупок и падают от продаж, потом возвращаются</span><button id="mktClose" aria-label="Закрыть">×</button></div><div class="mbody"><div id="mkt"></div></div></div></div>
 <div id="chartModal" class="modal" hidden><div class="mwin" role="dialog" aria-label="График ресурса"><div class="mhead"><b id="chartTitle" style="font-size:16px"></b><button id="chartClose" aria-label="Закрыть">×</button></div><div class="mbody"><canvas id="resChart" class="chart" width="600" height="260"></canvas><div id="chartNote"></div></div></div></div>
 <div id="toast" role="status" hidden></div>
 <div id="netbox"><div class="box" id="netStep"></div></div>
 <!-- ?v= must change with every release: GitHub Pages lets browsers cache files for 10 minutes, and a new page with an old game.js breaks -->
-<script src="game.js?v=43"></script>
+<script src="game.js?v=45"></script>
 <script>
 // W, H, B, NEED_TEXT, POWER, WATER are globals from game.js
 // show script errors instead of a silently frozen game (e.g. a stale cached game.js)
@@ -305,7 +305,7 @@ $('name').onchange = () => {
   if (net) net.rename();
 };
 
-const ic = n => `<img class="ic" src="icons/${n}.png?v=43" alt="">`; // emoji don't render in every browser, so icons are SVG files
+const ic = n => `<img class="ic" src="icons/${n}.png?v=45" alt="">`; // emoji don't render in every browser, so icons are SVG files
 const RES = { money: 'money', wood: 'wood', stone: 'stone', food: 'food', iron: 'iron', gold: 'gold', oil: 'oil', asphalt: 'asphalt', horses: 'horses' };
 const costText = c => Object.entries(c).map(([k, v]) => v + ic(RES[k])).join(' ');
 const TOOLS = { info: { label: 'Информация', icon: 'info', cost: {} }, buy: { label: 'Купить землю', icon: 'buy', cost: {}, tech: 'explore' }, clear: { label: 'Расчистить', icon: 'clear', cost: {}, note: 'лес 5' + ic('money') + ', камень 10' + ic('money') }, ...B, bulldoze: { label: 'Снести', icon: 'bulldoze', cost: { money: 2 } } };
@@ -489,9 +489,9 @@ const nbr = (i, dx, dy) => { const x = i % W + dx, y = ((i / W) | 0) + dy; retur
 // bottom vertex, the diamond is 256 px wide). Whatever has no texture is drawn by code as before.
 const TEX = {}, texCache = new Map();
 let SPR = {}, texReady = false;
-fetch('textures/sprites.json?v=43').then(r => r.json()).then(m => {
+fetch('textures/sprites.json?v=45').then(r => r.json()).then(m => {
   SPR = m;
-  return Promise.all(Object.keys(m).map(n => new Promise(ok => { const im = new Image(); im.onload = () => { TEX[n] = im; ok(); }; im.onerror = ok; im.src = `textures/${n}.png?v=43`; })));
+  return Promise.all(Object.keys(m).map(n => new Promise(ok => { const im = new Image(); im.onload = () => { TEX[n] = im; ok(); }; im.onerror = ok; im.src = `textures/${n}.png?v=45`; })));
 }).then(() => {
   if (TEX.prop_puddle) { let k = 1; while (SPR['oil_' + k]) k++; TEX['oil_' + k] = TEX.prop_puddle; SPR['oil_' + k] = SPR.prop_puddle; } // variants count up from 1
   if (TEX.road_b && TEX.road_one) buildRoads();
@@ -558,8 +558,8 @@ function buildRoads() {
   }
 }
 const VEH = {}, VSZ = {};
-fetch('textures/vehicles.json?v=43').then(r => r.json()).then(m => Object.keys(m).forEach(n => {
-  const im = new Image(); im.onload = () => { VEH[n] = im; VSZ[n] = m[n]; }; im.src = `textures/veh_${n}.png?v=43`;
+fetch('textures/vehicles.json?v=45').then(r => r.json()).then(m => Object.keys(m).forEach(n => {
+  const im = new Image(); im.onload = () => { VEH[n] = im; VSZ[n] = m[n]; }; im.src = `textures/veh_${n}.png?v=45`;
 })).catch(() => {});
 const MIRROR = { se: 'sw', sw: 'se', nw: 'ne', ne: 'nw', e: 'w', w: 'e' }, BACK = { se: 'nw', nw: 'se', sw: 'ne', ne: 'sw' };
 // draws vehicle `base` at screen point (x, y) heading (dx, dy), `wid` tiles wide on screen; false when it has no picture.
@@ -1242,6 +1242,7 @@ function draw() {
   drawTraffic(vx, vy, vw, vh);
   drawDepositFx(vx, vy, vw, vh, performance.now());
   drawFires(vx, vy, vw, vh, performance.now());
+  drawFiremen(vx, vy, vw, vh);
   if (sel >= 0) {
     const clr = tool === 'clear', buy = tool === 'buy', imp = tool === 'improve', [x0, y0, x1, y1] = selRect(), col = imp ? '130,230,150' : buy ? '255,225,80' : clr ? '235,140,60' : ZCOL[B[tool].zone];
     const price = buy && st.players[name] ? Game.landPrice(st, name) : 0;
@@ -1284,6 +1285,70 @@ function drawFires(vx, vy, vw, vh, t) {
       ctx.fillStyle = `rgba(70,70,75,${0.45 * (1 - ph)})`;
       ctx.beginPath(); ctx.arc(px + Math.sin(ph * 5 + i) * S * 0.2, py - S * (0.7 + ph * 1.6), S * (0.12 + ph * 0.2), 0, 7); ctx.fill();
     }
+  }
+}
+
+// ---- Firefighters: when a building catches fire within reach of a well or a fire station, people run from it
+// with buckets, throw the water at the fire and run back for more while it burns (the game puts it out after
+// Game.FIRE_PUT ticks). Only a picture of what the rules do; they move straight across the tiles, not along roads.
+const firemen = [], FF_RUN = 2.2, FF_THROW = 1.1; // tiles a second at ×1; seconds for one throw
+let fireSeen = new Set();
+function fireSource(i) { // the nearest well or station whose reach covers tile i
+  const x = i % W, y = i / W | 0; let best = -1, bd = 1e9;
+  for (const [t, r] of Object.entries(Game.FIRE_COVER))
+    for (let Y = Math.max(0, y - r); Y <= Math.min(H - 1, y + r); Y++) for (let X = Math.max(0, x - r); X <= Math.min(W - 1, x + r); X++) {
+      const d = (X - x) ** 2 + (Y - y) ** 2;
+      if (st.grid[Y * W + X] === t && d < bd) { bd = d; best = Y * W + X; }
+    }
+  return best;
+}
+function fireWatch() { // on each state: send people to fires that just started
+  const now = new Set(Object.keys(st.fire || {}));
+  for (const k of now) if (!fireSeen.has(k)) {
+    const to = +k, from = fireSource(to); if (from < 0) continue;
+    const fx = to % W + 0.5, fy = (to / W | 0) + 0.5, sx = from % W + 0.5, sy = (from / W | 0) + 0.5, d = Math.hypot(sx - fx, sy - fy) || 1;
+    for (let n = 0, many = st.grid[from] === 'firestation' ? 3 : 2; n < many; n++) { // stand around the fire on the near side
+      const side = (n - (many - 1) / 2) * 0.35;
+      firemen.push({ fire: k, x: sx, y: sy, hx: sx, hy: sy, tx: fx + (sx - fx) / d * 0.6 - (sy - fy) / d * side, ty: fy + (sy - fy) / d * 0.6 + (sx - fx) / d * side, state: 'go', wait: n * 0.35, t: 0, run: 0 });
+    }
+  }
+  fireSeen = now;
+}
+function firemenStep(dt) {
+  for (let k = firemen.length - 1; k >= 0; k--) {
+    const a = firemen[k];
+    if (a.wait > 0) { a.wait -= dt; continue; }
+    if (a.state === 'throw') { a.t += dt / FF_THROW; if (a.t >= 1) { a.state = 'back'; a.t = 0; } continue; }
+    const [gx2, gy2] = a.state === 'go' ? [a.tx, a.ty] : [a.hx, a.hy], dx = gx2 - a.x, dy = gy2 - a.y, d = Math.hypot(dx, dy), stepLen = FF_RUN * dt;
+    a.dx = dx; a.dy = dy;
+    if (d <= stepLen) {
+      a.x = gx2; a.y = gy2;
+      if (a.state === 'go') { a.state = 'throw'; a.t = 0; a.dx = a.tx - a.hx; a.dy = a.ty - a.hy; }
+      else if (st.fire && a.fire in st.fire) a.state = 'go'; // still burning: another bucket
+      else firemen.splice(k, 1);
+    } else { a.x += dx / d * stepLen; a.y += dy / d * stepLen; a.run += stepLen; }
+  }
+}
+// which of the four ways a move points to, and the picture of it: the sheet has run se/nw and throw se/ne, the rest mirrored
+const ffWay = (dx, dy) => Math.abs(dx) >= Math.abs(dy) ? (dx > 0 ? 'se' : 'nw') : (dy > 0 ? 'sw' : 'ne');
+const FF_HAVE = { run: { se: ['se', 0], sw: ['se', 1], nw: ['nw', 0], ne: ['nw', 1] }, throw: { se: ['se', 0], sw: ['se', 1], ne: ['ne', 0], nw: ['ne', 1] } };
+function drawFiremen(vx, vy, vw, vh) {
+  for (const a of firemen) {
+    if (a.wait > 0) continue;
+    const act = a.state === 'throw' ? 'throw' : 'run', [way, flip] = FF_HAVE[act][ffWay(a.dx || 1, a.dy || 0)];
+    const f = act === 'throw' ? 1 + Math.min(5, Math.floor(a.t * 6)) : 1 + Math.floor(a.run * 9) % 6, n = `ff_${act}_${way}_${f}`;
+    const [x, y] = P(a.x, a.y), im = VEH[n], m = VSZ[n];
+    if (!im || x < vx - S * 2 || y < vy - S || x > vx + vw + S * 2 || y > vy + vh + S * 2) continue;
+    const h = Math.round(0.62 * S), w = Math.max(2, Math.round(m[0] * h / m[1])), key = 'ff|' + n + '|' + h + (flip ? '|f' : '');
+    let c2 = texCache.get(key);
+    if (!c2) {
+      c2 = document.createElement('canvas'); c2.width = w; c2.height = h;
+      const g = c2.getContext('2d'); g.imageSmoothingQuality = 'high';
+      if (flip) { g.translate(w, 0); g.scale(-1, 1); }
+      g.drawImage(im, 0, 0, w, h); texCache.set(key, c2);
+    }
+    const ax = (flip ? m[0] - m[2] : m[2]) * h / m[1];
+    ctx.drawImage(c2, Math.round(x - ax), Math.round(y - h)); // feet on the point
   }
 }
 
@@ -1489,7 +1554,7 @@ function frameLoop(t) {
   const dt = Math.min(0.1, (t - lastFrame) / 1000 || 0);
   lastFrame = t;
   panStep(dt); zoomStep(dt);
-  if (st) { trafficStep(dt * (st.speed ?? 1)); draw(); }
+  if (st) { trafficStep(dt * (st.speed ?? 1)); firemenStep(dt * (st.speed ?? 1)); draw(); }
   requestAnimationFrame(frameLoop);
 }
 requestAnimationFrame(frameLoop);
@@ -1592,7 +1657,7 @@ const DESC = {
   mine: 'Добывает железо или золото. Ставится прямо на месторождение.',
   market: 'Здесь вы торгуете ресурсами: окно «Рынок» вверху. Цены общие для всех и зависят от спроса.',
   depot: 'Сюда везут сырьё и товары, отсюда товары едут в магазины. До двигателя возят телеги: каждой нужна лошадь.',
-  firewell: 'Тушит пожары в 5 клетках вокруг: горящее здание рядом с колодцем гасят за два тика. Без колодца пожар сжигает здание и может перекинуться на соседей.',
+  firewell: 'Тушит пожары в 5 клетках вокруг: жители бегут от колодца с вёдрами и заливают огонь за несколько тиков. Без колодца пожар сжигает здание и может перекинуться на соседей.',
   firestation: 'Пожарная станция: тушит пожары в 12 клетках вокруг. Нужны дорога и работники.',
   healer: 'Дом знахаря: во время эпидемии спасает половину из 40 жителей. Больница лечит лучше — 90% из 150.',
   kinder: 'Места для 30 детей. Повышает рождаемость.',
@@ -1689,6 +1754,7 @@ function render() {
     (me.sick > 0 ? `<span class="warn" title="Лечат знахари и больницы: сейчас спасают ${Math.round((me.cure || 0) * 100)}%">${ic('sick')} Эпидемия: ещё ${me.sick} т.${me.died ? `, −${me.died} жит./тик` : ''}</span>` : '') +
     (me.drought > 0 ? `<span class="warn" title="Фермы дают вдвое меньше еды (с «Орошением» — на четверть)">${ic('drought')} Засуха: ещё ${me.drought} т.</span>` : '');
   if (tipKey) showTip();
+  fireWatch();
   eduChart(me); factoryPanel(); researchPanel(me); techToast(me); eventToast(); mktPanel(me); resChart(me);
 }
 const esc = s => s.replace(/[&<>"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[ch]);
@@ -1799,7 +1865,7 @@ $('factory').onclick = e => {
 
 // research tree in a window in the middle of the screen: eras are columns, branches are rows,
 // each branch's studies are linked from era to era; studies of the current era can be picked
-const TECH_ICON = { explore: 'buy', agriculture: 'horses', writing: 'edu', crafts: 'house', community: 'park', trade: 'money', mechanics: 'mine', schools: 'school', architecture: 'shop', post: 'stop', geology: 'oilwell', electricity: 'plant', medicine: 'hospital', industry: 'ind', plumbing: 'pump', refining: 'refinery', engine: 'engine', universities: 'uni', business: 'zoff', transit: 'bus', herbalism: 'herbalism', firefighting: 'firefighting', quarantine: 'quarantine', seismic: 'seismic', forestry: 'sawmill', irrigation: 'pump', breeding: 'horses', masonry: 'quarry', banking: 'upkeep', printing: 'copy', preserving: 'canned', logistics: 'depot', automation: 'prod', globaltrade: 'money', computers: 'research', elearning: 'edu', skyscrapers: 'upgrade', ecology: 'park' };
+const TECH_ICON = { explore: 'buy', agriculture: 'horses', writing: 'edu', crafts: 'house', community: 'firewell', trade: 'money', mechanics: 'mine', schools: 'school', architecture: 'shop', post: 'stop', geology: 'oilwell', electricity: 'plant', medicine: 'hospital', industry: 'ind', plumbing: 'pump', refining: 'refinery', engine: 'engine', universities: 'uni', business: 'zoff', transit: 'bus', herbalism: 'herbalism', firefighting: 'firefighting', quarantine: 'quarantine', seismic: 'seismic', forestry: 'sawmill', irrigation: 'pump', breeding: 'horses', masonry: 'quarry', banking: 'upkeep', printing: 'copy', preserving: 'canned', logistics: 'depot', automation: 'prod', globaltrade: 'money', computers: 'research', elearning: 'edu', skyscrapers: 'upgrade', ecology: 'park' };
 const BRANCH_ICON = { world: 'land', science: 'research', edu: 'edu', art: 'art', social: 'pop' };
 const COL = 200, ROW = 96, LEFT = 116, TOPH = 44; // layout of the tree in pixels
 const openRes = on => { $('resModal').hidden = !on; $('resBtn').classList.toggle('sel', on); lastResearch = ''; if (on && st) researchPanel(st.players[name]); };
@@ -1814,7 +1880,7 @@ function techToast(me) {
   knownTech = new Set(now);
   if (!fresh.length) return;
   const t = Game.techOf(fresh[fresh.length - 1]);
-  $('toast').innerHTML = `<img class="ic big" src="icons/${TECH_ICON[t.id]}.png?v=43" alt="" style="width:30px;height:30px"><div><b>Исследование завершено: ${t.name}</b><br><small>${t.desc}</small></div><button data-next>${ic('research')} Выбрать следующее</button>`;
+  $('toast').innerHTML = `<img class="ic big" src="icons/${TECH_ICON[t.id]}.png?v=45" alt="" style="width:30px;height:30px"><div><b>Исследование завершено: ${t.name}</b><br><small>${t.desc}</small></div><button data-next>${ic('research')} Выбрать следующее</button>`;
   $('toast').hidden = false;
   clearTimeout(toastTimer); toastTimer = setTimeout(() => { $('toast').hidden = true; }, 8000);
 }
@@ -1822,7 +1888,7 @@ $('toast').onclick = e => { $('toast').hidden = true; if (e.target.closest('[dat
 // My events as cards in the map's corner, under the tutorial: each new log line about me becomes one card, with what
 // it means and what helps. Cards go after EV_LIFE ms or by ×; an epidemic or a drought card stays while it lasts.
 const EV_KIND = [
-  [/пожар!/, 'fire', 'Пожар', 'Здание не работает и сгорит через несколько тиков. Колодец в 5 клетках или пожарная станция в 12 тушат пожар за два тика.'],
+  [/пожар!/, 'fire', 'Пожар', 'Здание не работает и сгорит через несколько тиков. Колодец в 5 клетках или пожарная станция в 12 тушат пожар за несколько тиков.'],
   [/сгорело/, 'fire', 'Здание сгорело', 'Рядом не было колодца или пожарной станции. Огонь может перекинуться на соседние здания.'],
   [/пожар потушен/, 'firewell', 'Пожар потушен', 'Колодец или пожарная станция справились.', 'good'],
   [/эпидеми/, 'sick', 'Эпидемия', 'Каждый тик умирает часть жителей, больше всего старики. Знахари спасают половину своих 40 жителей, больницы — 90% из 150.', 'sick'],
@@ -1846,7 +1912,7 @@ function eventToast() {
   const html = evCards.map((e, n) => { // only the newest card explains what helps, so a few fit under the tutorial
     const left = e.kind === 'sick' ? `Ещё ${me.sick} тиков · спасают ${Math.round((me.cure || 0) * 100)}% больных` : e.kind === 'drought' ? `Ещё ${me.drought} тиков` : '';
     const full = e.kind === 'sick' ? 25 : e.kind === 'drought' ? 30 : 0, rest = e.kind === 'sick' ? me.sick : me.drought;
-    return `<div class="ev${e.kind === 'good' ? ' good' : ''}" data-ev="${e.id}"><img src="icons/${e.pic}.png?v=43" alt=""><div class="body"><b>${e.title}</b><p>${esc(e.text)}</p>` +
+    return `<div class="ev${e.kind === 'good' ? ' good' : ''}" data-ev="${e.id}"><img src="icons/${e.pic}.png?v=45" alt=""><div class="body"><b>${e.title}</b><p>${esc(e.text)}</p>` +
       (e.help && !n ? `<p>${e.help}</p>` : '') + (left ? `<p><small>${left}</small></p><div class="bar"><i style="width:${Math.min(100, rest / full * 100)}%"></i></div>` : '') +
       (e.tile >= 0 ? `<div class="acts"><button data-goto="${e.tile}">Показать на карте</button></div>` : '') + `</div><button data-x aria-label="Закрыть">×</button></div>`;
   }).join('');
@@ -1888,7 +1954,7 @@ function researchPanel(me) {
     }
     const why = done ? 'Изучено' : cur ? 'Изучается' : open ? 'Нажмите, чтобы изучать' : t.era > (me.level || 0) ? `Откроется в эпоху «${LEVELS[t.era].name}»` : `Сначала изучите ${miss.map(r => `«${r.name}»`).join(' и ')}`;
     nodes += `<div class="node ${done ? 'done' : cur ? 'cur' : open ? 'open' : 'off'}${t.side ? ' side' : ''}" style="left:${x}px;top:${y}px" title="${why}${t.side ? ' · необязательное: для новой эпохи не нужно' : ''}"${open ? ` data-tech="${t.id}"` : ''}>` +
-      `<img class="big" src="icons/${TECH_ICON[t.id]}.png?v=43" alt=""><div><b>${done ? ic('ok') + ' ' : ''}${t.name}</b><span>${t.desc}</span></div>` +
+      `<img class="big" src="icons/${TECH_ICON[t.id]}.png?v=45" alt=""><div><b>${done ? ic('ok') + ' ' : ''}${t.name}</b><span>${t.desc}</span></div>` +
       (cur || (pts && !done) ? `<div class="bar"><i style="width:${Math.min(100, pts / Game.TECH_COST[t.era] * 100)}%"></i></div>` : '') + '</div>';
   }
   const legend = `<div class="tlegend"><span><i class="lg main"></i>основная ветка — нужна для новой эпохи</span><span><i class="lg side"></i>ответвление — бонус, по желанию</span><span><i class="lg ln"></i>линия — что нужно изучить раньше</span></div>`;

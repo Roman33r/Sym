@@ -22,12 +22,12 @@ const B = {
   plant:   { cost: { money: 200, stone: 20 }, needs: 'r', tech: 'electricity', upkeep: 3, label: 'Электростанция', icon: 'plant' },
   pump:    { cost: { money: 150, stone: 10 }, needs: 'rpl', tech: 'plumbing', upkeep: 2, label: 'Водокачка (у озера)', icon: 'pump' },
   shop:    { cost: { money: 100, wood: 10, stone: 10 }, needs: 'rpw', tech: 'architecture', jobs: 6, prod: { money: 1 }, label: 'Магазин (продаёт товары)', icon: 'shop' },
-  park:    { cost: { money: 30 }, tech: 'community', label: 'Парк (радует жителей)', icon: 'park' },
+  park:    { cost: { money: 30 }, tech: 'ecology', label: 'Парк (радует жителей)', icon: 'park' },
   stop:    { cost: { money: 40 }, needs: 'r', tech: 'post', upkeep: 1, label: 'Остановка (автобус до работы)', icon: 'stop' },
   market:  { cost: { money: 120, wood: 30, stone: 10 }, needs: 'r', tech: 'trade', jobs: 4, label: 'Рынок (покупка и продажа ресурсов)', icon: 'market' },
   depot:   { cost: { money: 80, wood: 10 }, needs: 'r', label: 'Склад (сюда грузовики везут товары)', icon: 'depot' },
   // against fires: a well puts out fires within 5 tiles, a fire station within 12 (see FIRE_COVER)
-  firewell: { cost: { money: 25, stone: 5 }, label: 'Колодец (тушит пожары в 5 клетках)', icon: 'firewell' },
+  firewell: { cost: { money: 25, stone: 5 }, tech: 'community', label: 'Колодец (тушит пожары в 5 клетках)', icon: 'firewell' },
   firestation: { cost: { money: 220, stone: 30, iron: 5 }, needs: 'r', tech: 'firefighting', jobs: 4, upkeep: 3, label: 'Пожарная станция (тушит в 12 клетках)', icon: 'firestation' },
   healer:  { cost: { money: 60, wood: 15 }, needs: 'r', tech: 'herbalism', jobs: 1, upkeep: 1, label: 'Дом знахаря (лечит 40 жителей)', icon: 'healer' },
   // services: see SEATS for how many each serves
@@ -103,7 +103,7 @@ const TECH = [
   { id: 'agriculture', era: 0, branch: 'science', name: 'Земледелие', desc: 'животноводство на фермах: лошади' },
   { id: 'writing', era: 0, branch: 'edu', name: 'Письменность', desc: 'исследования идут в 1,5 раза быстрее' },
   { id: 'crafts', era: 0, branch: 'art', name: 'Ремёсла', desc: 'дом' },
-  { id: 'community', era: 0, branch: 'social', name: 'Община', desc: 'парк' },
+  { id: 'community', era: 0, branch: 'social', name: 'Община', desc: 'колодец: тушит пожары рядом' },
   { id: 'trade', era: 1, branch: 'world', name: 'Торговые пути', desc: 'здание рынка: покупка и продажа ресурсов' },
   { id: 'mechanics', era: 1, branch: 'science', name: 'Механика', desc: 'рудник' },
   { id: 'schools', era: 1, branch: 'edu', name: 'Школы', desc: 'школа и детский сад' },
@@ -123,7 +123,7 @@ const TECH = [
   { id: 'computers', era: 4, branch: 'science', name: 'Компьютеры', desc: 'исследования в 1,5 раза быстрее' },
   { id: 'elearning', era: 4, branch: 'edu', name: 'Онлайн-образование', desc: 'университеты выпускают вдвое больше' },
   { id: 'skyscrapers', era: 4, branch: 'art', name: 'Небоскрёбы', desc: 'жилая башня на 40 жителей' },
-  { id: 'ecology', era: 4, branch: 'social', name: 'Экология', desc: 'ваши заводы и станции загрязняют вдвое меньше' },
+  { id: 'ecology', era: 4, branch: 'social', name: 'Экология', desc: 'парк; ваши заводы и станции загрязняют вдвое меньше' },
   // side branches (lane 1, 2 under the main line): not needed for the next era, each gives a bonus
   { id: 'herbalism', era: 0, branch: 'social', lane: 1, side: true, req: [], name: 'Травничество', desc: 'дом знахаря: лечит болезни' },
   { id: 'firefighting', era: 2, branch: 'social', lane: 2, side: true, req: ['post'], name: 'Пожарное дело', desc: 'пожарная станция: тушит в 12 клетках' },
@@ -447,9 +447,9 @@ function ship(s, comp, who, i, res, vehicle) {
 // Events: rare fires, epidemics, droughts and disasters, at most one new one per player at a time of each kind.
 // Chances are per player and tick (a tick is half a second at ×1), none in the first EVENT_CALM ticks of a game.
 // A fire burns FIRE_T ticks and then destroys the building, sometimes catching a neighbour; a well or a fire station
-// nearby puts it out in two ticks. An epidemic kills a share of the residents each tick unless healers and hospitals
+// nearby puts it out in FIRE_PUT ticks (its people run there with buckets, see the client). An epidemic kills a share of the residents each tick unless healers and hospitals
 // treat them; a drought halves the farms' food; a disaster destroys one or two buildings.
-const EVENT_P = { fire: 0.001, sick: 0.0006, drought: 0.0006, disaster: 0.0003 }, EVENT_CALM = 120, FIRE_T = 8;
+const EVENT_P = { fire: 0.001, sick: 0.0006, drought: 0.0006, disaster: 0.0003 }, EVENT_CALM = 120, FIRE_T = 8, FIRE_PUT = 6;
 const FIRE_COVER = { firewell: 5, firestation: 12 };
 let eventsOn = true; // tests switch the random part off
 const setEvents = on => { eventsOn = on; };
@@ -464,7 +464,7 @@ function events(s) {
   for (const i in s.fire) {
     const left = --s.fire[i];
     if (!flammable(s.grid[i])) { delete s.fire[i]; continue; }
-    if (covered(s, i)) { if (left <= FIRE_T - 2) { delete s.fire[i]; s.events.push(`${ownerOf(s, i)}: пожар потушен`); } continue; }
+    if (covered(s, i)) { if (left <= FIRE_T - FIRE_PUT) { delete s.fire[i]; s.events.push(`${ownerOf(s, i)}: пожар потушен`); } continue; }
     if (left <= 0) { delete s.fire[i]; burnDown(s, i); continue; }
     if (eventsOn && Math.random() < 0.06) { // the flames reach a neighbour
       const j = nb(+i).find(k => flammable(s.grid[k]) && !(k in s.fire));
@@ -886,5 +886,5 @@ function room(s) {
   return r;
 }
 
-const api = { W, H, B, NEED_TEXT, WANT_TEXT, POWER, WATER, START, LEVELS, levelOf, upgradeBlock, PRICES, SELL, RES_TEXT, trade, priceOf, mkOf, hasMarket, HIST_RES, CLEAR, startCorner, landOf, landPrice, newGame, start, nextTurn, compute, tick, act, actArea, wants, happiness, residents, commute, ownerOf, room, SPEEDS, LOAD, roadNets, networks, PRODUCTS, GROUPS, SEATS, pollution, setSpec, popOf, demographics, TECH, TECH_COST, BRANCHES, techOf, hasTech, setResearch, allTech, FARM, HORSES_PER_FARM, horsesPerFarm, UTIL_ERA, isRoad, EVENT_P, FIRE_T, FIRE_COVER, setEvents, startFire, disaster, cureOf, covered, slowAt, wornAt, ROAD_UPKEEP, PROD_K, UPGRADE, blOf, prodK, upCost, canImprove, improveCost, horseUse, HOME_TIERS, tierOf, homeCap, maxTier };
+const api = { W, H, B, NEED_TEXT, WANT_TEXT, POWER, WATER, START, LEVELS, levelOf, upgradeBlock, PRICES, SELL, RES_TEXT, trade, priceOf, mkOf, hasMarket, HIST_RES, CLEAR, startCorner, landOf, landPrice, newGame, start, nextTurn, compute, tick, act, actArea, wants, happiness, residents, commute, ownerOf, room, SPEEDS, LOAD, roadNets, networks, PRODUCTS, GROUPS, SEATS, pollution, setSpec, popOf, demographics, TECH, TECH_COST, BRANCHES, techOf, hasTech, setResearch, allTech, FARM, HORSES_PER_FARM, horsesPerFarm, UTIL_ERA, isRoad, EVENT_P, FIRE_T, FIRE_PUT, FIRE_COVER, setEvents, startFire, disaster, cureOf, covered, slowAt, wornAt, ROAD_UPKEEP, PROD_K, UPGRADE, blOf, prodK, upCost, canImprove, improveCost, horseUse, HOME_TIERS, tierOf, homeCap, maxTier };
 if (typeof module !== 'undefined') module.exports = api; else window.Game = api;

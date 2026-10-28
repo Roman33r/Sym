@@ -435,8 +435,10 @@ assert.ok(G.compute(ev)[1].includes('f'), 'a burning building does not work');
 for (let k = 0; k < G.FIRE_T; k++) G.tick(ev);
 assert.strictEqual(ev.grid[1], 'grass', 'no well: the farm burned down');
 assert.strictEqual(G.act(ev, 'E', 'firewell', 9), null);
-ev.events = []; G.startFire(ev, 11); G.tick(ev); G.tick(ev);
-assert.ok(ev.grid[11] === 'sawmill' && !(11 in ev.fire), 'the well put it out in two ticks');
+ev.events = []; G.startFire(ev, 11); for (let k = 0; k < G.FIRE_PUT - 1; k++) G.tick(ev);
+assert.ok(11 in ev.fire, 'still burning while the buckets come');
+G.tick(ev);
+assert.ok(ev.grid[11] === 'sawmill' && !(11 in ev.fire), 'the well put it out in FIRE_PUT ticks');
 assert.strictEqual(G.act(ev, 'E', 'firestation', 1), null); // next to the path
 assert.ok(G.covered(ev, 11 * W + 11), 'a fire station reaches 12 tiles'); // the station stands at (1, 0)
 assert.ok(!G.covered(ev, 13 * W + 13), 'and no further');
