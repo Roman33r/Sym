@@ -280,6 +280,12 @@ assert.strictEqual(G.setSpec(h, 'H', 2, 'livestock'), null);
 HP.demo = { kids: 0, none: 40, school: 0, higher: 0, old: 0 }; // enough farm hands
 for (let k = 0; k < 200; k++) G.tick(h);
 assert.strictEqual(HP.res.horses, G.HORSES_PER_FARM, 'the herd stops at two');
+// the livestock farm ships its food with its own carts even with no free horse
+HP.res.horses = 0; h.ships = []; h.stock[2] = G.LOAD;
+G.tick(h);
+assert.ok(h.ships.length === 1 && h.ships[0].horse && h.ships[0].own && !h.noHorse.includes(2), 'own cart, no waiting');
+HP.res.horses = 2;
+assert.deepStrictEqual(G.horseUse(h, 'H'), { total: 2, trams: 0, carts: 0, free: 2, cap: 2 }, 'own carts keep the pool free');
 // a horse-tram stop needs one of those horses
 h.grid[8] = 'stop';
 HP.res.horses = 0;

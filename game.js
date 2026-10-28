@@ -344,6 +344,14 @@ const FACTORY_RATE = 1, SHOP_SALES = 2; // units per tick with a full staff
 // farm specializations; livestock farms raise horses, at most HORSES_PER_FARM each
 const FARM = { crops: { label: 'Культуры', food: 5 }, livestock: { label: 'Животноводство', food: 2 } };
 const HORSES_PER_FARM = 2;
+// a player's horses: trams take theirs first (see compute), carts in transit keep theirs; a livestock farm's own carts don't count
+function horseUse(s, who) {
+  const p = s.players[who], mine = (t, i) => s.grid[i] === t && ownerOf(s, i) === who;
+  const total = Math.floor(p.res.horses || 0), trams = hasTech(p, 'transit') ? 0 : s.grid.filter(mine.bind(null, 'stop')).length;
+  const carts = (s.ships || []).filter(sh => sh.who === who && sh.horse && !sh.own).length;
+  const cap = s.grid.filter((t, i) => mine('farm', i) && (s.spec || {})[i] === 'livestock').length * HORSES_PER_FARM;
+  return { total, trams: Math.min(trams, total), carts, free: Math.max(0, total - trams - carts), cap };
+}
 const isDepot = (s, who) => d => s.grid[d] === 'depot' && !s.status[d] && ownerOf(s, d) === who;
 // nearest tile passing isDest that shares a road network with tile i: { from, to, dest, dist } (from/to are road tiles)
 function findRoute(s, comp, i, isDest) {
@@ -367,8 +375,8 @@ function findRoute(s, comp, i, isDest) {
   return best;
 }
 // horse: the load goes by cart and keeps one of the owner's horses busy until it arrives
-function sendTruck(s, who, res, route, kind, horse) {
-  s.ships.push({ id: ++s.shipSeq, who, res, n: LOAD, from: route.from, to: route.to, dest: route.dest, kind, horse, t0: s.tick, at: s.tick + Math.max(1, Math.ceil(route.dist / 2)) });
+function sendTruck(s, who, res, route, kind, horse, own) {
+  s.ships.push({ id: ++s.shipSeq, who, res, n: LOAD, from: route.from, to: route.to, dest: route.dest, kind, horse, own, t0: s.tick, at: s.tick + Math.max(1, Math.ceil(route.dist / 2)) });
 }
 // load from producer i to the nearest depot; vehicle() gives 'truck' or 'horse', or false when no horse is free
 function ship(s, comp, who, i, res, vehicle) {
@@ -376,7 +384,7 @@ function ship(s, comp, who, i, res, vehicle) {
   if (!r) return 'depot';
   const v = vehicle();
   if (!v) return 'horse';
-  sendTruck(s, who, res, r, 'depot', v === 'horse');
+  sendTruck(s, who, res, r, 'depot', v !== 'truck', v === 'own');
   return true;
 }
 
@@ -475,8 +483,8 @@ function tick(s) {
     const R = p.res;
     for (const k of [...CARGO_RES, ...Object.keys(PRODUCTS), 'asphalt', 'horses']) R[k] = R[k] || 0;
     // horses: trams take theirs first (see compute), carts use what is left; with engines everything goes by truck
-    const engine = hasTech(p, 'engine'), stops = hasTech(p, 'transit') ? 0 : (cnt.stop || 0);
-    let freeHorses = engine ? Infinity : Math.floor(R.horses) - stops - s.ships.filter(sh => sh.who === who && sh.horse).length;
+    const engine = hasTech(p, 'engine');
+    let freeHorses = engine ? Infinity : horseUse(s, who).free;
     const vehicle = () => (engine ? 'truck' : freeHorses >= 1 ? (freeHorses--, 'horse') : false);
     // research: points from adults, schools and universities; writing speeds it up
     const rp = (0.5 + (d.none + d.school + d.higher) * 0.01 + (cnt.school || 0) + (cnt.uni || 0) * 3) * (hasTech(p, 'writing') ? 1.5 : 1) * (hasTech(p, 'computers') ? 1.5 : 1);
@@ -521,7 +529,9 @@ function tick(s) {
       }
       if (!res) return;
       s.stock[i] = Math.min(STORE, (s.stock[i] || 0) + made);
-      if (s.stock[i] >= LOAD) { const r = ship(s, comp, who, i, res, vehicle); if (r === true) s.stock[i] -= LOAD; else (r === 'horse' ? noHorse : undelivered).push(i); }
+      // a livestock farm carries its own food with its own carts, so it never waits for a free horse
+      const veh = t === 'farm' && s.spec[i] === 'livestock' && !engine ? () => 'own' : vehicle;
+      if (s.stock[i] >= LOAD) { const r = ship(s, comp, who, i, res, veh); if (r === true) s.stock[i] -= LOAD; else (r === 'horse' ? noHorse : undelivered).push(i); }
     });
     for (const [k, v] of Object.entries(used)) { R[k] += v; add(k, 'Заводы берут сырьё', -v); } // re-run through add() for the breakdown
     // shops: sell what they have, order a load of the most stocked product from the nearest depot when running low
@@ -735,5 +745,5 @@ function room(s) {
   return r;
 }
 
-const api = { W, H, B, NEED_TEXT, WANT_TEXT, POWER, WATER, START, LEVELS, levelOf, upgradeBlock, PRICES, SELL, RES_TEXT, trade, CLEAR, startCorner, landOf, landPrice, newGame, start, nextTurn, compute, tick, act, actArea, wants, happiness, residents, commute, ownerOf, room, SPEEDS, LOAD, roadNets, networks, PRODUCTS, GROUPS, SEATS, pollution, setSpec, popOf, demographics, TECH, TECH_COST, BRANCHES, techOf, hasTech, setResearch, allTech, FARM, HORSES_PER_FARM, UTIL_ERA, isRoad, HOME_TIERS, tierOf, homeCap, maxTier };
+const api = { W, H, B, NEED_TEXT, WANT_TEXT, POWER, WATER, START, LEVELS, levelOf, upgradeBlock, PRICES, SELL, RES_TEXT, trade, CLEAR, startCorner, landOf, landPrice, newGame, start, nextTurn, compute, tick, act, actArea, wants, happiness, residents, commute, ownerOf, room, SPEEDS, LOAD, roadNets, networks, PRODUCTS, GROUPS, SEATS, pollution, setSpec, popOf, demographics, TECH, TECH_COST, BRANCHES, techOf, hasTech, setResearch, allTech, FARM, HORSES_PER_FARM, UTIL_ERA, isRoad, horseUse, HOME_TIERS, tierOf, homeCap, maxTier };
 if (typeof module !== 'undefined') module.exports = api; else window.Game = api;

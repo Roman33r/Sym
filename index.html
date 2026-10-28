@@ -31,6 +31,9 @@
   .panel button.cur { background: #3d7a4f; border-color: #6c6; }
   .modal { position: fixed; inset: 0; background: #0b0f17cc; display: flex; align-items: center; justify-content: center; z-index: 15; }
   .modal[hidden] { display: none; }
+  #toast { position: fixed; top: 64px; left: 50%; transform: translateX(-50%); z-index: 20; background: #22352a; border: 2px solid #3d9a5f; border-radius: 8px; padding: 10px 14px; box-shadow: 0 6px 24px #000a; display: flex; gap: 10px; align-items: center; font-size: 14px; }
+  #toast[hidden] { display: none; }
+  #toast button { width: auto; margin: 0; }
   .mwin { background: #1d2330; border: 1px solid #556; border-radius: 10px; padding: 12px 16px 16px; max-width: calc(100vw - 32px); max-height: calc(100vh - 32px); overflow: auto; box-shadow: 0 10px 40px #000a; }
   .mhead { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
   .mhead button { width: auto; margin-left: auto; padding: 2px 10px; }
@@ -73,12 +76,12 @@
 <body>
 <header id="top">
   <span class="logo">Город вместе</span>
-  <div id="speed"><button data-v="0" title="Пауза"><img class="ic" src="icons/pause.svg?v=14" alt="Пауза"></button><button data-v="1" title="Скорость ×1"><img class="ic" src="icons/play.svg?v=14" alt="×1"></button><button data-v="2" title="Скорость ×2"><img class="ic" src="icons/fast.svg?v=14" alt="×2"></button><button data-v="4" title="Скорость ×4"><img class="ic" src="icons/faster.svg?v=14" alt="×4"></button></div>
+  <div id="speed"><button data-v="0" title="Пауза"><img class="ic" src="icons/pause.svg?v=15" alt="Пауза"></button><button data-v="1" title="Скорость ×1"><img class="ic" src="icons/play.svg?v=15" alt="×1"></button><button data-v="2" title="Скорость ×2"><img class="ic" src="icons/fast.svg?v=15" alt="×2"></button><button data-v="4" title="Скорость ×4"><img class="ic" src="icons/faster.svg?v=15" alt="×4"></button></div>
   <span id="tickN" class="date"></span>
-  <button id="commBtn" title="Показать ЛЭП, водопровод и куда доходят электричество и вода" style="width:auto"><img class="ic" src="icons/power.svg?v=14" alt=""> Коммуникации</button>
-  <button id="polBtn" title="Показать загрязнение от заводов, станций, карьеров и рудников" style="width:auto"><img class="ic" src="icons/pollution.svg?v=14" alt=""> Загрязнение</button>
-  <button id="resBtn" title="Дерево исследований: открывает постройки и следующие эпохи" style="width:auto"><img class="ic" src="icons/research.svg?v=14" alt=""> Исследования</button>
-  <button id="eduBtn" title="График состава населения по образованию" style="width:auto"><img class="ic" src="icons/edu.svg?v=14" alt=""> Образование</button>
+  <button id="commBtn" title="Показать ЛЭП, водопровод и куда доходят электричество и вода" style="width:auto"><img class="ic" src="icons/power.svg?v=15" alt=""> Коммуникации</button>
+  <button id="polBtn" title="Показать загрязнение от заводов, станций, карьеров и рудников" style="width:auto"><img class="ic" src="icons/pollution.svg?v=15" alt=""> Загрязнение</button>
+  <button id="resBtn" title="Дерево исследований: открывает постройки и следующие эпохи" style="width:auto"><img class="ic" src="icons/research.svg?v=15" alt=""> Исследования</button>
+  <button id="eduBtn" title="График состава населения по образованию" style="width:auto"><img class="ic" src="icons/edu.svg?v=15" alt=""> Образование</button>
   <div id="res"></div>
   <div id="zoom" title="Масштаб (или Ctrl+колесо)"><button id="zout" aria-label="Уменьшить">−</button><button id="zin" aria-label="Увеличить">+</button></div>
 </header>
@@ -87,24 +90,25 @@
 <div id="side">
   <label>Имя: <input id="name" maxlength="20" style="width:150px"></label>
   <div id="phase"></div>
-  <div id="edu" class="panel" hidden><b>Состав населения</b><canvas id="eduChart" width="250" height="140" style="width:100%"></canvas><div id="eduLegend"></div></div>
   <div id="factory" class="panel" hidden></div>
   <div id="level"></div>
   <div id="tools"></div>
   <div id="err"></div>
   <div id="tip" class="pop" role="tooltip"></div>
   <div id="hc" class="pop" role="tooltip"></div>
-  <div id="info">ЛКМ — строить (дороги и линии можно тянуть, зоны — выделять прямоугольником), ПКМ — снести. Колесо / Shift+колесо — прокрутка, Ctrl+колесо — масштаб.</div>
+  <div id="info">ЛКМ — строить (дороги и линии можно тянуть, зоны — выделять прямоугольником), ПКМ — выйти из строительства в «Информацию», а в «Информации» — снести. Колесо / Shift+колесо — прокрутка, Ctrl+колесо — масштаб.</div>
   <div id="invite"></div>
   <h4>Игроки</h4><div id="players"></div>
   <h4>События</h4><div id="log"></div>
-  <button id="restart" style="margin-top:12px;text-align:center"><img class="ic" src="icons/restart.svg?v=14" alt=""> Новый город</button>
+  <button id="restart" style="margin-top:12px;text-align:center"><img class="ic" src="icons/restart.svg?v=15" alt=""> Новый город</button>
 </div>
 </div>
-<div id="resModal" class="modal" hidden><div class="mwin" role="dialog" aria-label="Дерево исследований"><div class="mhead"><b style="font-size:16px"><img class="ic" src="icons/research.svg?v=14" alt=""> Дерево исследований</b><span id="resRate" style="color:#bbc;font-size:13px"></span><button id="resClose" aria-label="Закрыть">×</button></div><div id="research" class="tree"></div></div></div>
+<div id="resModal" class="modal" hidden><div class="mwin" role="dialog" aria-label="Дерево исследований"><div class="mhead"><b style="font-size:16px"><img class="ic" src="icons/research.svg?v=15" alt=""> Дерево исследований</b><span id="resRate" style="color:#bbc;font-size:13px"></span><button id="resClose" aria-label="Закрыть">×</button></div><div id="research" class="tree"></div></div></div>
+<div id="eduModal" class="modal" hidden><div class="mwin" role="dialog" aria-label="Образование"><div class="mhead"><b style="font-size:16px"><img class="ic" src="icons/edu.svg?v=15" alt=""> Состав населения по образованию</b><button id="eduClose" aria-label="Закрыть">×</button></div><div style="display:flex;gap:16px;flex-wrap:wrap;align-items:center"><canvas id="eduChart" width="560" height="260" style="max-width:100%;background:#161b26;border-radius:6px"></canvas><div id="eduLegend" style="font-size:14px;line-height:1.8"></div></div></div></div>
+<div id="toast" role="status" hidden></div>
 <div id="netbox"><div class="box" id="netStep"></div></div>
 <!-- ?v= must change with every release: GitHub Pages lets browsers cache files for 10 minutes, and a new page with an old game.js breaks -->
-<script src="game.js?v=14"></script>
+<script src="game.js?v=15"></script>
 <script>
 // W, H, B, NEED_TEXT, POWER, WATER are globals from game.js
 // show script errors instead of a silently frozen game (e.g. a stale cached game.js)
@@ -127,7 +131,7 @@ $('name').onchange = () => {
   if (net) net.rename();
 };
 
-const ic = n => `<img class="ic" src="icons/${n}.svg?v=14" alt="">`; // emoji don't render in every browser, so icons are SVG files
+const ic = n => `<img class="ic" src="icons/${n}.svg?v=15" alt="">`; // emoji don't render in every browser, so icons are SVG files
 const RES = { money: 'money', wood: 'wood', stone: 'stone', food: 'food', iron: 'iron', gold: 'gold', oil: 'oil', asphalt: 'asphalt', horses: 'horses' };
 const costText = c => Object.entries(c).map(([k, v]) => v + ic(RES[k])).join(' ');
 const TOOLS = { info: { label: 'Информация', icon: 'info', cost: {} }, buy: { label: 'Купить землю', icon: 'buy', cost: {}, tech: 'explore' }, clear: { label: 'Расчистить', icon: 'clear', cost: {}, note: 'лес 5' + ic('money') + ', камень 10' + ic('money') }, ...B, bulldoze: { label: 'Снести', icon: 'bulldoze', cost: { money: 2 } } };
@@ -1090,12 +1094,18 @@ function render() {
     `<span data-res="pop">${ic('pop')} ${me.pop}${d2(me.growth || 0)}</span><span data-res="goods">${ic('depot')} ${f(Object.keys(PRODUCTS).reduce((n, g) => n + (r[g] || 0), 0))}</span><span title="Рабочие места">${ic('jobs')} ${me.jobs}</span><span title="Земля, клеток">${ic('land')} ${Game.landOf(st, name)}</span>` +
     (me.fed ? '' : '<span style="color:#f77">Голод! Налоги падают</span>');
   if (tipKey) showTip();
-  eduChart(me); factoryPanel(); researchPanel(me);
+  eduChart(me); factoryPanel(); researchPanel(me); techToast(me);
 }
 const esc = s => s.replace(/[&<>"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[ch]);
 const TERR = { grass: 'Трава', tree: 'Лес', rock: 'Камень', lake: 'Озеро', iron: 'Месторождение железа', gold: 'Месторождение золота', oil: 'Месторождение нефти' };
 const POLLUTES = ['ind', 'plant', 'quarry']; // the 'quiet' need; wider pollution is Game.pollution
 // info window for the hovered tile, kept next to the cursor and rebuilt on every state update
+// "free of total" for a player's horses, with what keeps the rest busy
+function horseText(who) {
+  const p = st.players[who], h = Game.horseUse(st, who);
+  if (Game.hasTech(p, 'engine')) return `${ic('horses')} Грузы возят грузовики`;
+  return `${ic('horses')} Лошади: свободно <b>${h.free}</b> из ${h.total}` + (h.trams ? ` · конка ${h.trams}` : '') + (h.carts ? ` · с телегами в пути ${h.carts}` : '') + (h.cap ? ` · фермы вырастят до ${h.cap}` : '');
+}
 function card(i) {
   const t = st.grid[i], b = B[t], miss = st.status[i], rows = [];
   const yes = ok => ic(ok ? 'ok' : 'no');
@@ -1141,7 +1151,7 @@ function card(i) {
   if (t === 'farm') rows.push(`${ic('farm')} ${Game.FARM[(st.spec || {})[i] || 'crops'].label}` + (owner === name ? ' <small>— кликните «Информацией», чтобы сменить</small>' : ''));
   if (t === 'path') rows.push('Грузы и люди идут здесь вдвое медленнее, чем по асфальту');
   if (t === 'refinery') rows.push(`${ic('oil')} Берёт нефть со склада, делает асфальт; запас ${Math.floor((st.stock || {})[i] || 0)} из ${Game.LOAD}`);
-  if (t === 'depot' && op) { const busy = (st.ships || []).filter(sh => sh.who === owner && sh.horse).length; rows.push(`${ic('horses')} Лошадей: ${Math.floor(op.res.horses || 0)}, в пути с телегами: ${busy}` + (Game.hasTech(op, 'engine') ? ' — грузы возят грузовики' : '')); }
+  if ((t === 'depot' || t === 'farm') && op) rows.push(horseText(owner));
   if ((st.noHorse || []).includes(i)) rows.push(ic('warn') + ' Груз ждёт: нет свободной лошади для телеги');
   if (t === 'stop') rows.push(ic('bus') + ' Возит на работу жителей в 3 клетках от неё, если на той же дороге есть остановка в 3 клетках от работы');
   const u = [st.util[i] & POWER && ic('power') + ' ЛЭП', st.util[i] & WATER && ic('pipe') + ' водопровод'].filter(Boolean);
@@ -1167,7 +1177,7 @@ function factoryPanel() {
   const cur = (st.spec || {})[selFactory] || (kind === 'farm' ? 'crops' : 'clothes');
   const head = `<b>${ic(kind)} ${kind === 'farm' ? 'Ферма' : 'Завод'} (${selFactory % W}, ${(selFactory / W) | 0})</b> <button data-close style="width:auto;display:inline-block;float:right;padding:0 8px">×</button><br>`;
   const html = kind === 'farm' ? head + 'Специализация:' + Object.entries(Game.FARM).map(([g, f]) =>
-    `<button data-spec="${g}" class="${g === cur ? 'cur' : ''}">${ic(g === 'crops' ? 'farm' : 'horses')} ${f.label} <small>${f.food}${ic('food')} за тик${g === 'livestock' ? ` и лошади, до ${Game.HORSES_PER_FARM} на ферму` : ''}</small></button>`).join('') : head + 'Что выпускать:' +
+    `<button data-spec="${g}" class="${g === cur ? 'cur' : ''}">${ic(g === 'crops' ? 'farm' : 'horses')} ${f.label} <small>${f.food}${ic('food')} за тик${g === 'livestock' ? ` и лошади, до ${Game.HORSES_PER_FARM} на ферму; еду везёт своими телегами` : ''}</small></button>`).join('') + `<div style="margin-top:6px">${horseText(name)}</div>` : head + 'Что выпускать:' +
     Object.entries(PRODUCTS).map(([g, p]) => `<button data-spec="${g}" class="${g === cur ? 'cur' : ''}">${ic(g)} ${p.label} <small>${Object.entries(p.input).map(([k, v]) => v + ic(RES[k])).join(' ') || 'без сырья'} → ${p.price}${ic('money')}</small></button>`).join('');
   if (html !== lastFactory) box.innerHTML = lastFactory = html; // rebuild only on change so a click isn't lost
   box.hidden = false;
@@ -1189,7 +1199,18 @@ $('resBtn').onclick = () => openRes($('resModal').hidden);
 $('resClose').onclick = () => openRes(false);
 $('resModal').onclick = e => { if (e.target === $('resModal')) openRes(false); }; // click outside the window closes it
 addEventListener('keydown', e => { if (e.key === 'Escape' && !$('resModal').hidden) openRes(false); });
-let lastResearch = '';
+let lastResearch = '', knownTech = null, toastTimer = 0;
+function techToast(me) {
+  if (!me) return;
+  const now = Object.keys(me.tech || {}), fresh = knownTech ? now.filter(t => !knownTech.has(t)) : [];
+  knownTech = new Set(now);
+  if (!fresh.length) return;
+  const t = Game.techOf(fresh[fresh.length - 1]);
+  $('toast').innerHTML = `<img class="ic big" src="icons/${TECH_ICON[t.id]}.svg?v=15" alt="" style="width:30px;height:30px"><div><b>Исследование завершено: ${t.name}</b><br><small>${t.desc}</small></div><button data-next>${ic('research')} Выбрать следующее</button>`;
+  $('toast').hidden = false;
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => { $('toast').hidden = true; }, 8000);
+}
+$('toast').onclick = e => { $('toast').hidden = true; if (e.target.closest('[data-next]')) openRes(true); };
 function researchPanel(me) {
   const box = $('research');
   if ($('resModal').hidden || !me) return;
@@ -1206,7 +1227,7 @@ function researchPanel(me) {
     if (before) { const [bx0, by0] = pos(before); lines += `<line x1="${bx0 + 168}" y1="${by0 + 40}" x2="${x}" y2="${y + 40}" stroke="${Game.hasTech(me, before.id) ? (done ? '#3d9a5f' : '#6a7fa8') : '#3a4256'}" stroke-width="3"${Game.hasTech(me, before.id) ? '' : ' stroke-dasharray="6 5"'}/>`; }
     const why = done ? 'Изучено' : cur ? 'Изучается' : open ? 'Нажмите, чтобы изучать' : t.era > (me.level || 0) ? `Откроется в эпоху «${LEVELS[t.era].name}»` : `Сначала изучите «${before.name}»`;
     nodes += `<div class="node ${done ? 'done' : cur ? 'cur' : open ? 'open' : 'off'}" style="left:${x}px;top:${y}px" title="${why}"${open ? ` data-tech="${t.id}"` : ''}>` +
-      `<img class="big" src="icons/${TECH_ICON[t.id]}.svg?v=14" alt=""><div><b>${done ? ic('ok') + ' ' : ''}${t.name}</b><br><span style="color:#aab">${t.desc}</span></div>` +
+      `<img class="big" src="icons/${TECH_ICON[t.id]}.svg?v=15" alt=""><div><b>${done ? ic('ok') + ' ' : ''}${t.name}</b><br><span style="color:#aab">${t.desc}</span></div>` +
       (cur || (pts && !done) ? `<div class="bar"><i style="width:${Math.min(100, pts / Game.TECH_COST[t.era] * 100)}%"></i></div>` : '') + '</div>';
   }
   const html = `<div style="position:relative;width:${Wt}px;height:${Ht}px"><svg width="${Wt}" height="${Ht}">${lines}</svg>${nodes}</div>`;
@@ -1216,12 +1237,16 @@ function researchPanel(me) {
 $('research').onclick = e => { const t = e.target.closest('[data-tech]'); if (t) msg({ type: 'research', v: t.dataset.tech }); };
 
 // stacked chart of the population groups over time (kept by the server every 5 ticks)
-$('eduBtn').onclick = () => { $('edu').hidden = !$('edu').hidden; $('eduBtn').classList.toggle('sel', !$('edu').hidden); if (st) eduChart(st.players[name]); };
+const openEdu = on => { $('eduModal').hidden = !on; $('eduBtn').classList.toggle('sel', on); if (on && st) eduChart(st.players[name]); };
+$('eduBtn').onclick = () => openEdu($('eduModal').hidden);
+$('eduClose').onclick = () => openEdu(false);
+$('eduModal').onclick = e => { if (e.target === $('eduModal')) openEdu(false); };
+addEventListener('keydown', e => { if (e.key === 'Escape') openEdu(false); });
 function eduChart(me) {
-  if ($('edu').hidden || !me) return;
+  if ($('eduModal').hidden || !me) return;
   const cv = $('eduChart'), g = cv.getContext('2d'), h = me.hist || [], Wc = cv.width, Hc = cv.height, keys = Object.keys(GROUPS);
   g.clearRect(0, 0, Wc, Hc);
-  if (h.length < 2) { g.fillStyle = '#aab'; g.font = '12px sans-serif'; g.fillText('Данные появятся через несколько тиков', 10, Hc / 2); }
+  if (h.length < 2 || !h.some(e => keys.some(k => e[k]))) { g.fillStyle = '#aab'; g.font = '14px sans-serif'; g.fillText(h.length < 2 ? 'Данные появятся через несколько тиков' : 'Пока в городе нет жителей', 20, Hc / 2); }
   else {
     const top = Math.max(...h.map(e => keys.reduce((n, k) => n + e[k], 0)), 1), X = k => k / (h.length - 1) * Wc, Y = v => Hc - v / top * (Hc - 4);
     let lower = h.map(() => 0);
@@ -1262,6 +1287,7 @@ const tileAt = e => {
 };
 c.oncontextmenu = e => e.preventDefault();
 c.onmousedown = e => {
+  if (e.button === 2 && tool !== 'info') { sel = -1; document.querySelector('[data-tool=info]').click(); draw(); return; }
   const i = tileAt(e); if (i < 0) return;
   const t = e.button === 2 ? 'bulldoze' : tool;
   last = i;
