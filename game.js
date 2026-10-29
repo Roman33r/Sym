@@ -819,9 +819,14 @@ function tick(s) {
     });
     for (const k in needs) needs[k] = places ? needs[k] / places : 0;
     p.hist = p.hist || [];
-    if (s.tick % 5 === 0) { // population groups and resources (r) for the charts
-      p.hist.push({ t: s.tick, ...Object.fromEntries(Object.keys(GROUPS).map(g => [g, Math.round(d[g] * 10) / 10])), r: Object.fromEntries(HIST_RES.map(k => [k, Math.round((R[k] || 0) * 10) / 10])) });
+    const acc = p.acc = p.acc || { n: 0, i: {}, o: {} }; // what came in and went out since the last chart point
+    acc.n++;
+    for (const k of HIST_RES) for (const [, v] of flow[k] || []) { if (v > 0) acc.i[k] = (acc.i[k] || 0) + v; else acc.o[k] = (acc.o[k] || 0) - v; }
+    if (s.tick % 5 === 0) { // population groups, resources (r) and their income (i) and spending (o) a tick, for the charts
+      const avg = m => Object.fromEntries(Object.entries(m).map(([k, v]) => [k, Math.round(v / acc.n * 10) / 10]));
+      p.hist.push({ t: s.tick, ...Object.fromEntries(Object.keys(GROUPS).map(g => [g, Math.round(d[g] * 10) / 10])), r: Object.fromEntries(HIST_RES.map(k => [k, Math.round((R[k] || 0) * 10) / 10])), i: avg(acc.i), o: avg(acc.o) });
       if (p.hist.length > 120) p.hist.shift();
+      p.acc = { n: 0, i: {}, o: {} };
     }
     Object.assign(p, { cure: cureOf(cnt, popOf(d)), pop, cap, growth: popOf(d) - before0, jobs, workers: Math.round(fo + Math.max(0, fOther)), wr: { off: wrOff, other: wrOther }, cov, fed, flow, needs, happy: hap });
   }

@@ -618,3 +618,12 @@ assert.deepStrictEqual(G.buildCost(dp.players.D, 'depot', dp, 'D'), { money: G.B
 assert.strictEqual(G.act(dp, 'D', 'depot', 1), null, 'the first one without wood');
 assert.strictEqual(G.act(dp, 'D', 'depot', 3), 'не хватает дерева', 'the second one needs it');
 console.log('ok');
+
+// chart points keep what came in and went out, as an average a tick
+const ch = G.newGame(26); ch.grid.fill('grass'); G.start(ch, ['C']); G.act(ch, 'C', 'claim', 0); const CP = ch.players.C;
+CP.res = { ...CP.res, money: 1e4 }; ch.tick = 1;
+for (let k = 0; k < 5; k++) G.tick(ch);
+const pt = CP.hist[CP.hist.length - 1];
+assert.ok(pt && pt.t % 5 === 0 && pt.i && pt.o, 'a chart point with income and spending');
+assert.ok(Math.abs(pt.o.food - CP.flow.food.filter(([, v]) => v < 0).reduce((n, [, v]) => n - v, 0)) < 0.2 || pt.o.food === undefined, 'spending is per tick');
+console.log('ok');
