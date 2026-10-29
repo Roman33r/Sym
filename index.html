@@ -262,15 +262,15 @@
   <div class="hrow">
     <span class="logo">Город вместе</span>
     <span id="tickN" class="date"></span>
-    <div id="speed" class="hgroup" aria-label="Скорость игры"><button data-v="0" title="Пауза (пробел)"><img class="ic" src="icons/pause.png?v=79" alt="Пауза"></button><button data-v="1" title="Скорость ×1"><img class="ic" src="icons/play.png?v=79" alt="×1"></button><button data-v="2" title="Скорость ×2"><img class="ic" src="icons/fast.png?v=79" alt="×2"></button><button data-v="4" title="Скорость ×4"><img class="ic" src="icons/faster.png?v=79" alt="×4"></button></div>
+    <div id="speed" class="hgroup" aria-label="Скорость игры"><button data-v="0" title="Пауза (пробел)"><img class="ic" src="icons/pause.png?v=80" alt="Пауза"></button><button data-v="1" title="Скорость ×1"><img class="ic" src="icons/play.png?v=80" alt="×1"></button><button data-v="2" title="Скорость ×2"><img class="ic" src="icons/fast.png?v=80" alt="×2"></button><button data-v="4" title="Скорость ×4"><img class="ic" src="icons/faster.png?v=80" alt="×4"></button></div>
     <div class="spacer"></div>
     <div class="hgroup acts" aria-label="Управление городом">
-      <button id="commBtn" title="Показать ЛЭП, водопровод и куда доходят электричество и вода"><img class="ic" src="icons/power.png?v=79" alt=""><span>Коммуникации</span></button>
-      <button id="polBtn" title="Показать загрязнение от заводов, станций, карьеров и рудников. У домов, где оно выше 0,6, воздух грязный: жители недовольны, а эпидемии случаются чаще"><img class="ic" src="icons/pollution.png?v=79" alt=""><span>Загрязнение</span></button>
-      <button id="logBtn" title="Логистика: куда каждое здание возит грузы; кликните здание, затем склад"><img class="ic" src="icons/depot.png?v=79" alt=""><span>Логистика</span></button>
-      <button id="resBtn" title="Дерево исследований: открывает постройки и следующие эпохи"><img class="ic" src="icons/research.png?v=79" alt=""><span>Исследования</span></button>
-      <button id="mktBtn" title="Рынок: купить и продать ресурсы, цены зависят от спроса"><img class="ic" src="icons/market.png?v=79" alt=""><span>Рынок</span></button>
-      <button id="eduBtn" title="График состава населения по образованию"><img class="ic" src="icons/edu.png?v=79" alt=""><span>Образование</span></button>
+      <button id="commBtn" title="Показать ЛЭП, водопровод и куда доходят электричество и вода"><img class="ic" src="icons/power.png?v=80" alt=""><span>Коммуникации</span></button>
+      <button id="polBtn" title="Показать загрязнение от заводов, станций, карьеров и рудников. У домов, где оно выше 0,6, воздух грязный: жители недовольны, а эпидемии случаются чаще"><img class="ic" src="icons/pollution.png?v=80" alt=""><span>Загрязнение</span></button>
+      <button id="logBtn" title="Логистика: куда каждое здание возит грузы; кликните здание, затем склад"><img class="ic" src="icons/depot.png?v=80" alt=""><span>Логистика</span></button>
+      <button id="resBtn" title="Дерево исследований: открывает постройки и следующие эпохи"><img class="ic" src="icons/research.png?v=80" alt=""><span>Исследования</span></button>
+      <button id="mktBtn" title="Рынок: купить и продать ресурсы, цены зависят от спроса"><img class="ic" src="icons/market.png?v=80" alt=""><span>Рынок</span></button>
+      <button id="eduBtn" title="График состава населения по образованию"><img class="ic" src="icons/edu.png?v=80" alt=""><span>Образование</span></button>
     </div>
     <div id="zoom" class="hgroup" title="Масштаб (или колесо мыши)"><button id="zout" aria-label="Уменьшить">−</button><button id="zin" aria-label="Увеличить">+</button></div>
   </div>
@@ -289,36 +289,36 @@
   <div class="sec"><h4>Игроки</h4><div id="players"></div></div>
   <div class="sec"><h4>События</h4><div id="log" aria-live="polite"></div></div>
   <div class="sec"><h4>Управление</h4><div id="info">ЛКМ — строить (дороги и линии можно тянуть, зоны — выделять прямоугольником), ПКМ — выйти из строительства в «Информацию», а в «Информации» — снести. Колесо — масштаб к курсору, Shift+колесо, стрелки или WASD (с Shift быстрее) — перемещение, пробел — пауза.</div></div>
-  <button id="tutBtn" class="ghost"><img class="ic" src="icons/info.png?v=79" alt=""> Пройти обучение заново</button>
-  <button id="restart"><img class="ic" src="icons/restart.png?v=79" alt=""> Новый город</button>
+  <button id="tutBtn" class="ghost"><img class="ic" src="icons/info.png?v=80" alt=""> Пройти обучение заново</button>
+  <button id="restart"><img class="ic" src="icons/restart.png?v=80" alt=""> Новый город</button>
 </div>
 </div>
-<div id="resModal" class="modal" hidden><div class="mwin" role="dialog" aria-label="Дерево исследований"><div class="mhead"><b><img class="ic" src="icons/research.png?v=79" alt=""> Дерево исследований</b><span id="resRate"></span><button id="resClose" aria-label="Закрыть">×</button></div><div class="mbody"><div id="research" class="tree"></div></div></div></div>
-<div id="eduModal" class="modal" hidden><div class="mwin" role="dialog" aria-label="Образование"><div class="mhead"><b><img class="ic" src="icons/edu.png?v=79" alt=""> Состав населения по образованию</b><button id="eduClose" aria-label="Закрыть">×</button></div><div class="mbody" style="display:flex;gap:18px;flex-wrap:wrap;align-items:center"><canvas id="eduChart" class="chart" width="560" height="260"></canvas><div id="eduLegend"></div></div></div></div>
-<div id="mktModal" class="modal" hidden><div class="mwin" role="dialog" aria-label="Рынок"><div class="mhead"><b><img class="ic" src="icons/market.png?v=79" alt=""> Рынок</b><span>цены растут от покупок и падают от продаж, потом возвращаются</span><button id="mktClose" aria-label="Закрыть">×</button></div><div class="mbody"><div id="mkt"></div></div></div></div>
-<div id="taxModal" class="modal" hidden><div class="mwin" role="dialog" aria-label="Налоги" style="width:min(460px, calc(100vw - 32px))"><div class="mhead"><b><img class="ic" src="icons/money.png?v=79" alt=""> Налоги</b><button id="taxClose" aria-label="Закрыть">×</button></div><div class="mbody">
+<div id="resModal" class="modal" hidden><div class="mwin" role="dialog" aria-label="Дерево исследований"><div class="mhead"><b><img class="ic" src="icons/research.png?v=80" alt=""> Дерево исследований</b><span id="resRate"></span><button id="resClose" aria-label="Закрыть">×</button></div><div class="mbody"><div id="research" class="tree"></div></div></div></div>
+<div id="eduModal" class="modal" hidden><div class="mwin" role="dialog" aria-label="Образование"><div class="mhead"><b><img class="ic" src="icons/edu.png?v=80" alt=""> Состав населения по образованию</b><button id="eduClose" aria-label="Закрыть">×</button></div><div class="mbody" style="display:flex;gap:18px;flex-wrap:wrap;align-items:center"><canvas id="eduChart" class="chart" width="560" height="260"></canvas><div id="eduLegend"></div></div></div></div>
+<div id="mktModal" class="modal" hidden><div class="mwin" role="dialog" aria-label="Рынок"><div class="mhead"><b><img class="ic" src="icons/market.png?v=80" alt=""> Рынок</b><span>цены растут от покупок и падают от продаж, потом возвращаются</span><button id="mktClose" aria-label="Закрыть">×</button></div><div class="mbody"><div id="mkt"></div></div></div></div>
+<div id="taxModal" class="modal" hidden><div class="mwin" role="dialog" aria-label="Налоги" style="width:min(460px, calc(100vw - 32px))"><div class="mhead"><b><img class="ic" src="icons/money.png?v=80" alt=""> Налоги</b><button id="taxClose" aria-label="Закрыть">×</button></div><div class="mbody">
   <label for="taxRange" class="taxrow"><span>Ставка</span><b id="taxPct">100%</b></label>
   <input id="taxRange" type="range" min="0" max="200" step="5" value="100">
   <div class="taxscale"><span>0%</span><span>100% — норма</span><span>200%</span></div>
   <div id="taxInfo"></div>
-  <button id="taxChart" style="margin-top:12px"><img class="ic" src="icons/money.png?v=79" alt=""> График денег</button>
+  <button id="taxChart" style="margin-top:12px"><img class="ic" src="icons/money.png?v=80" alt=""> График денег</button>
 </div></div></div>
-<div id="lostModal" class="modal" hidden><div class="mwin" role="alertdialog" aria-label="Город потерян" style="width:min(420px, calc(100vw - 32px))"><div class="mhead"><b><img class="ic" src="icons/warn.png?v=79" alt=""> Город потерян</b></div><div class="mbody">
+<div id="lostModal" class="modal" hidden><div class="mwin" role="alertdialog" aria-label="Город потерян" style="width:min(420px, calc(100vw - 32px))"><div class="mhead"><b><img class="ic" src="icons/warn.png?v=80" alt=""> Город потерян</b></div><div class="mbody">
   <p>Довольство жителей слишком долго держалось ниже 10%: они восстали, и город больше не подчиняется. Начните заново и следите за довольством — налоги, еда, работа, магазины и парки.</p>
-  <button id="lostRestart"><img class="ic" src="icons/restart.png?v=79" alt=""> Новый город</button>
+  <button id="lostRestart"><img class="ic" src="icons/restart.png?v=80" alt=""> Новый город</button>
 </div></div></div>
 <div id="chartModal" class="modal" hidden><div class="mwin" role="dialog" aria-label="График ресурса"><div class="mhead"><b id="chartTitle" style="font-size:16px"></b><button id="chartClose" aria-label="Закрыть">×</button></div><div class="mbody"><canvas id="resChart" class="chart" width="600" height="260"></canvas><div id="chartNote"></div></div></div></div>
 <div id="toast" role="status" hidden></div>
 <div id="netbox"><div class="box" id="netStep"></div></div>
 <!-- ?v= must change with every release: GitHub Pages lets browsers cache files for 10 minutes, and a new page with an old game.js breaks -->
-<script src="game.js?v=79"></script>
+<script src="game.js?v=80"></script>
 <script>
 // W, H, B, NEED_TEXT, POWER, WATER are globals from game.js
 // show script errors instead of a silently frozen game (e.g. a stale cached game.js)
 window.onerror = m => { const e = document.getElementById('err'); if (e) e.textContent = 'Ошибка: ' + m + ' — обновите страницу (Ctrl+F5)'; };
 let S = 20; // zoom: half the width of a tile diamond, in pixels
 // the game's version, shown small in the map's corner; raised with every release
-const VERSION = '0.11.1';
+const VERSION = '0.12.0';
 document.getElementById('ver').textContent = 'v' + VERSION;
 const c = document.getElementById('c'), ctx = c.getContext('2d');
 // the screen canvas is the size of the view; the map itself is drawn in chunks (see paint)
@@ -336,14 +336,15 @@ $('name').onchange = () => {
   if (net) net.rename();
 };
 
-const ic = n => `<img class="ic" src="icons/${n}.png?v=79" alt="">`; // emoji don't render in every browser, so icons are SVG files
-const RES = { money: 'money', wood: 'wood', stone: 'stone', food: 'food', iron: 'ironore', gold: 'goldore', ironbar: 'iron', goldbar: 'gold', oil: 'oil', asphalt: 'asphalt', horses: 'horses' }; // iron/gold are ore, the bar icons go to the bars
+const ic = n => `<img class="ic" src="icons/${n}.png?v=80" alt="">`; // emoji don't render in every browser, so icons are SVG files
+const RES = { money: 'money', wood: 'wood', stone: 'stone', food: 'food', iron: 'ironore', gold: 'goldore', ironbar: 'iron', goldbar: 'gold', oil: 'oil', asphalt: 'asphalt', fuel: 'fuel', horses: 'horses' }; // iron/gold are ore, the bar icons go to the bars
 const costText = c => Object.entries(c).map(([k, v]) => v + ic(RES[k])).join(' ');
 // what the player still lacks for cost c, as a line to show under its button ('' when it is affordable)
 const lackText = c => { const me = st.players[name], miss = Object.entries(c).filter(([k, v]) => (me.res[k] || 0) < v).map(([k, v]) => `${Math.ceil(v - (me.res[k] || 0))}${ic(RES[k])}`); return miss.length ? `<br><small class="down">Не хватает: ${miss.join(' ')}</small>` : ''; };
 const TOOLS = { info: { label: 'Информация', icon: 'info', cost: {} }, buy: { label: 'Купить землю', icon: 'buy', cost: {}, tech: 'explore' }, clear: { label: 'Расчистить', icon: 'clear', cost: {}, note: 'лес 5' + ic('money') + ', камень 10' + ic('money') }, ...B, bulldoze: { label: 'Снести', icon: 'bulldoze', cost: { money: 2 } } };
 const TABS = [['Сети', 'road', ['path', 'cobble', 'road', 'power', 'pipe', 'stop']], ['Зоны', 'zres', ['zres', 'zoff', 'zind']], ['Жильё', 'house', ['improve', 'park']],
   ['Добыча', 'farm', ['farm', 'sawmill', 'quarry', 'mine', 'well', 'smelter']], ['Торговля', 'market', ['market', 'depot', 'shop']], ['Соцсфера', 'school', ['firewell', 'firestation', 'healer', 'kinder', 'school', 'hospital', 'uni']], ['Энергия', 'plant', ['plant', 'pump', 'refinery']]];
+const FROM_OIL = ['asphalt', 'fuel']; // shown in oil's list in the resource bar, not on their own
 const toolCost = k => (B[k] && st && st.players[name] ? Game.buildCost(st.players[name], k, st, name) : TOOLS[k].cost);
 const cardName = l => l.replace(/ \(.*\)$/, ''); // card titles without the explanation in brackets; the full text is in the tooltip
 const toolBtn = k => {
@@ -538,9 +539,9 @@ const nbr = (i, dx, dy) => { const x = i % W + dx, y = ((i / W) | 0) + dy; retur
 // bottom vertex, the diamond is 256 px wide). Whatever has no texture is drawn by code as before.
 const TEX = {}, texCache = new Map();
 let SPR = {}, texReady = false;
-fetch('textures/sprites.json?v=79').then(r => r.json()).then(m => {
+fetch('textures/sprites.json?v=80').then(r => r.json()).then(m => {
   SPR = m;
-  return Promise.all(Object.keys(m).map(n => new Promise(ok => { const im = new Image(); im.onload = () => { TEX[n] = im; ok(); }; im.onerror = ok; im.src = `textures/${n}.png?v=79`; })));
+  return Promise.all(Object.keys(m).map(n => new Promise(ok => { const im = new Image(); im.onload = () => { TEX[n] = im; ok(); }; im.onerror = ok; im.src = `textures/${n}.png?v=80`; })));
 }).then(() => {
   if (TEX.prop_puddle) { let k = 1; while (SPR['oil_' + k]) k++; TEX['oil_' + k] = TEX.prop_puddle; SPR['oil_' + k] = SPR.prop_puddle; } // variants count up from 1
   if (TEX.road_b && TEX.road_one) buildRoads();
@@ -607,8 +608,8 @@ function buildRoads() {
   }
 }
 const VEH = {}, VSZ = {};
-fetch('textures/vehicles.json?v=79').then(r => r.json()).then(m => Object.keys(m).forEach(n => {
-  const im = new Image(); im.onload = () => { VEH[n] = im; VSZ[n] = m[n]; }; im.src = `textures/veh_${n}.png?v=79`;
+fetch('textures/vehicles.json?v=80').then(r => r.json()).then(m => Object.keys(m).forEach(n => {
+  const im = new Image(); im.onload = () => { VEH[n] = im; VSZ[n] = m[n]; }; im.src = `textures/veh_${n}.png?v=80`;
 })).catch(() => {});
 const MIRROR = { se: 'sw', sw: 'se', nw: 'ne', ne: 'nw', e: 'w', w: 'e' }, BACK = { se: 'nw', nw: 'se', sw: 'ne', ne: 'sw' };
 // draws vehicle `base` at screen point (x, y) heading (dx, dy), `wid` tiles wide on screen; false when it has no picture.
@@ -1505,7 +1506,7 @@ function drawDoctors(vx, vy, vw, vh, put) {
 // ---- Traffic: people, cars, buses and trucks moving along the roads.
 // Purely for show: it follows what the city does (residents, workers, stops, production), the rules don't depend on it.
 const traffic = { agents: [], comp: [], homes: [], works: [], shops: [], producers: [], stops: [] };
-const CARGO = { oil: '#2b2a30', asphalt: '#3a3d44', food: '#e0b040', wood: '#8b5a2b', stone: '#9a9a94', iron: '#6f7c88', gold: '#f2c230', ironbar: '#a7b3bf', goldbar: '#ffd34d', clothes: '#d46ab0', furniture: '#b5651d', canned: '#c8ccd2', tools: '#4f6d8f', jewelry: '#f5d76e' };
+const CARGO = { oil: '#2b2a30', asphalt: '#3a3d44', fuel: '#d63a2a', food: '#e0b040', wood: '#8b5a2b', stone: '#9a9a94', iron: '#6f7c88', gold: '#f2c230', ironbar: '#a7b3bf', goldbar: '#ffd34d', clothes: '#d46ab0', furniture: '#b5651d', canned: '#c8ccd2', tools: '#4f6d8f', jewelry: '#f5d76e' };
 const CAR_COLORS = ['#d64545', '#3f7fd6', '#e8e8e8', '#2f2f35', '#3cb44b', '#f58231', '#8e44ad'];
 const SKIN = ['#f1c9a5', '#d9a77e', '#a86f4c', '#6e4630'], SHIRT = ['#e74c3c', '#3498db', '#2ecc71', '#f1c40f', '#9b59b6', '#ecf0f1', '#e67e22'];
 const pickR = a => a[(Math.random() * a.length) | 0];
@@ -1795,7 +1796,7 @@ cam.x = OX + (W - H) / 2 * S - c.width / 2; cam.y = OY + (W + H) / 2 * S / 2 - c
 
 // hover window over a resource: what adds to it and takes from it this tick
 let tipKey = '';
-const RES_NAME = { money: 'Деньги', wood: 'Дерево', stone: 'Камень', food: 'Еда', iron: 'Железная руда', gold: 'Золотая руда', ironbar: 'Железные слитки', goldbar: 'Золотые слитки', oil: 'Нефть', asphalt: 'Асфальт', horses: 'Лошади' };
+const RES_NAME = { money: 'Деньги', wood: 'Дерево', stone: 'Камень', food: 'Еда', iron: 'Железная руда', gold: 'Золотая руда', ironbar: 'Железные слитки', goldbar: 'Золотые слитки', oil: 'Нефть', asphalt: 'Асфальт', fuel: 'Топливо', horses: 'Лошади' };
 const GROUP_COL = { kids: '#f5b041', none: '#95a5a6', school: '#5dade2', higher: '#58d68d', old: '#af7ac5' };
 const num = v => Math.abs(v) < 0.05 ? '0' : (v > 0 ? '+' : '−') + Math.abs(v).toFixed(1);
 function tipHtml(k) {
@@ -1817,7 +1818,8 @@ function tipHtml(k) {
   const rows = ((me.flow || {})[k] || []).map(([what, v]) => `<div class="${v > 0 ? 'up' : 'down'}">${num(v)} ${esc(what)}</div>`);
   const way = (st.ships || []).filter(sh => sh.who === name && sh.kind === 'depot' && sh.res === k).reduce((n, sh) => n + sh.n, 0);
   const cap = Game.capOf(st, name), have = Math.floor(me.res[k] || 0);
-  const head = k === 'horses' ? horseText(name) + '<hr>' : k === 'money' ? '' : `На складах ${have} из ${cap}` + (way ? `, везут ещё ${way}` : '') + (have + way >= cap ? ' — <span class="down">места нет, постройте склад</span>' : '') + '<hr>';
+  const fromOil = k !== 'oil' ? '' : '<b>Из нефти на НПЗ</b>' + FROM_OIL.map(g => `<div class="sub">${ic(RES[g])} ${RES_NAME[g]}: <b>${Math.floor(me.res[g] || 0)}</b> <small class="${(me.delta[g] || 0) > 0.05 ? 'up' : (me.delta[g] || 0) < -0.05 ? 'down' : ''}">${num(me.delta[g] || 0)}</small></div>`).join('') + '<hr>';
+  const head = fromOil + (k === 'horses' ? horseText(name) + '<hr>' : k === 'money' ? '' : `На складах ${have} из ${cap}` + (way ? `, везут ещё ${way}` : '') + (have + way >= cap ? ' — <span class="down">места нет, постройте склад</span>' : '') + '<hr>');
   return head + `<b>${ic(RES[k])} ${RES_NAME[k]} за тик</b>` + (rows.join('') || '<div>ничего не приходит и не уходит</div>') + `<hr>Итого: ${num(me.delta[k] || 0)}` +
     (k === 'food' && !me.fed ? '<div class="down">Склад пуст — жители голодают, налоги ×0.3</div>' : '') + (k === 'money' ? '<div><small>Кликните, чтобы настроить налоги</small></div>' : Game.HIST_RES.includes(k) ? '<div><small>Кликните, чтобы открыть график</small></div>' : '');
 }
@@ -1847,7 +1849,7 @@ const DESC = {
   cobble: 'Брусчатка: вдвое быстрее тропинки, кладётся поверх неё. Каждая клетка тратит немного камня в тик; без камня разбивается и становится медленной, как тропинка.',
   road: 'Асфальтовая дорога: вдвое быстрее тропинки, кладётся поверх тропинки и брусчатки. Каждая клетка тратит немного нефти в тик; без нефти разбивается.',
   well: 'Добывает нефть. Ставится прямо на месторождение нефти.',
-  refinery: 'Перерабатывает нефть в асфальт для дорог. Шумит и загрязняет.',
+  refinery: 'Перерабатывает нефть в асфальт для дорог или в топливо для грузовиков — на выбор. Шумит и загрязняет.',
   power: 'Несёт электричество от электростанции. Здания тоже передают его соседям. Нужно только многоэтажкам и башням.',
   pipe: 'Несёт воду от водокачки. Здания тоже передают её соседям.',
   stop: 'Возит жителей на работу между остановками одной дороги. До автобусов это конка: нужна лошадь со склада.',
@@ -1963,7 +1965,7 @@ function render() {
   const hu = Game.horseUse(st, name);
   // [key, icon, value html, extra class, title]: icons stay put and only the numbers are rewritten, so nothing blinks or shifts
   const n5 = v => (v > 99999 ? Math.round(v / 1000) + 'к' : String(f(v))); // at most 5 characters: bigger numbers in thousands
-  const items = [...Object.keys(RES).map(k => [k, RES[k], `<b>${k === 'horses' ? `${hu.total}/${hu.busy}` : n5(r[k] || 0)}</b>${way[k] ? `<small class="way" title="ещё едет на склад: потратить можно, когда приедет">↗${way[k]}</small>` : ''}${d(k)}`]),
+  const items = [...Object.keys(RES).filter(k => !FROM_OIL.includes(k)).map(k => [k, RES[k], `<b>${k === 'horses' ? `${hu.total}/${hu.busy}` : n5(r[k] || 0)}</b>${way[k] ? `<small class="way" title="ещё едет на склад: потратить можно, когда приедет">↗${way[k]}</small>` : ''}${d(k)}`]),
     ['happy', moodIcon(me), `<b>${Math.round((me.happy || 0) * 100)}%</b>`], ['pop', 'pop', `<b>${me.pop}</b>${d2(me.growth || 0)}`],
     ['goods', 'depot', `<b>${n5(Object.keys(PRODUCTS).reduce((n, g) => n + (r[g] || 0), 0))}</b>`], ['', 'jobs', `<b>${me.jobs}</b>`, '', 'Рабочие места'], ['', 'land', `<b>${Game.landOf(st, name)}</b>`, '', 'Земля, клеток'],
   ];
@@ -1997,7 +1999,7 @@ const POLLUTES = ['ind', 'plant', 'quarry']; // the 'quiet' need; wider pollutio
 function horseText(who) {
   const p = st.players[who], h = Game.horseUse(st, who);
   if (Game.hasTech(p, 'engine')) { const n = (st.ships || []).filter(sh => sh.who === who && !sh.horse).length;
-    return `${ic('engine')} Грузы возят грузовики: в пути ${n}, жгут ${Math.round(n * Game.TRUCK_OIL * 10) / 10}${ic('oil')} за тик` + ((p.res.oil || 0) > 0 ? '' : ' · <span class="down">нефти нет — грузы везут лошади</span>'); }
+    return `${ic('engine')} Грузы возят грузовики: в пути ${n}, жгут ${Math.round(n * Game.TRUCK_FUEL * 10) / 10}${ic('fuel')} за тик` + ((p.res.fuel || 0) > 0 ? '' : ' · <span class="down">топлива нет — грузы везут лошади; его делает НПЗ из нефти</span>'); }
   return `${ic('horses')} Лошади: всего <b>${h.total}</b>, заняты <b>${h.busy}</b>` + (h.total ? ` · едят ${Math.round(h.total * Game.HORSE_FOOD * 10) / 10}${ic('food')} за тик` + (p.fed === false ? ' · <span class="down">голодают — возят только еду</span>' : '') : '') + (h.trams ? ` (конка ${h.trams})` : '') + ` · свободно ${h.free}` + (h.carts ? ` · с телегами в пути ${h.carts}` : '') + (h.cap ? ` · фермы вырастят до ${h.cap}` : '');
 }
 function card(i) {
@@ -2050,7 +2052,9 @@ function card(i) {
     rows.push(`${ic(RES[m.ore])} Плавит ${RES_TEXT[m.ore]} со склада: ${m.per} → 1 ${ic(RES[(st.spec || {})[i] || 'ironbar'])} ${m.label.toLowerCase()}; запас ${Math.floor((st.stock || {})[i] || 0)} из ${Game.LOAD}`);
     if ((st.starved || []).includes(i)) rows.push(ic('warn') + ' Не хватает руды — завод работает не в полную силу');
     if (owner === name) rows.push('<small>Кликните «Информацией», чтобы выбрать металл</small>'); }
-  if (t === 'refinery') rows.push(`${ic('oil')} Берёт нефть со склада, делает асфальт; запас ${Math.floor((st.stock || {})[i] || 0)} из ${Game.LOAD}`);
+  if (t === 'refinery') { const g = Game.REFINE[(st.spec || {})[i]] ? st.spec[i] : 'asphalt';
+    rows.push(`${ic('oil')} Берёт нефть со склада, делает ${ic(RES[g])} ${Game.REFINE[g].label.toLowerCase()}; запас ${Math.floor((st.stock || {})[i] || 0)} из ${Game.LOAD}`);
+    if (owner === name) rows.push('<small>Кликните «Информацией», чтобы выбрать, что выпускать</small>'); }
   if ((t === 'depot' || t === 'farm') && op) rows.push(horseText(owner));
   if (Game.routable(st, i) && (st.route || {})[i] !== undefined) { const d = st.route[i]; rows.push(`${ic('depot')} Возит на выбранный склад (${d % W}, ${(d / W) | 0})` + ((st.undelivered || []).includes(i) ? ' — <span class="down">он не на той же дороге или не работает</span>' : '')); }
   if (op && op.strike && op.strike.t === t) rows.push(`${ic('warn')} <span class="down">Забастовка: не работает ещё ${op.strike.left} т.</span>`);
@@ -2090,9 +2094,11 @@ function factoryPanel() {
     box.hidden = false;
     return;
   }
-  const cur = (st.spec || {})[selFactory] || (kind === 'farm' ? 'crops' : kind === 'smelter' ? 'ironbar' : 'clothes');
+  const cur = (st.spec || {})[selFactory] || (kind === 'farm' ? 'crops' : kind === 'smelter' ? 'ironbar' : kind === 'refinery' ? 'asphalt' : 'clothes');
   const head = `<b>${ic(B[kind].icon || kind)} ${short(kind)} (${selFactory % W}, ${(selFactory / W) | 0})</b> <button data-close style="width:auto;display:inline-block;float:right;padding:0 8px">×</button>` + levelPanel(selFactory);
-  const html = kind === 'smelter' ? head + 'Что плавить:' + Object.entries(Game.SMELT).map(([g, m]) =>
+  const html = kind === 'refinery' ? head + 'Что выпускать:' + Object.entries(Game.REFINE).map(([g, m]) =>
+    `<button data-spec="${g}" class="${g === cur ? 'cur' : ''}">${ic(RES[g])} ${m.label} <small>1${ic('oil')} → 1${ic(RES[g])} · ${g === 'fuel' ? 'для грузовиков' : 'для асфальтовых дорог'}</small></button>`).join('') :
+    kind === 'smelter' ? head + 'Что плавить:' + Object.entries(Game.SMELT).map(([g, m]) =>
     `<button data-spec="${g}" class="${g === cur ? 'cur' : ''}">${ic(RES[g])} ${m.label} <small>${m.per}${ic(RES[m.ore])} → 1${ic(RES[g])}, продаётся по ${Game.SELL[g]}${ic('money')}</small></button>`).join('') :
     kind !== 'farm' && kind !== 'ind' ? head : kind === 'farm' ? head + 'Специализация:' + Object.entries(Game.FARM).map(([g, f]) =>
     `<button data-spec="${g}" class="${g === cur ? 'cur' : ''}">${ic(g === 'crops' ? 'farm' : 'horses')} ${f.label} <small>${f.food}${ic('food')} за тик${g === 'livestock' ? ` и лошади, до ${Game.horsesPerFarm(st.players[name])} на ферму; еду везёт своими телегами` : ''}</small></button>`).join('') + `<div style="margin-top:6px">${horseText(name)}</div>` : head + 'Что выпускать:' +
@@ -2124,7 +2130,7 @@ function techToast(me) {
   knownTech = new Set(now);
   if (!fresh.length) return;
   const t = Game.techOf(fresh[fresh.length - 1]);
-  $('toast').innerHTML = `<img class="ic big" src="icons/${TECH_ICON[t.id]}.png?v=79" alt="" style="width:30px;height:30px"><div><b>Исследование завершено: ${t.name}</b><br><small>${t.desc}</small></div><button data-next>${ic('research')} Выбрать следующее</button>`;
+  $('toast').innerHTML = `<img class="ic big" src="icons/${TECH_ICON[t.id]}.png?v=80" alt="" style="width:30px;height:30px"><div><b>Исследование завершено: ${t.name}</b><br><small>${t.desc}</small></div><button data-next>${ic('research')} Выбрать следующее</button>`;
   $('toast').hidden = false;
   clearTimeout(toastTimer); toastTimer = setTimeout(() => { $('toast').hidden = true; }, 8000);
 }
@@ -2159,7 +2165,7 @@ function eventToast() {
   const html = evCards.map((e, n) => { // only the newest card explains what helps, so a few fit under the tutorial
     const left = e.kind === 'sick' ? `Ещё ${Game.sickLeft(me)} тиков · спасают ${Math.round((me.cure || 0) * 100)}% больных, и чем больше, тем быстрее она пройдёт` : e.kind === 'drought' ? `Ещё ${me.drought} тиков` : '';
     const full = e.kind === 'sick' ? Game.SICK_T : e.kind === 'drought' ? Game.DROUGHT_T : 0, rest = e.kind === 'sick' ? me.sick : me.drought;
-    return `<div class="ev${e.kind === 'good' ? ' good' : ''}" data-ev="${e.id}"><img src="icons/${e.pic}.png?v=79" alt=""><div class="body"><b>${e.title}</b><p>${esc(e.text)}</p>` +
+    return `<div class="ev${e.kind === 'good' ? ' good' : ''}" data-ev="${e.id}"><img src="icons/${e.pic}.png?v=80" alt=""><div class="body"><b>${e.title}</b><p>${esc(e.text)}</p>` +
       (e.help && !n ? `<p>${e.help}</p>` : '') + (left ? `<p><small>${left}</small></p><div class="bar"><i style="width:${Math.min(100, rest / full * 100)}%"></i></div>` : '') +
       (e.tile >= 0 ? `<div class="acts"><button data-goto="${e.tile}">Показать на карте</button></div>` : '') + `</div><button data-x aria-label="Закрыть">×</button></div>`;
   }).join('');
@@ -2203,7 +2209,7 @@ function researchPanel(me) {
     }
     const why = done ? 'Изучено' : cur ? 'Изучается' : open ? 'Нажмите, чтобы изучать' : t.era > (me.level || 0) ? `Откроется в эпоху «${LEVELS[t.era].name}»` : `Сначала изучите ${miss.map(r => `«${r.name}»`).join(' и ')}`;
     nodes += `<div class="node ${done ? 'done' : cur ? 'cur' : open ? 'open' : 'off'}${t.side ? ' side' : ''}" style="left:${x}px;top:${y}px" title="${why}${t.side ? ' · необязательное: для новой эпохи не нужно' : ''}"${open ? ` data-tech="${t.id}"` : ''}>` +
-      `<img class="big" src="icons/${TECH_ICON[t.id]}.png?v=79" alt=""><div><b>${done ? ic('ok') + ' ' : ''}${t.name}</b><span>${t.desc}</span></div>` +
+      `<img class="big" src="icons/${TECH_ICON[t.id]}.png?v=80" alt=""><div><b>${done ? ic('ok') + ' ' : ''}${t.name}</b><span>${t.desc}</span></div>` +
       (cur || (pts && !done) ? `<div class="bar"><i style="width:${Math.min(100, pts / Game.TECH_COST[t.era] * 100)}%"></i></div>` : '') +
       (cur ? `<i class="left">${ticksLeft(me, t)}</i>` : '') + '</div>';
   }

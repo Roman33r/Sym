@@ -211,7 +211,7 @@ const d = G.newGame(6);
 d.grid.fill('grass');
 G.start(d, ['D']); G.act(d, 'D', 'claim', 0);
 const DP = d.players.D;
-DP.res = { money: 1e5, wood: 1e3, stone: 1e3, food: 100, iron: 0, gold: 0, asphalt: 99, oil: 99 }; DP.tech = G.allTech(); delete DP.tech.logistics; // oil keeps the asphalt in repair; logistics is tested below
+DP.res = { money: 1e5, wood: 1e3, stone: 1e3, food: 100, iron: 0, gold: 0, asphalt: 99, oil: 99, fuel: 99 }; DP.tech = G.allTech(); delete DP.tech.logistics; // oil keeps the asphalt in repair, fuel runs the trucks; logistics is tested below
 d.grid[0] = 'lake';
 for (let x = 0; x < 12; x++) G.act(d, 'D', 'road', W + x);
 G.act(d, 'D', 'pump', 1); G.act(d, 'D', 'plant', 2); G.act(d, 'D', 'farm', 3); G.act(d, 'D', 'house', 4);
@@ -266,7 +266,7 @@ const f = G.newGame(8);
 f.grid.fill('grass');
 G.start(f, ['F']); G.act(f, 'F', 'claim', 0);
 const FP = f.players.F;
-FP.level = 2; FP.tech = G.allTech(); FP.res = { money: 1e5, wood: 500, stone: 1e3, food: 500, iron: 0, gold: 0, asphalt: 99, oil: 99 }; // oil for the trucks
+FP.level = 2; FP.tech = G.allTech(); FP.res = { money: 1e5, wood: 500, stone: 1e3, food: 500, iron: 0, gold: 0, asphalt: 99, oil: 99, fuel: 99 }; // fuel for the trucks
 f.grid[0] = 'lake';
 for (let x = 0; x < 12; x++) G.act(f, 'F', 'road', W + x);
 G.act(f, 'F', 'pump', 1); G.act(f, 'F', 'plant', 2); f.grid[3] = 'ind';
@@ -286,7 +286,7 @@ for (let k = 0; k < 120 && !sale; k++) {
 assert.ok(toDepot && toShop && sale, `furniture reached the depot (${toDepot}), went to the shop (${toShop}) and sold (${sale})`);
 assert.ok(FP.res.wood < 500, 'the factory used wood');
 // the metallurgical plant turns ore from the stock into bars, iron or gold as set
-FP.res.oil = 99; f.ships = []; f.stock = {};
+FP.res.fuel = 99; f.ships = []; f.stock = {};
 f.grid[9] = 'grass'; assert.strictEqual(G.act(f, 'F', 'smelter', 9), null);
 assert.strictEqual(G.setSpec(f, 'F', 9, 'silverbar'), 'неизвестный металл');
 FP.res.iron = 40; FP.res.gold = 0; FP.res.ironbar = 0;
@@ -298,14 +298,14 @@ FP.res.iron = 0; FP.res.gold = 10; f.stock[9] = 0;
 G.tick(f); G.tick(f);
 assert.ok(FP.res.gold < 10, 'now it takes gold');
 assert.ok(f.starved.includes(9) || FP.res.gold > 0, 'little ore: the plant runs short');
-// trucks burn oil; a level-up gives a depot more room
-assert.ok(FP.flow.oil.some(([w, v]) => w.startsWith('Грузовики') && v < 0) || FP.res.oil < 99, 'trucks burn oil');
+// trucks burn fuel; a level-up gives a depot more room
+assert.ok(FP.flow.fuel.some(([w, v]) => w.startsWith('Грузовики') && v < 0) || FP.res.fuel < 99, 'trucks burn fuel');
 assert.strictEqual(G.depotCap(f, 10), G.DEPOT_CAP * G.PROD_K[G.blOf(f, 10)]);
 FP.level = 3; FP.res.ironbar = 99; const cap0 = G.capOf(f, 'F');
 assert.strictEqual(G.act(f, 'F', 'improve', 10), null);
 assert.strictEqual(G.capOf(f, 'F') - cap0, Math.round(G.DEPOT_CAP * G.PROD_K[G.blOf(f, 10)]) - Math.round(G.DEPOT_CAP * G.PROD_K[G.blOf(f, 10) - 1]), 'the better depot holds more');
-// no oil: the loads wait for horses
-FP.res.oil = 0; f.ships = []; f.stock[3] = G.LOAD; FP.res.furniture = 0; G.tick(f);
+// no fuel: the loads wait for horses
+FP.res.fuel = 0; f.ships = []; f.stock[3] = G.LOAD; FP.res.furniture = 0; G.tick(f);
 assert.ok(!f.ships.some(x => !x.horse) && f.noHorse.includes(3), 'no fuel, no trucks');
 assert.ok(FP.hist.length > 0 && 'higher' in FP.hist[0], 'population history is kept for the chart');
 // offices only take people with a degree
@@ -386,6 +386,10 @@ HP.res.iron = 50; HP.res.ironbar = 50; HP.res.oil = 30;
 assert.strictEqual(G.act(h, 'H', 'refinery', 9), null);
 for (let k = 0; k < 10; k++) G.tick(h);
 assert.ok(HP.res.oil < 30 && h.stock[9] > 0, 'the refinery turned oil into asphalt');
+assert.strictEqual(G.setSpec(h, 'H', 9, 'gas'), 'НПЗ делает асфальт или топливо');
+assert.strictEqual(G.setSpec(h, 'H', 9, 'fuel'), null);
+h.stock[9] = 0; HP.res.oil = 30; G.tick(h);
+assert.ok(HP.res.oil < 30 && h.stock[9] > 0 && (h.spec || {})[9] === 'fuel', 'now it makes fuel');
 assert.strictEqual(G.act(h, 'H', 'road', W + 5), 'не хватает асфальта');
 HP.res.asphalt = 1;
 assert.strictEqual(G.act(h, 'H', 'road', W + 5), null);
