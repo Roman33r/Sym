@@ -86,7 +86,7 @@ const PROD_K = [1, 1.4, 1.8, 2.3, 2.9];
 const UPGRADE = { farm: 1, sawmill: 1, quarry: 1, ironmine: 1, goldmine: 1, oilwell: 1, refinery: 1, smelter: 1, ind: 1, shop: 1, depot: 1 }; // a depot's level multiplies its room instead
 const blOf = (s, i) => (s.bl || {})[i] ?? 0;
 const prodK = (s, i) => PROD_K[blOf(s, i)];
-const upCost = (t, L) => ({ money: Math.round(((B[t].cost.money || 60) + 60) * L * 0.6), ...(L < 2 ? { wood: 15 } : { stone: 12 * L }), ...(L >= 3 ? { ironbar: 2 * L } : {}) });
+const upCost = (t, L) => ({ money: Math.round(((B[t].cost.money || 60) + 60) * L * 3), ...(L < 2 ? { wood: 60 } : { stone: 48 * L }), ...(L >= 3 ? { ironbar: 8 * L } : {}) });
 // can tile i be raised one step now (homes by tier, producers by level), and what does it take to its era's top
 const canImprove = (s, i, p) => { const t = s.grid[i]; return !!p && (B[t] && B[t].home ? tierOf(s, i) < maxTier(p) : !!UPGRADE[t] && blOf(s, i) < Math.min(p.level || 0, PROD_K.length - 1)); };
 function improveCost(s, i, p) {
@@ -364,7 +364,8 @@ function commute(s, st = s.status || compute(s)) {
 }
 
 // Soft needs of residents of home tile i; jobs/food use the owner's totals from the previous tick.
-const WANT_TEXT = { food: 'Еда в городе', jobs: 'Работа для всех', work: 'Дорога до работы: пешком до 4 кл. или автобусом', shop: 'Магазин в 5 клетках', park: 'Парк в 4 клетках или лес рядом', quiet: 'Нет завода, станции или карьера в 3 клетках' };
+const WANT_TEXT = { food: 'Еда в городе', jobs: 'Работа для всех', work: 'Дорога до работы: пешком до 4 кл. или автобусом', shop: 'Магазин в 5 клетках', park: 'Парк в 4 клетках или лес рядом', quiet: 'Нет завода, станции или карьера в 3 клетках', air: 'Чистый воздух: загрязнение у дома ниже 0,6' };
+const DIRTY = 0.6; // pollution at a home from which the air counts as dirty (see pollution())
 const wants = (s, i, reach = commute(s)) => {
   const g = s.grid, p = s.players[ownerOf(s, i)] || { res: { food: 0 }, jobs: 0, pop: 1 };
   return {
@@ -374,6 +375,7 @@ const wants = (s, i, reach = commute(s)) => {
     shop: near(g, i, 'shop', 5),
     park: near(g, i, 'park', 4) || near(g, i, 'tree', 2),
     quiet: !['ind', 'plant', 'quarry'].some(t => near(g, i, t, 3)),
+    air: polOf(s)[i] < DIRTY,
   };
 };
 const share = w => Object.values(w).filter(Boolean).length / Object.keys(WANT_TEXT).length;
@@ -477,11 +479,11 @@ function ship(s, comp, who, i, res, vehicle, space = Infinity) {
 }
 
 // Events: rare fires, epidemics, droughts and disasters, at most one new one per player at a time of each kind.
-// Chances are per player and tick (a tick is half a second at ×1), none in the first EVENT_CALM ticks of a game.
+// Chances are per player and tick (a tick is 2 seconds at ×1), none in the first EVENT_CALM ticks of a game.
 // A fire burns FIRE_T ticks and then destroys the building, sometimes catching a neighbour; a well or a fire station
 // nearby puts it out in FIRE_PUT ticks (its people run there with buckets, see the client). An epidemic kills a share of the residents each tick unless healers and hospitals
 // treat them; a drought halves the farms' food; a disaster destroys one or two buildings.
-const EVENT_P = { fire: 0.001, sick: 0.0006, drought: 0.0006, disaster: 0.0003 }, EVENT_CALM = 120, FIRE_T = 8, FIRE_PUT = 6;
+const EVENT_P = { fire: 0.0015, sick: 0.0009, drought: 0.0009, disaster: 0.00045 }, EVENT_CALM = 120, FIRE_T = 8, FIRE_PUT = 6;
 const FIRE_COVER = { firewell: 5, firestation: 12 };
 let eventsOn = true; // tests switch the random part off
 const setEvents = on => { eventsOn = on; };
@@ -508,10 +510,17 @@ function events(s) {
     if (!eventsOn || s.tick < EVENT_CALM) continue;
     const bs = () => buildingsOf(s, who);
     if (Math.random() < EVENT_P.fire) { const b = bs(); if (b.length) startFire(s, b[Math.random() * b.length | 0]); }
-    if (!p.sick && p.pop > 20 && Math.random() < EVENT_P.sick) { p.sick = hasTech(p, 'quarantine') ? 12 : 25; s.events.push(`${who}: эпидемия! Нужны знахари и больницы`); }
+    // epidemics come up to 3 times as often in a dirty town
+    if (!p.sick && p.pop > 20 && Math.random() < EVENT_P.sick * (1 + 2 * dirtyShare(s, who))) { p.sick = hasTech(p, 'quarantine') ? 12 : 25; s.events.push(`${who}: эпидемия! Нужны знахари и больницы`); }
     if (!p.drought && Math.random() < EVENT_P.drought) { p.drought = 30; s.events.push(`${who}: засуха — фермы дают меньше еды`); }
     if (Math.random() < EVENT_P.disaster) disaster(s, who, p);
   }
+}
+// share of the player's homes that breathe dirty air
+function dirtyShare(s, who) {
+  const pol = polOf(s); let homes = 0, dirty = 0;
+  s.grid.forEach((t, i) => { if (B[t] && B[t].home && ownerOf(s, i) === who) { homes++; if (pol[i] >= DIRTY) dirty++; } });
+  return homes ? dirty / homes : 0;
 }
 function disaster(s, who, p, roll = Math.random) {
   const b = buildingsOf(s, who);
@@ -559,6 +568,10 @@ function demographics(d, cap, cnt, hap, uniK = 1) { // uniK: online education do
 
 // Pollution per tile from factories, power plants, quarries and mines, fading over 5 tiles.
 const POLLUTERS = { smelter: 1.2, ind: 1, plant: 0.8, quarry: 0.5, ironmine: 0.6, goldmine: 0.6, oilwell: 0.6, refinery: 1.2 };
+// pollution of the state, worked out once per state (the rules ask for it home by home)
+const polCache = new WeakMap();
+const polSig = s => { let h = 0; for (let i = 0; i < s.grid.length; i++) if (POLLUTERS[s.grid[i]]) h = (h * 31 + i + 1) | 0; return h; }; // where the polluters stand
+const polOf = s => { let c = polCache.get(s); const sig = polSig(s); if (!c || c.sig !== sig) polCache.set(s, c = { sig, map: pollution(s) }); return c.map; };
 function pollution(s) {
   const p = new Float32Array(W * H);
   s.grid.forEach((t, i) => {
@@ -937,5 +950,5 @@ function room(s) {
   return r;
 }
 
-const api = { W, H, B, NEED_TEXT, WANT_TEXT, POWER, WATER, START, LEVELS, levelOf, upgradeBlock, PRICES, SELL, RES_TEXT, trade, priceOf, mkOf, hasMarket, HIST_RES, CLEAR, startCorner, landOf, landPrice, newGame, start, nextTurn, compute, tick, act, actArea, wants, happiness, residents, commute, ownerOf, room, SPEEDS, LOAD, TRUCK_LOAD, PACE, roadNets, networks, PRODUCTS, SMELT, GROUPS, SEATS, pollution, setSpec, popOf, demographics, TECH, TECH_COST, BRANCHES, techOf, hasTech, setResearch, allTech, FARM, HORSES_PER_FARM, horsesPerFarm, UTIL_ERA, isRoad, EVENT_P, FIRE_T, FIRE_PUT, FIRE_COVER, setEvents, startFire, disaster, cureOf, covered, slowAt, wornAt, ROAD_UPKEEP, PROD_K, UPGRADE, blOf, prodK, upCost, canImprove, improveCost, horseUse, setRoute, routable, depotFor, findRoute, HORSE_FOOD, BASE_CAP, DEPOT_CAP, depotCap, capOf, TRUCK_OIL, HOME_TIERS, tierOf, homeCap, maxTier };
+const api = { W, H, B, NEED_TEXT, WANT_TEXT, POWER, WATER, START, LEVELS, levelOf, upgradeBlock, PRICES, SELL, RES_TEXT, trade, priceOf, mkOf, hasMarket, HIST_RES, CLEAR, startCorner, landOf, landPrice, newGame, start, nextTurn, compute, tick, act, actArea, wants, happiness, residents, commute, ownerOf, room, SPEEDS, LOAD, TRUCK_LOAD, PACE, roadNets, networks, PRODUCTS, SMELT, GROUPS, SEATS, pollution, polOf, DIRTY, dirtyShare, setSpec, popOf, demographics, TECH, TECH_COST, BRANCHES, techOf, hasTech, setResearch, allTech, FARM, HORSES_PER_FARM, horsesPerFarm, UTIL_ERA, isRoad, EVENT_P, FIRE_T, FIRE_PUT, FIRE_COVER, setEvents, startFire, disaster, cureOf, covered, slowAt, wornAt, ROAD_UPKEEP, PROD_K, UPGRADE, blOf, prodK, upCost, canImprove, improveCost, horseUse, setRoute, routable, depotFor, findRoute, HORSE_FOOD, BASE_CAP, DEPOT_CAP, depotCap, capOf, TRUCK_OIL, HOME_TIERS, tierOf, homeCap, maxTier };
 if (typeof module !== 'undefined') module.exports = api; else window.Game = api;

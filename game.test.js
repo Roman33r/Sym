@@ -24,19 +24,24 @@ assert.strictEqual(G.act(s, 'A', 'house', 2), 'клетка занята');
 G.tick(s);
 assert.deepStrictEqual([s.status[1], s.status[2], s.status[4]], ['', '', '']);
 // homes: built in Новое время the house is a block of flats (24); food and jobs (0 >= 0) met, no workplace,
-// shop or park, power plant next door: room for 24 * (0.4 + 0.6 * 2/6)
+// shop or park, power plant next door (noisy, but 2 tiles off its smoke is under DIRTY): room for 24 * (0.4 + 0.6 * 3/7)
 const A = s.players.A;
 assert.strictEqual(G.tierOf(s, 4), 3);
-assert.strictEqual(A.cap, 14);
+assert.strictEqual(A.cap, 16);
 assert.ok(A.pop >= 1 && A.pop <= A.cap, 'people move in gradually'); // the first newcomers
 // that tick's change: tax 0.5 per resident minus plant (3) and pump (2) upkeep; residents eat 0.2 each (with the side studies' bonuses)
 const near = (a, b) => assert.ok(Math.abs(a - b) < 1e-9, a + ' ≈ ' + b);
 near(A.delta.money, A.pop * 0.5 * 1.2 - 3 - 2); // banks: taxes +20%
 near(A.delta.food, -A.pop * 0.2 * 0.8); // preserving: 20% less food
 // now the residents have 0 jobs, so the jobs need fails too
-assert.deepStrictEqual(G.wants(s, 4), { food: true, jobs: false, work: false, shop: false, park: false, quiet: false });
+assert.deepStrictEqual(G.wants(s, 4), { food: true, jobs: false, work: false, shop: false, park: false, quiet: false, air: true });
 s.grid[W * 2 + 7] = 'park'; s.grid[W * 2 + 9] = 'shop'; // the shop is 5 tiles away: counts as a shop nearby, too far to walk to as a job
-assert.strictEqual(G.happiness(s, 4), 0.5);
+assert.strictEqual(G.happiness(s, 4), 4 / 7);
+// dirty air: right next to a factory the home loses that want, and the town gets more epidemics
+s.grid[W * 2 + 5] = 'ind';
+assert.strictEqual(G.wants(s, 4).air, false);
+assert.strictEqual(G.dirtyShare(s, 'A'), 1);
+s.grid[W * 2 + 5] = 'grass';
 s.grid[W * 2 + 7] = s.grid[W * 2 + 9] = 'grass';
 const money = s.players.A.res.money;
 assert.strictEqual(G.act(s, 'A', 'bulldoze', 4), null);
