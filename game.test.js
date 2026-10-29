@@ -544,3 +544,24 @@ for (const t of Object.keys(G.UPGRADE)) for (let L = 1; L < G.PROD_K.length; L++
   assert.ok(Object.keys(c).every(k => UP.res[k] === 0), `${t} to level ${L + 1} takes its price`);
 }
 console.log('ok');
+
+// a quarry goes on the rocks themselves and leaves them when knocked down; islands get no deposits or rocks
+const qz = G.newGame(21); qz.grid.fill('grass'); G.start(qz, ['Q']); G.act(qz, 'Q', 'claim', 0);
+qz.players.Q.res = { ...qz.players.Q.res, money: 1e4, wood: 100 };
+qz.grid[3] = 'rock';
+assert.strictEqual(G.act(qz, 'Q', 'quarry', 2), 'каменоломня ставится прямо на камни');
+assert.strictEqual(G.act(qz, 'Q', 'quarry', 3), null);
+assert.strictEqual(G.act(qz, 'Q', 'bulldoze', 3), null);
+assert.strictEqual(qz.grid[3], 'rock');
+for (let seed = 1; seed < 12; seed++) {
+  const m = G.newGame(seed), part = new Int32Array(W * G.H).fill(-1), size = [];
+  for (let i = 0; i < m.grid.length; i++) {
+    if (m.grid[i] === 'lake' || part[i] >= 0) continue;
+    const q = [i]; part[i] = size.length; let n = 0;
+    while (q.length) { const k = q.pop(); n++; for (const j of [k - 1, k + 1, k - W, k + W]) if (j >= 0 && j < m.grid.length && Math.abs(j % W - k % W) <= 1 && m.grid[j] !== 'lake' && part[j] < 0) { part[j] = size.length; q.push(j); } }
+    size.push(n);
+  }
+  const main = size.indexOf(Math.max(...size));
+  assert.ok(m.grid.every((t, i) => part[i] === main || !['iron', 'gold', 'oil', 'rock'].includes(t)), `map ${seed}: nothing to mine on an island`);
+}
+console.log('ok');

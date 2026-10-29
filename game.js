@@ -18,7 +18,7 @@ const B = {
   improve: { cost: {}, label: 'Улучшить дома', icon: 'upgrade' }, // tool: raises homes to the era's tier
   farm:    { cost: { money: 40, wood: 5 }, needs: 'rw', jobs: 4, prod: { food: 5 }, label: 'Ферма (еда)', icon: 'farm' },
   sawmill: { cost: { money: 60 }, needs: 'rpt', jobs: 4, prod: { wood: 2 }, label: 'Лесопилка (дерево)', icon: 'sawmill' },
-  quarry:  { cost: { money: 80, wood: 10 }, needs: 'rpk', jobs: 4, prod: { stone: 1.5 }, label: 'Каменоломня (камень)', icon: 'quarry' },
+  quarry:  { cost: { money: 80, wood: 10 }, needs: 'rp', ore: 'rock', jobs: 4, prod: { stone: 1.5 }, label: 'Каменоломня (камень)', icon: 'quarry' },
   plant:   { cost: { money: 200, stone: 20 }, needs: 'r', tech: 'electricity', upkeep: 3, label: 'Электростанция', icon: 'plant' },
   pump:    { cost: { money: 150, stone: 10 }, needs: 'rpl', tech: 'plumbing', upkeep: 2, label: 'Водокачка (у озера)', icon: 'pump' },
   shop:    { cost: { money: 100, wood: 10, stone: 10 }, needs: 'rpw', tech: 'architecture', jobs: 6, prod: { money: 1 }, label: 'Магазин (продаёт товары)', icon: 'shop' },
@@ -234,6 +234,16 @@ function newGame(seed = (Date.now() % 2147483646) + 1) {
   };
   blob('lake', 22, 4, 1); blob('tree', 76, 3.5, 0.75); blob('rock', 40, 2, 0.7);
   blob('iron', 5, 0.6, 0.9, 0.7); blob('gold', 3, 0.4, 0.9, 0.6); blob('oil', 3, 0.6, 0.9, 0.8); // rare deposits: a few small clusters of 1–4 tiles
+  // deposits and rocks only on the mainland: an island has no road to it, so whatever lies there can't be used
+  const part = new Int32Array(W * H).fill(-1), size = [];
+  for (let i = 0; i < W * H; i++) {
+    if (grid[i] === 'lake' || part[i] >= 0) continue;
+    const q = [i]; part[i] = size.length; let n = 0;
+    while (q.length) { const k = q.pop(); n++; for (const j of nb(k)) if (grid[j] !== 'lake' && part[j] < 0) { part[j] = size.length; q.push(j); } }
+    size.push(n);
+  }
+  const main = size.indexOf(Math.max(...size));
+  for (let i = 0; i < W * H; i++) if (part[i] !== main && ['iron', 'gold', 'oil', 'rock'].includes(grid[i])) grid[i] = 'grass';
   // phase: lobby (waiting for start) → draft (players pick a starting area in drawn order) → play
   return { grid, util: Array(W * H).fill(0), owner: Array(W * H).fill(''), players: {}, phase: 'lobby', order: [], turn: 0, tick: 0, speed: 1 };
 }
@@ -862,7 +872,7 @@ function act(s, who, tool, i, recompute = true) {
     if (!B[tool] || B[tool].grown) return 'неизвестный инструмент';
     const lock = techLock(p, B[tool].tech); if (lock) return lock;
     const over = (tool === 'cobble' && t === 'path') || (tool === 'road' && (t === 'path' || t === 'cobble'));
-    if (t !== 'grass' && !over) return 'клетка занята'; // paving goes over a path, asphalt over cobblestone too
+    if (tool === 'quarry' ? t !== 'rock' : t !== 'grass' && !over) return tool === 'quarry' ? 'каменоломня ставится прямо на камни' : 'клетка занята'; // paving goes over a path, asphalt over cobblestone too
     const e = pay(buildCost(p, tool)); if (e) return e;
     g[i] = tool;
     if (B[tool].home) (s.hl = s.hl || {})[i] = maxTier(p);
