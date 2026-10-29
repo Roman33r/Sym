@@ -540,6 +540,18 @@ function events(s) {
 // share of the player's homes that breathe dirty air
 // ticks an epidemic still lasts at the current rate of cure
 const sickLeft = p => Math.ceil((p.sick || 0) / (1 + (p.cure || 0)));
+// Taxes: the player sets a rate from 0 to 200% of the normal one (p.tax, 1 = 100%). At 100% a resident pays TAX_BASE a
+// tick; each 100% above the normal takes TAX_MOOD off every home's happiness, each 100% below adds as much.
+const TAX_BASE = 0.35, TAX_MOOD = 0.3, TAX_MAX = 2;
+const taxOf = p => (p.tax ?? 1);
+const taxMood = p => -TAX_MOOD * (taxOf(p) - 1);
+function setTax(s, who, v) {
+  const p = s.players[who];
+  if (!p) return 'сначала выберите стартовый участок';
+  if (typeof v !== 'number' || !(v >= 0 && v <= TAX_MAX)) return 'налог от 0 до 200%';
+  p.tax = Math.round(v * 20) / 20; // steps of 5%
+  return null;
+}
 function dirtyShare(s, who) {
   const pol = polOf(s); let homes = 0, dirty = 0;
   s.grid.forEach((t, i) => { if (B[t] && B[t].home && ownerOf(s, i) === who) { homes++; if (pol[i] >= DIRTY) dirty++; } });
@@ -642,7 +654,7 @@ function tick(s) {
       if (own[i] !== who || st[i] || !B[t]) return;
       cnt[t] = (cnt[t] || 0) + 1;
       if (!B[t].home) return;
-      const w = wants(s, i, reach), h = share(w), n = fill(s, i, h);
+      const w = wants(s, i, reach), h = Math.max(0, Math.min(1, share(w) + taxMood(p))), n = fill(s, i, h); // taxes move happiness
       cap += n; if (w.work) reachCap += n;
       const room = homeCap(s, i);
       places += room; happy += h * room;
@@ -773,7 +785,7 @@ function tick(s) {
     if (trucks) add('oil', `Грузовики жгут топливо (${trucks})`, -Math.min(R.oil, trucks * TRUCK_OIL));
     if (R.horses >= 1) add('food', `Лошади едят (${Math.floor(R.horses)})`, -Math.floor(R.horses) * HORSE_FOOD);
     const fed = R.food > 0; if (!fed) R.food = 0;
-    add('money', `Налоги (${pop} жит.)${fed ? '' : ' — голод, ×0.3'}`, pop * 0.5 * (fed ? 1 : 0.3) * (hasTech(p, 'banking') ? 1.2 : 1));
+    add('money', `Налоги ${Math.round(taxOf(p) * 100)}% (${pop} жит.)${fed ? '' : ' — голод, ×0.3'}`, pop * TAX_BASE * taxOf(p) * (fed ? 1 : 0.3) * (hasTech(p, 'banking') ? 1.2 : 1));
     p.delta = Object.fromEntries(Object.keys(R).map(k => [k, R[k] - before[k]])); // economy only, not player spending
     // residents move in while there are jobs (plus a starting pull); businesses open while there are free workers
     const want = { res: jobs + 16 - pop, biz: pop - jobs };
@@ -947,6 +959,7 @@ function room(s) {
       return err;
     }
     if (m.type === 'route') return setRoute(s, who, m.i, m.d);
+    if (m.type === 'tax') { const err = setTax(s, who, m.v); if (!err) r.say(`${who}: налоги ${Math.round(s.players[who].tax * 100)}%`); return err; }
     if (m.type === 'research') {
       const err = setResearch(s, who, String(m.v));
       if (!err) r.say(`${who}: исследует «${techOf(m.v).name}»`);
@@ -974,5 +987,5 @@ function room(s) {
   return r;
 }
 
-const api = { W, H, B, NEED_TEXT, WANT_TEXT, POWER, WATER, START, LEVELS, levelOf, upgradeBlock, PRICES, SELL, RES_TEXT, trade, priceOf, mkOf, hasMarket, HIST_RES, CLEAR, startCorner, landOf, landPrice, newGame, start, nextTurn, compute, tick, act, actArea, wants, happiness, residents, commute, ownerOf, room, SPEEDS, LOAD, TRUCK_LOAD, PACE, roadNets, networks, PRODUCTS, SMELT, GROUPS, SEATS, pollution, polOf, DIRTY, dirtyShare, setSpec, popOf, demographics, TECH, TECH_COST, BRANCHES, techOf, hasTech, setResearch, allTech, FARM, HORSES_PER_FARM, horsesPerFarm, UTIL_ERA, isRoad, EVENT_P, sickLeft, SICK_T, SICK_DEATH, SICK_IDLE, DROUGHT_T, DROUGHT_K, DROUGHT_IRR, FIRE_T, FIRE_PUT, FIRE_COVER, setEvents, startFire, disaster, cureOf, covered, slowAt, wornAt, ROAD_UPKEEP, PROD_K, UPGRADE, blOf, prodK, upCost, canImprove, improveCost, horseUse, setRoute, routable, depotFor, findRoute, HORSE_FOOD, BASE_CAP, DEPOT_CAP, depotCap, capOf, TRUCK_OIL, HOME_TIERS, tierOf, homeCap, maxTier, buildCost };
+const api = { W, H, B, NEED_TEXT, WANT_TEXT, POWER, WATER, START, LEVELS, levelOf, upgradeBlock, PRICES, SELL, RES_TEXT, trade, priceOf, mkOf, hasMarket, HIST_RES, CLEAR, startCorner, landOf, landPrice, newGame, start, nextTurn, compute, tick, act, actArea, wants, happiness, residents, commute, ownerOf, room, SPEEDS, LOAD, TRUCK_LOAD, PACE, roadNets, networks, PRODUCTS, SMELT, GROUPS, SEATS, pollution, polOf, DIRTY, dirtyShare, setSpec, popOf, demographics, TECH, TECH_COST, BRANCHES, techOf, hasTech, setResearch, allTech, FARM, HORSES_PER_FARM, horsesPerFarm, UTIL_ERA, isRoad, EVENT_P, sickLeft, SICK_T, SICK_DEATH, SICK_IDLE, DROUGHT_T, DROUGHT_K, DROUGHT_IRR, FIRE_T, FIRE_PUT, FIRE_COVER, setEvents, startFire, disaster, cureOf, covered, slowAt, wornAt, ROAD_UPKEEP, PROD_K, UPGRADE, blOf, prodK, upCost, canImprove, improveCost, horseUse, setTax, taxOf, taxMood, TAX_BASE, TAX_MOOD, TAX_MAX, setRoute, routable, depotFor, findRoute, HORSE_FOOD, BASE_CAP, DEPOT_CAP, depotCap, capOf, TRUCK_OIL, HOME_TIERS, tierOf, homeCap, maxTier, buildCost };
 if (typeof module !== 'undefined') module.exports = api; else window.Game = api;

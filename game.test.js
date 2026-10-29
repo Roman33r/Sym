@@ -29,9 +29,9 @@ const A = s.players.A;
 assert.strictEqual(G.tierOf(s, 4), 3);
 assert.strictEqual(A.cap, 16);
 assert.ok(A.pop >= 1 && A.pop <= A.cap, 'people move in gradually'); // the first newcomers
-// that tick's change: tax 0.5 per resident minus plant (3) and pump (2) upkeep; residents eat 0.2 each (with the side studies' bonuses)
+// that tick's change: tax TAX_BASE per resident minus plant (3) and pump (2) upkeep; residents eat 0.2 each (with the side studies' bonuses)
 const near = (a, b) => assert.ok(Math.abs(a - b) < 1e-9, a + ' ≈ ' + b);
-near(A.delta.money, A.pop * 0.5 * 1.2 - 3 - 2); // banks: taxes +20%
+near(A.delta.money, A.pop * G.TAX_BASE * 1.2 - 3 - 2); // normal taxes; banks: +20%
 near(A.delta.food, -A.pop * 0.2 * 0.8); // preserving: 20% less food
 // now the residents have 0 jobs, so the jobs need fails too
 assert.deepStrictEqual(G.wants(s, 4), { food: true, jobs: false, work: false, shop: false, park: false, quiet: false, air: true });
@@ -564,4 +564,24 @@ for (let seed = 1; seed < 12; seed++) {
   const main = size.indexOf(Math.max(...size));
   assert.ok(m.grid.every((t, i) => part[i] === main || !['iron', 'gold', 'oil', 'rock'].includes(t)), `map ${seed}: nothing to mine on an island`);
 }
+console.log('ok');
+
+// taxes: 0..200% of the normal rate; dearer taxes bring more money and fewer residents
+const tx = G.room(G.newGame(22)); tx.join('t', 'T'); tx.handle('T', { type: 'start' });
+const tt = tx.s; tt.grid.fill('grass'); G.act(tt, 'T', 'claim', 0);
+assert.strictEqual(G.setTax(tt, 'T', 2.5), 'налог от 0 до 200%');
+assert.strictEqual(G.setTax(tt, 'T', 'x'), 'налог от 0 до 200%');
+assert.strictEqual(tx.handle('T', { type: 'tax', v: 1.52 }), null);
+assert.strictEqual(tt.players.T.tax, 1.5, 'steps of 5%');
+assert.ok(Math.abs(G.taxMood(tt.players.T) + 0.15) < 1e-9, '150%: happiness down by 0.15');
+G.setTax(tt, 'T', 0); assert.ok(Math.abs(G.taxMood(tt.players.T) - G.TAX_MOOD) < 1e-9, 'no taxes: happier');
+const taxed = v => { const g = G.newGame(23); g.grid.fill('grass'); G.start(g, ['P']); G.act(g, 'P', 'claim', 0); const P4 = g.players.P;
+  P4.res = { ...P4.res, money: 1e4, wood: 999, stone: 999 }; P4.tech = {}; P4.tax = v; P4.demo = { kids: 0, none: 20, school: 0, higher: 0, old: 0 };
+  for (let x = 0; x < 6; x++) G.act(g, 'P', 'path', W + x);
+  for (let x = 0; x < 6; x++) g.grid[x] = 'zres';
+  for (let k = 0; k < 40; k++) G.tick(g);
+  return [P4.flow.money.find(([w]) => w.startsWith('Налоги'))[1] / Math.max(1, P4.pop), P4.happy]; };
+const [low, lowHap] = taxed(0.5), [high, highHap] = taxed(1.5);
+assert.ok(Math.abs(high / low - 3) < 0.01, 'three times the rate, three times the tax per resident');
+assert.ok(highHap < lowHap, 'high taxes, unhappier town');
 console.log('ok');
