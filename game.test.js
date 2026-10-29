@@ -521,3 +521,15 @@ assert.strictEqual(dz.grid.slice(0, 6).filter(t => t === 'farm').length, 4, 'two
 ZP.tech.seismic = true; G.disaster(dz, 'Z', ZP, () => 0.9);
 assert.strictEqual(dz.grid.slice(0, 6).filter(t => t === 'farm').length, 3, 'sturdy: at most one');
 console.log('ok');
+
+// every upgrade costs exactly the price its button shows (upCost): with just that much it goes through and leaves nothing
+for (const t of Object.keys(G.UPGRADE)) for (let L = 1; L < G.PROD_K.length; L++) {
+  const u = G.newGame(1); u.grid.fill('grass'); G.start(u, ['U']); G.act(u, 'U', 'claim', 0);
+  const UP = u.players.U, c = G.upCost(t, L);
+  UP.level = L; UP.tech = G.allTech(); u.grid[5] = t; u.bl = { 5: L - 1 };
+  for (const k in UP.res) UP.res[k] = 0;
+  Object.assign(UP.res, c);
+  assert.strictEqual(G.act(u, 'U', 'improve', 5), null, `${t} to level ${L + 1}`);
+  assert.ok(Object.keys(c).every(k => UP.res[k] === 0), `${t} to level ${L + 1} takes its price`);
+}
+console.log('ok');
