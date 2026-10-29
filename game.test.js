@@ -587,8 +587,8 @@ assert.ok(Math.abs(high / low - 3) < 0.01, 'three times the rate, three times th
 assert.ok(highHap < lowHap, 'high taxes, unhappier town');
 console.log('ok');
 
-// happiness drives production: 81–100% ×1.2, 71–80 ×1, 51–70 ×0.7, 31–50 ×0.5, 10–30 ×0.2
-assert.deepStrictEqual([100, 81, 80, 71, 70, 51, 50, 31, 30, 10].map(G.moodK), [1.2, 1.2, 1, 1, 0.7, 0.7, 0.5, 0.5, 0.2, 0.2]);
+// happiness drives production: 81–100% ×1.5, 71–80 ×1.2, 51–70 ×1, 31–50 ×0.5, 10–30 ×0.2
+assert.deepStrictEqual([100, 81, 80, 71, 70, 51, 50, 31, 30, 10].map(G.moodK), [1.5, 1.5, 1.2, 1.2, 1, 1, 0.5, 0.5, 0.2, 0.2]);
 assert.strictEqual(G.strikeP(50), 0, 'no strikes above 49%');
 assert.ok(G.strikeP(49) > 0 && G.strikeP(10) > G.strikeP(40), 'the unhappier, the likelier a strike');
 // a strike stops every building of its kind; very unhappy for LOSE_T ticks, the town is lost

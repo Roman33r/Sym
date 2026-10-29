@@ -557,7 +557,7 @@ function setTax(s, who, v) {
 // Happiness drives work: production goes by MOOD_K of the town's happiness (in %); at STRIKE_AT% and below a strike may
 // stop every building of one kind for STRIKE_T ticks, the likelier the unhappier the town; under LOSE_AT% for LOSE_T
 // ticks running (in a town with homes for at least LOSE_POP) the town rises up and the game is lost.
-const MOOD_K = [[81, 1.2], [71, 1], [51, 0.7], [31, 0.5], [0, 0.2]];
+const MOOD_K = [[81, 1.5], [71, 1.2], [51, 1], [31, 0.5], [0, 0.2]];
 const moodK = pct => MOOD_K.find(([from]) => pct >= from)[1];
 const STRIKE_AT = 49, STRIKE_T = 30, STRIKE_P = 0.003, LOSE_AT = 10, LOSE_T = 10, LOSE_POP = 20;
 const strikeP = pct => (pct <= STRIKE_AT ? STRIKE_P * (STRIKE_AT + 2 - pct) / 10 : 0); // 49%: 0.06% a tick … 10%: 1.2%
