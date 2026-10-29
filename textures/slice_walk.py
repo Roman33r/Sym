@@ -1,8 +1,8 @@
 # Cuts a walk-cycle sheet (rows = directions, 6 frames each, white cells with dark borders) into
-# textures/veh_ped_<way>_<frame>.png and adds them to vehicles.json. Every frame of a direction gets the same canvas,
+# textures/veh_<prefix>_<way>_<frame>.png (prefix ped by default) and adds them to vehicles.json. Every frame of a direction gets the same canvas,
 # with the body's middle and the feet in the same place, so the walker doesn't jitter. <way>: se (towards the viewer,
 # down-right) and ne (away, up-right); the game mirrors them into sw and nw.
-# Usage: python slice_walk.py <sheet image>
+# Usage: python slice_walk.py <sheet image> [prefix]
 import json, sys
 import numpy as np
 from PIL import Image
@@ -12,6 +12,7 @@ OUT = 'E:/Grad/textures/'
 ROWS = {0: 'se', 1: 'ne'}  # row on the sheet → direction; rows 3-4 turn the head both ways, so nw is ne mirrored
 COLS, NROWS, FRAMES = 6, 4, 6
 im = np.asarray(Image.open(sys.argv[1]).convert('RGB')).astype(int)
+prefix = sys.argv[2] if len(sys.argv) > 2 else 'ped'
 H, W = im.shape[:2]
 cw, ch = W / COLS, H / NROWS
 
@@ -23,7 +24,11 @@ def frame(r, c):
     fg = ~np.isin(lab, [l for l in edge if l])
     fl, n = ndimage.label(fg)
     sizes = ndimage.sum(fg, fl, range(1, n + 1))
-    fg = ndimage.binary_erosion(fl == sizes.argmax() + 1)  # the figure only, without bits of the cell border
+    fg = fl == sizes.argmax() + 1  # the figure only, without bits of the cell border
+    wl, wn = ndimage.label((lo > 236) & (hi - lo < 20) & fg)  # background shut in between the legs or arms
+    for k, n in enumerate(ndimage.sum(np.ones_like(lo), wl, range(1, wn + 1))):
+        if n > 30: fg[wl == k + 1] = False
+    fg = ndimage.binary_erosion(fg)
     ys, xs = np.nonzero(fg)
     top, bottom = ys.min(), ys.max()
     body = xs[ys < top + (bottom - top) * 0.55]  # head and torso: the part that doesn't swing
@@ -38,7 +43,7 @@ for r, way in ROWS.items():
     for k, (f, cx, by) in enumerate(frames):
         canvas = Image.new('RGBA', (w, h), (0, 0, 0, 0))
         canvas.alpha_composite(f, (int(round(left - cx)) + 1, int(round(up - by)) + 1))  # body middle and feet aligned
-        canvas.save(OUT + f'veh_ped_{way}_{k + 1}.png')
-        veh[f'ped_{way}_{k + 1}'] = [w, h]
+        canvas.save(OUT + f'veh_{prefix}_{way}_{k + 1}.png')
+        veh[f'{prefix}_{way}_{k + 1}'] = [w, h]
     print(way, w, h)
 json.dump(veh, open(OUT + 'vehicles.json', 'w'), separators=(',', ':'))
