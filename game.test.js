@@ -222,9 +222,10 @@ assert.strictEqual(G.act(d, 'D', 'depot', 10), null);
 G.tick(d);
 assert.strictEqual(d.ships.length, 1);
 const sh = d.ships[0];
-assert.deepStrictEqual([sh.res, sh.n, sh.from, sh.to, sh.at - sh.t0], ['food', G.TRUCK_LOAD, W + 3, W + 10, 2]); // a full truck: 7 tiles at 4 per tick
+assert.deepStrictEqual([sh.res, sh.from, sh.to, sh.at - sh.t0], ['food', W + 3, W + 10, 2]); // a truck: 7 tiles at 4 per tick
+assert.ok(sh.n >= G.LOAD && sh.n <= G.TRUCK_LOAD, 'it takes what the farm has, up to a truck load');
 for (let k = 0; k < 2; k++) G.tick(d);
-assert.ok(DP.flow.food.some(([what, v]) => what.startsWith('Привезли') && v === G.TRUCK_LOAD), 'the load arrived on the 2nd tick');
+assert.ok(DP.flow.food.some(([what, v]) => what.startsWith('Привезли') && v === sh.n), 'the load arrived on the 2nd tick');
 assert.ok(!d.ships.some(x => x.id === sh.id));
 d.ships = []; d.stock[3] = G.LOAD - 1; G.tick(d); // a truck takes what there is, from a cart load up
 assert.ok(d.ships.length === 1 && d.ships[0].n >= G.LOAD && d.ships[0].n < G.TRUCK_LOAD, 'a part load goes too');
@@ -584,4 +585,32 @@ const taxed = v => { const g = G.newGame(23); g.grid.fill('grass'); G.start(g, [
 const [low, lowHap] = taxed(0.5), [high, highHap] = taxed(1.5);
 assert.ok(Math.abs(high / low - 3) < 0.01, 'three times the rate, three times the tax per resident');
 assert.ok(highHap < lowHap, 'high taxes, unhappier town');
+console.log('ok');
+
+// happiness drives production: 81–100% ×1.2, 71–80 ×1, 51–70 ×0.7, 31–50 ×0.5, 10–30 ×0.2
+assert.deepStrictEqual([100, 81, 80, 71, 70, 51, 50, 31, 30, 10].map(G.moodK), [1.2, 1.2, 1, 1, 0.7, 0.7, 0.5, 0.5, 0.2, 0.2]);
+assert.strictEqual(G.strikeP(50), 0, 'no strikes above 49%');
+assert.ok(G.strikeP(49) > 0 && G.strikeP(10) > G.strikeP(40), 'the unhappier, the likelier a strike');
+// a strike stops every building of its kind; very unhappy for LOSE_T ticks, the town is lost
+const mt = G.newGame(24); mt.grid.fill('grass'); G.start(mt, ['M']); G.act(mt, 'M', 'claim', 0); const MP2 = mt.players.M;
+MP2.res = { ...MP2.res, money: 1e5, wood: 999, stone: 999, food: 0 }; MP2.tech = { crafts: true }; MP2.tax = 2;
+for (let x = 0; x < 8; x++) G.act(mt, 'M', 'path', W + x);
+G.act(mt, 'M', 'farm', 0); G.act(mt, 'M', 'farm', 1);
+for (let x = 2; x < 8; x++) G.act(mt, 'M', 'house', x);
+MP2.demo = { kids: 0, none: 30, school: 0, higher: 0, old: 0 };
+MP2.strike = { t: 'farm', left: 3 }; mt.stock = {}; G.tick(mt);
+assert.ok(!mt.stock[0] && !mt.stock[1], 'striking farms make nothing');
+assert.strictEqual(MP2.strike.left, 2);
+for (let k = 0; k < G.LOSE_T + 2 && !MP2.lost; k++) { MP2.demo = { kids: 0, none: 30, school: 0, higher: 0, old: 0 }; MP2.res.food = 0; G.tick(mt); }
+assert.ok(MP2.lost, `taxed at 200% with nothing to live for, the town rises (happiness ${Math.round(MP2.happy * 100)}%)`);
+assert.strictEqual(G.act(mt, 'M', 'path', W + 9), 'жители восстали — начните новый город');
+console.log('ok');
+
+// the first depot needs no wood (wood only comes in through a depot); the next ones do
+const dp = G.newGame(25); dp.grid.fill('grass'); G.start(dp, ['D']); G.act(dp, 'D', 'claim', 0);
+dp.players.D.res = { ...dp.players.D.res, money: 1e4, wood: 0 };
+for (let x = 0; x < 6; x++) G.act(dp, 'D', 'path', W + x);
+assert.deepStrictEqual(G.buildCost(dp.players.D, 'depot', dp, 'D'), { money: G.B.depot.cost.money });
+assert.strictEqual(G.act(dp, 'D', 'depot', 1), null, 'the first one without wood');
+assert.strictEqual(G.act(dp, 'D', 'depot', 3), 'не хватает дерева', 'the second one needs it');
 console.log('ok');

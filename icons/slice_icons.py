@@ -13,10 +13,11 @@ SHEETS = {
     '17.jpg': [['pause', 'play', 'fast', 'faster', 'pollution'], ['restart', 'ok', 'no', 'warn', 'lock'], ['prod', 'upkeep', 'noise', 'host', 'join'], ['invite', 'copy', 'dice', None, None]],
     '22.webp': [['firewell', 'firestation', 'healer', 'cobble'], ['fire', 'sick', 'drought', 'storm'], ['herbalism', 'firefighting', 'quarantine', 'seismic']],
     '33.png': [['smelter', 'ironore', 'goldore']],
+    '44.png': [['moodsad', 'moodok', 'moodhappy']],
     '18.jpg': [['money', 'wood', 'stone', 'food', 'iron'], ['gold', 'oil', 'asphalt', 'horses', 'pop'], ['happy', 'jobs', 'land', 'depot', 'clothes'], ['furniture', 'canned', 'tools', 'jewelry', None]],
 }
 SIZE = 96
-CROP = {'22.webp': 870, '33.png': (352, 655, 30)}  # the icons end above an empty strip at the bottom; (top, bottom, side inset): only that strip, inside each cell's frame
+CROP = {'22.webp': 870, '33.png': (352, 655, 30), '44.png': (0, 211, 20)}  # the icons end above an empty strip at the bottom; (top, bottom, side inset): only that strip, inside each cell's frame
 for file, rows in SHEETS.items():
     im = np.asarray(Image.open(sys.argv[1] + '/' + file).convert('RGB')).astype(int)
     top, bottom, inset = CROP[file] if isinstance(CROP.get(file), tuple) else (0, CROP.get(file), 0)

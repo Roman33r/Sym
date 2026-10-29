@@ -97,9 +97,11 @@ function improveCost(s, i, p) {
 }
 const homeCap = (s, i) => HOME_TIERS[tierOf(s, i)].cap;
 // what building `tool` costs player p: a home or a lot of a residential zone comes at the era's tier, so it also costs
-// every step up to that tier (otherwise knocking a hut down and building anew would beat upgrading it)
-function buildCost(p, tool) {
+// every step up to that tier (otherwise knocking a hut down and building anew would beat upgrading it). The first depot
+// costs no wood: wood only reaches the town through a depot. s and who are needed for that one.
+function buildCost(p, tool, s, who) {
   const c = { ...B[tool].cost };
+  if (tool === 'depot' && s && !s.grid.some((t, i) => t === 'depot' && ownerOf(s, i) === who)) delete c.wood;
   if (B[tool].home || B[tool].zone === 'res') for (const h of HOME_TIERS.slice(1, maxTier(p) + 1)) for (const k in h.cost) c[k] = (c[k] || 0) + h.cost[k];
   return c;
 }
@@ -552,6 +554,14 @@ function setTax(s, who, v) {
   p.tax = Math.round(v * 20) / 20; // steps of 5%
   return null;
 }
+// Happiness drives work: production goes by MOOD_K of the town's happiness (in %); at STRIKE_AT% and below a strike may
+// stop every building of one kind for STRIKE_T ticks, the likelier the unhappier the town; under LOSE_AT% for LOSE_T
+// ticks running (in a town with homes for at least LOSE_POP) the town rises up and the game is lost.
+const MOOD_K = [[81, 1.2], [71, 1], [51, 0.7], [31, 0.5], [0, 0.2]];
+const moodK = pct => MOOD_K.find(([from]) => pct >= from)[1];
+const STRIKE_AT = 49, STRIKE_T = 30, STRIKE_P = 0.003, LOSE_AT = 10, LOSE_T = 10, LOSE_POP = 20;
+const strikeP = pct => (pct <= STRIKE_AT ? STRIKE_P * (STRIKE_AT + 2 - pct) / 10 : 0); // 49%: 0.06% a tick … 10%: 1.2%
+const STRIKES = ['farm', 'sawmill', 'quarry', 'ironmine', 'goldmine', 'oilwell', 'refinery', 'smelter', 'ind', 'off', 'shop']; // kinds that can strike
 function dirtyShare(s, who) {
   const pol = polOf(s); let homes = 0, dirty = 0;
   s.grid.forEach((t, i) => { if (B[t] && B[t].home && ownerOf(s, i) === who) { homes++; if (pol[i] >= DIRTY) dirty++; } });
@@ -647,6 +657,7 @@ function tick(s) {
     s.grid.forEach((t, i) => { const o = s.players[ownerOf(s, i)]; if (t === 'house') s.hl[i] = 1; if (t === 'res') s.hl[i] = o ? maxTier(o) : 0; });
   }
   for (const [who, p] of Object.entries(s.players)) {
+    if (p.lost) continue; // the town rose up: nothing goes on there
     if (!p.tech) { p.tech = {}; for (const t of TECH) if (t.era < (p.level || 0)) p.tech[t.id] = true; p.rpts = {}; } // saves from before research
     const cnt = {}, needs = Object.fromEntries(Object.keys(WANT_TEXT).map(k => [k, 0]));
     let cap = 0, reachCap = 0, places = 0, happy = 0;
@@ -660,7 +671,14 @@ function tick(s) {
       places += room; happy += h * room;
       for (const k in w) needs[k] += w[k] ? room : 0;
     });
-    const hap = places ? happy / places : 0;
+    const hap = places ? happy / places : 0, pct = Math.round(hap * 100);
+    const mood = places ? moodK(pct) : 1; // a town without homes yet has nobody to be unhappy
+    if (p.strike && --p.strike.left <= 0) { s.events.push(`${who}: забастовка закончилась, ${short(p.strike.t).toLowerCase()} снова работает`); p.strike = null; }
+    if (eventsOn && places && !p.strike && s.tick >= EVENT_CALM && Math.random() < strikeP(pct)) {
+      const kinds = STRIKES.filter(t => cnt[t]);
+      if (kinds.length) { const t = kinds[Math.random() * kinds.length | 0]; p.strike = { t, left: STRIKE_T }; s.events.push(`${who}: забастовка! ${short(t)} не работает ${STRIKE_T} тиков — жители недовольны`); }
+    }
+    const workK = t => mood * (p.strike && p.strike.t === t ? 0 : 1); // what happiness and strikes leave of a building's work
     // saves from before demographics: everyone counts as an adult without a degree
     const d = p.demo || (p.demo = { ...newDemo(), none: p.pop || 0 });
     if (!p.eduFix) { // saves from before: newcomers came educated even without schools
@@ -676,6 +694,8 @@ function tick(s) {
       for (const g in d) d[g] -= d[g] * k * (g === 'old' ? 2 : 1); // the old suffer most
     } else p.died = 0;
     const pop = Math.round(popOf(d));
+    p.gloom = places >= LOSE_POP && pct < LOSE_AT ? (p.gloom || 0) + 1 : 0; // homes, not residents: an unhappy town empties
+    if (p.gloom >= LOSE_T) { p.lost = true; s.events.push(`${who}: жители восстали — город потерян`); }
     // who can work where: offices need a degree, every other job takes anyone; only people who can get to work count
     const r = (cap ? reachCap / cap : 0) * (1 - SICK_IDLE * ill), jobs = Object.entries(cnt).reduce((n, [t, c]) => n + c * (B[t].jobs || 0), 0);
     const offJobs = (cnt.off || 0) * B.off.jobs, otherJobs = jobs - offJobs;
@@ -707,7 +727,7 @@ function tick(s) {
       if (R[k] >= need) add(k, `Содержание: ${short(t)} (${n} кл.)`, -need); else p.worn[t] = true;
     }
     for (const [t, n] of Object.entries(cnt)) {
-      for (const [k, v] of Object.entries(B[t].prod || {})) if (!CARGO_RES.includes(k)) add(k, `${short(t)} ×${n}`, n * v * wrOf(t));
+      for (const [k, v] of Object.entries(B[t].prod || {})) if (!CARGO_RES.includes(k)) add(k, `${short(t)} ×${n}`, n * v * wrOf(t) * workK(t));
       if (B[t].upkeep) add('money', `Содержание: ${short(t)} ×${n}`, -n * B[t].upkeep);
     }
     // raw goods and factory products: fill each producer's stock, send full loads to a depot
@@ -715,34 +735,35 @@ function tick(s) {
     s.grid.forEach((t, i) => {
       if (own[i] !== who || st[i] || !B[t]) return;
       let res = null, made = 0;
+      const wk = wrOther * workK(t);
       if (t === 'smelter') { // ore from the owner's stock into bars
         res = s.spec[i] || 'ironbar';
-        const m = SMELT[res], full = FACTORY_RATE * wrOther * prodK(s, i) * auto;
+        const m = SMELT[res], full = FACTORY_RATE * wk * prodK(s, i) * auto;
         made = Math.min(full, R[m.ore] / m.per);
         if (made < full * 0.99) starved.push(i);
         R[m.ore] -= made * m.per; used[m.ore] = (used[m.ore] || 0) + made * m.per;
       } else if (t === 'refinery') { // oil from the owner's stock into asphalt
         res = 'asphalt';
-        made = Math.min(FACTORY_RATE * wrOther * prodK(s, i) * auto, R.oil);
-        if (made < FACTORY_RATE * wrOther * prodK(s, i) * auto * 0.99) starved.push(i);
+        made = Math.min(FACTORY_RATE * wk * prodK(s, i) * auto, R.oil);
+        if (made < FACTORY_RATE * wk * prodK(s, i) * auto * 0.99) starved.push(i);
         R.oil -= made; used.oil = (used.oil || 0) + made;
       } else if (t === 'farm') {
         const f = FARM[s.spec[i] || 'crops'];
-        res = 'food'; made = f.food * wrOther * prodK(s, i) * (hasTech(p, 'irrigation') ? 1.25 : 1) * (p.drought > 0 ? (hasTech(p, 'irrigation') ? DROUGHT_IRR : DROUGHT_K) : 1);
+        res = 'food'; made = f.food * wk * prodK(s, i) * (hasTech(p, 'irrigation') ? 1.25 : 1) * (p.drought > 0 ? (hasTech(p, 'irrigation') ? DROUGHT_IRR : DROUGHT_K) : 1);
         if (s.spec[i] === 'livestock') { // horses grow slowly; each livestock farm keeps at most horsesPerFarm
           const herd = s.grid.reduce((n, x, k) => n + (x === 'farm' && own[k] === who && s.spec[k] === 'livestock'), 0) * horsesPerFarm(p);
-          s.breed[i] = Math.min(1, (s.breed[i] || 0) + 0.04 * wrOther * (hasTech(p, 'breeding') ? 2 : 1));
+          s.breed[i] = Math.min(1, (s.breed[i] || 0) + 0.04 * wk * (hasTech(p, 'breeding') ? 2 : 1));
           if (s.breed[i] >= 1 && R.horses < herd && p.fed !== false) { s.breed[i] = 0; add('horses', 'Ферма вырастила лошадь', 1); }
         }
       } else if (t === 'ind') {
         res = s.spec[i] || 'clothes';
-        made = FACTORY_RATE * wrOther * prodK(s, i) * auto;
+        made = FACTORY_RATE * wk * prodK(s, i) * auto;
         for (const [k, v] of Object.entries(PRODUCTS[res].input)) made = Math.min(made, R[k] / v); // limited by raw material
-        if (made < FACTORY_RATE * wrOther * prodK(s, i) * auto * 0.99) starved.push(i);
+        if (made < FACTORY_RATE * wk * prodK(s, i) * auto * 0.99) starved.push(i);
         for (const [k, v] of Object.entries(PRODUCTS[res].input)) { R[k] -= v * made; used[k] = (used[k] || 0) + v * made; }
       } else if (B[t].prod) {
         res = Object.keys(B[t].prod).find(k => CARGO_RES.includes(k));
-        if (res) made = B[t].prod[res] * wrOther * prodK(s, i) * (hasTech(p, PROD_TECH[t]) && PROD_TECH[t] ? 1.3 : 1);
+        if (res) made = B[t].prod[res] * wk * prodK(s, i) * (hasTech(p, PROD_TECH[t]) && PROD_TECH[t] ? 1.3 : 1);
       }
       if (!res) return;
       s.stock[i] = Math.min(STORE, (s.stock[i] || 0) + made);
@@ -820,6 +841,7 @@ const withStatus = (s, e) => { if (!e) s.status = compute(s); return e; };
 
 // Applies a player action; returns an error string or null. recompute = false lets a caller placing many tiles recompute once.
 function act(s, who, tool, i, recompute = true) {
+  if (s.players[who] && s.players[who].lost) return 'жители восстали — начните новый город';
   if (tool === 'upgrade') {
     const p = s.players[who];
     if (!p) return 'сначала выберите стартовый участок';
@@ -885,7 +907,7 @@ function act(s, who, tool, i, recompute = true) {
     const lock = techLock(p, B[tool].tech); if (lock) return lock;
     const over = (tool === 'cobble' && t === 'path') || (tool === 'road' && (t === 'path' || t === 'cobble'));
     if (tool === 'quarry' ? t !== 'rock' : t !== 'grass' && !over) return tool === 'quarry' ? 'каменоломня ставится прямо на камни' : 'клетка занята'; // paving goes over a path, asphalt over cobblestone too
-    const e = pay(buildCost(p, tool)); if (e) return e;
+    const e = pay(buildCost(p, tool, s, who)); if (e) return e;
     g[i] = tool;
     if (B[tool].home) (s.hl = s.hl || {})[i] = maxTier(p);
     if (UPGRADE[tool]) (s.bl = s.bl || {})[i] = Math.min(p.level || 0, PROD_K.length - 1);
@@ -987,5 +1009,5 @@ function room(s) {
   return r;
 }
 
-const api = { W, H, B, NEED_TEXT, WANT_TEXT, POWER, WATER, START, LEVELS, levelOf, upgradeBlock, PRICES, SELL, RES_TEXT, trade, priceOf, mkOf, hasMarket, HIST_RES, CLEAR, startCorner, landOf, landPrice, newGame, start, nextTurn, compute, tick, act, actArea, wants, happiness, residents, commute, ownerOf, room, SPEEDS, LOAD, TRUCK_LOAD, PACE, roadNets, networks, PRODUCTS, SMELT, GROUPS, SEATS, pollution, polOf, DIRTY, dirtyShare, setSpec, popOf, demographics, TECH, TECH_COST, BRANCHES, techOf, hasTech, setResearch, allTech, FARM, HORSES_PER_FARM, horsesPerFarm, UTIL_ERA, isRoad, EVENT_P, sickLeft, SICK_T, SICK_DEATH, SICK_IDLE, DROUGHT_T, DROUGHT_K, DROUGHT_IRR, FIRE_T, FIRE_PUT, FIRE_COVER, setEvents, startFire, disaster, cureOf, covered, slowAt, wornAt, ROAD_UPKEEP, PROD_K, UPGRADE, blOf, prodK, upCost, canImprove, improveCost, horseUse, setTax, taxOf, taxMood, TAX_BASE, TAX_MOOD, TAX_MAX, setRoute, routable, depotFor, findRoute, HORSE_FOOD, BASE_CAP, DEPOT_CAP, depotCap, capOf, TRUCK_OIL, HOME_TIERS, tierOf, homeCap, maxTier, buildCost };
+const api = { W, H, B, NEED_TEXT, WANT_TEXT, POWER, WATER, START, LEVELS, levelOf, upgradeBlock, PRICES, SELL, RES_TEXT, trade, priceOf, mkOf, hasMarket, HIST_RES, CLEAR, startCorner, landOf, landPrice, newGame, start, nextTurn, compute, tick, act, actArea, wants, happiness, residents, commute, ownerOf, room, SPEEDS, LOAD, TRUCK_LOAD, PACE, roadNets, networks, PRODUCTS, SMELT, GROUPS, SEATS, pollution, polOf, DIRTY, dirtyShare, setSpec, popOf, demographics, TECH, TECH_COST, BRANCHES, techOf, hasTech, setResearch, allTech, FARM, HORSES_PER_FARM, horsesPerFarm, UTIL_ERA, isRoad, EVENT_P, MOOD_K, moodK, STRIKE_AT, STRIKE_T, strikeP, LOSE_AT, LOSE_T, LOSE_POP, sickLeft, SICK_T, SICK_DEATH, SICK_IDLE, DROUGHT_T, DROUGHT_K, DROUGHT_IRR, FIRE_T, FIRE_PUT, FIRE_COVER, setEvents, startFire, disaster, cureOf, covered, slowAt, wornAt, ROAD_UPKEEP, PROD_K, UPGRADE, blOf, prodK, upCost, canImprove, improveCost, horseUse, setTax, taxOf, taxMood, TAX_BASE, TAX_MOOD, TAX_MAX, setRoute, routable, depotFor, findRoute, HORSE_FOOD, BASE_CAP, DEPOT_CAP, depotCap, capOf, TRUCK_OIL, HOME_TIERS, tierOf, homeCap, maxTier, buildCost };
 if (typeof module !== 'undefined') module.exports = api; else window.Game = api;
