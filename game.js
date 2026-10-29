@@ -96,6 +96,13 @@ function improveCost(s, i, p) {
   return sum;
 }
 const homeCap = (s, i) => HOME_TIERS[tierOf(s, i)].cap;
+// what building `tool` costs player p: a home or a lot of a residential zone comes at the era's tier, so it also costs
+// every step up to that tier (otherwise knocking a hut down and building anew would beat upgrading it)
+function buildCost(p, tool) {
+  const c = { ...B[tool].cost };
+  if (B[tool].home || B[tool].zone === 'res') for (const h of HOME_TIERS.slice(1, maxTier(p) + 1)) for (const k in h.cost) c[k] = (c[k] || 0) + h.cost[k];
+  return c;
+}
 const maxTier = p => Math.min(p.level || 0, hasTech(p, 'skyscrapers') ? 4 : 3);
 const levelOf = p => LEVELS[p.level || 0];
 const BRANCHES = { world: 'Мир', science: 'Наука', edu: 'Образование', art: 'Искусство', social: 'Социальное' };
@@ -853,7 +860,7 @@ function act(s, who, tool, i, recompute = true) {
     const lock = techLock(p, B[tool].tech); if (lock) return lock;
     const over = (tool === 'cobble' && t === 'path') || (tool === 'road' && (t === 'path' || t === 'cobble'));
     if (t !== 'grass' && !over) return 'клетка занята'; // paving goes over a path, asphalt over cobblestone too
-    const e = pay(B[tool].cost); if (e) return e;
+    const e = pay(buildCost(p, tool)); if (e) return e;
     g[i] = tool;
     if (B[tool].home) (s.hl = s.hl || {})[i] = maxTier(p);
     if (UPGRADE[tool]) (s.bl = s.bl || {})[i] = Math.min(p.level || 0, PROD_K.length - 1);
@@ -953,5 +960,5 @@ function room(s) {
   return r;
 }
 
-const api = { W, H, B, NEED_TEXT, WANT_TEXT, POWER, WATER, START, LEVELS, levelOf, upgradeBlock, PRICES, SELL, RES_TEXT, trade, priceOf, mkOf, hasMarket, HIST_RES, CLEAR, startCorner, landOf, landPrice, newGame, start, nextTurn, compute, tick, act, actArea, wants, happiness, residents, commute, ownerOf, room, SPEEDS, LOAD, TRUCK_LOAD, PACE, roadNets, networks, PRODUCTS, SMELT, GROUPS, SEATS, pollution, polOf, DIRTY, dirtyShare, setSpec, popOf, demographics, TECH, TECH_COST, BRANCHES, techOf, hasTech, setResearch, allTech, FARM, HORSES_PER_FARM, horsesPerFarm, UTIL_ERA, isRoad, EVENT_P, SICK_T, SICK_DEATH, SICK_IDLE, DROUGHT_T, DROUGHT_K, DROUGHT_IRR, FIRE_T, FIRE_PUT, FIRE_COVER, setEvents, startFire, disaster, cureOf, covered, slowAt, wornAt, ROAD_UPKEEP, PROD_K, UPGRADE, blOf, prodK, upCost, canImprove, improveCost, horseUse, setRoute, routable, depotFor, findRoute, HORSE_FOOD, BASE_CAP, DEPOT_CAP, depotCap, capOf, TRUCK_OIL, HOME_TIERS, tierOf, homeCap, maxTier };
+const api = { W, H, B, NEED_TEXT, WANT_TEXT, POWER, WATER, START, LEVELS, levelOf, upgradeBlock, PRICES, SELL, RES_TEXT, trade, priceOf, mkOf, hasMarket, HIST_RES, CLEAR, startCorner, landOf, landPrice, newGame, start, nextTurn, compute, tick, act, actArea, wants, happiness, residents, commute, ownerOf, room, SPEEDS, LOAD, TRUCK_LOAD, PACE, roadNets, networks, PRODUCTS, SMELT, GROUPS, SEATS, pollution, polOf, DIRTY, dirtyShare, setSpec, popOf, demographics, TECH, TECH_COST, BRANCHES, techOf, hasTech, setResearch, allTech, FARM, HORSES_PER_FARM, horsesPerFarm, UTIL_ERA, isRoad, EVENT_P, SICK_T, SICK_DEATH, SICK_IDLE, DROUGHT_T, DROUGHT_K, DROUGHT_IRR, FIRE_T, FIRE_PUT, FIRE_COVER, setEvents, startFire, disaster, cureOf, covered, slowAt, wornAt, ROAD_UPKEEP, PROD_K, UPGRADE, blOf, prodK, upCost, canImprove, improveCost, horseUse, setRoute, routable, depotFor, findRoute, HORSE_FOOD, BASE_CAP, DEPOT_CAP, depotCap, capOf, TRUCK_OIL, HOME_TIERS, tierOf, homeCap, maxTier, buildCost };
 if (typeof module !== 'undefined') module.exports = api; else window.Game = api;

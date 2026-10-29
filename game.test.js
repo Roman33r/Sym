@@ -10,7 +10,7 @@ assert.strictEqual(G.act(s, 'A', 'claim', 0), 'сначала нажмите «�
 assert.strictEqual(G.start(s, ['A']), null);
 assert.strictEqual(G.act(s, 'A', 'claim', 0), null);
 assert.strictEqual(s.phase, 'play');
-s.players.A.res = { money: 9999, wood: 999, stone: 999, food: 50, iron: 0, gold: 0, asphalt: 999 };
+s.players.A.res = { money: 9999, wood: 999, stone: 999, food: 50, iron: 0, gold: 0, ironbar: 999, asphalt: 999 };
 s.players.A.level = 3; s.players.A.tech = G.allTech(); // Новое время, everything researched: power and water are hard needs; eras are tested below
 s.grid[0] = 'lake';
 for (let x = 0; x < 6; x++) assert.strictEqual(G.act(s, 'A', 'road', W + x), null);
@@ -68,7 +68,11 @@ assert.strictEqual(G.actArea(s, 'A', 'house', 30, 31), 'выделять обл�
 s.grid[4 * W + 3] = 'zres'; s.grid[5 * W + 3] = 'zres'; s.grid[4 * W + 1] = 'farm';
 const st = G.compute(s);
 assert.ok(!st[4 * W + 3].includes('r') && st[5 * W + 3].includes('r') && st[4 * W + 1].includes('r'));
-s.players.A.res.money = 15;
+// a residential lot costs the lot and every home step up to the era's tier, so rebuilding never beats upgrading
+const lot = G.buildCost(s.players.A, 'zres');
+assert.strictEqual(lot.money, G.B.zres.cost.money + G.HOME_TIERS.slice(1, G.maxTier(s.players.A) + 1).reduce((n, h) => n + h.cost.money, 0));
+assert.deepStrictEqual(G.buildCost(s.players.A, 'zind'), G.B.zind.cost, 'other zones keep their price');
+s.players.A.res.money = lot.money + 5; // enough for one lot
 assert.strictEqual(G.actArea(s, 'A', 'zres', 3 * W, 3 * W + 3), 'не хватает денег');
 assert.strictEqual(s.grid[3 * W], 'zres');
 s.players.A.res.money = 0;
@@ -91,7 +95,7 @@ assert.strictEqual(G.act(t, 'A', 'claim', 0), 'сейчас выбирает B')
 assert.strictEqual(G.act(t, 'B', 'claim', 18), null); // square x 12..23
 assert.strictEqual(G.act(t, 'A', 'claim', 18), 'там уже чужая земля — выберите место правее, левее или дальше');
 assert.strictEqual(G.act(t, 'A', 'claim', 0), null); // square x 0..11, right next to B
-for (const n of ['A', 'B']) Object.assign(t.players[n], { level: 3, tech: G.allTech(), res: { ...t.players[n].res, asphalt: 99 } });
+for (const n of ['A', 'B']) Object.assign(t.players[n], { level: 3, tech: G.allTech(), res: { ...t.players[n].res, asphalt: 99, money: 1e4, wood: 999, stone: 999, ironbar: 99 } });
 assert.strictEqual(t.phase, 'play');
 assert.strictEqual(G.actArea(t, 'A', 'buy', 11, 12), 'в выделении есть чужая земля');
 G.act(t, 'A', 'road', W + 10); G.act(t, 'A', 'plant', 10); G.act(t, 'A', 'power', 11);
