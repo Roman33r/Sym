@@ -507,6 +507,10 @@ assert.strictEqual(G.cureOf({ healer: 1 }, 40), 0.5, 'a healer saves half of his
 assert.strictEqual(G.cureOf({ hospital: 1 }, 150), 0.9, 'a hospital saves 90% of its 150');
 EP.demo = { kids: 0, none: 100, school: 0, higher: 0, old: 0 }; EP.sick = 5; G.tick(ev);
 assert.ok(EP.died > 0 && EP.sick === 4, 'the epidemic kills and wears off');
+EP.sick = 6; EP.cure = 0.5; G.tick(ev);
+assert.strictEqual(EP.sick, 4.5, 'half the sick treated: it wears off 1.5 ticks a tick');
+assert.strictEqual(G.sickLeft({ sick: 9, cure: 0.5 }), 6);
+assert.strictEqual(G.sickLeft({ sick: G.SICK_T, cure: 0 }), G.SICK_T, 'untreated it runs its full length');
 const workersSick = EP.workers; EP.sick = 0; EP.demo = { kids: 0, none: 100, school: 0, higher: 0, old: 0 }; G.tick(ev);
 assert.ok(!workersSick || EP.workers >= workersSick, 'the sick stay off work');
 // drought: farms give DROUGHT_K of their food, with irrigation DROUGHT_IRR

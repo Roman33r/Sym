@@ -372,10 +372,11 @@ function commute(s, st = s.status || compute(s)) {
 // Soft needs of residents of home tile i; jobs/food use the owner's totals from the previous tick.
 const WANT_TEXT = { food: 'Еда в городе', jobs: 'Работа для всех', work: 'Дорога до работы: пешком до 4 кл. или автобусом', shop: 'Магазин в 5 клетках', park: 'Парк в 4 клетках или лес рядом', quiet: 'Нет завода, станции или карьера в 3 клетках', air: 'Чистый воздух: загрязнение у дома ниже 0,6' };
 const DIRTY = 0.6;
-// an epidemic lasts SICK_T ticks (half with quarantine): SICK_DEATH of the residents die a tick and SICK_IDLE of the adults
+// an epidemic lasts SICK_T ticks untreated (half with quarantine) and wears off faster the more of the sick healers and
+// hospitals cure: by 1 + cure a tick, so twice as fast when everyone is treated (see sickLeft); SICK_DEATH of the residents die a tick and SICK_IDLE of the adults
 // stay off work, both cut by the share healers and hospitals cure; a drought lasts DROUGHT_T ticks and farms give
 // DROUGHT_K of their food (DROUGHT_IRR with irrigation)
-const SICK_T = 25, SICK_DEATH = 0.018, SICK_IDLE = 0.25, DROUGHT_T = 40, DROUGHT_K = 0.4, DROUGHT_IRR = 0.7; // pollution at a home from which the air counts as dirty (see pollution())
+const SICK_T = 30, SICK_DEATH = 0.018, SICK_IDLE = 0.25, DROUGHT_T = 40, DROUGHT_K = 0.4, DROUGHT_IRR = 0.7; // pollution at a home from which the air counts as dirty (see pollution())
 const wants = (s, i, reach = commute(s)) => {
   const g = s.grid, p = s.players[ownerOf(s, i)] || { res: { food: 0 }, jobs: 0, pop: 1 };
   return {
@@ -516,7 +517,7 @@ function events(s) {
     }
   }
   for (const [who, p] of Object.entries(s.players)) {
-    if (p.sick > 0) p.sick--; if (p.drought > 0) p.drought--;
+    if (p.sick > 0) p.sick = Math.max(0, p.sick - 1 - (p.cure || 0)); if (p.drought > 0) p.drought--; // p.cure: last tick's share treated
     if (!eventsOn || s.tick < EVENT_CALM) continue;
     const bs = () => buildingsOf(s, who);
     if (Math.random() < EVENT_P.fire) { const b = bs(); if (b.length) startFire(s, b[Math.random() * b.length | 0]); }
@@ -527,6 +528,8 @@ function events(s) {
   }
 }
 // share of the player's homes that breathe dirty air
+// ticks an epidemic still lasts at the current rate of cure
+const sickLeft = p => Math.ceil((p.sick || 0) / (1 + (p.cure || 0)));
 function dirtyShare(s, who) {
   const pol = polOf(s); let homes = 0, dirty = 0;
   s.grid.forEach((t, i) => { if (B[t] && B[t].home && ownerOf(s, i) === who) { homes++; if (pol[i] >= DIRTY) dirty++; } });
@@ -960,5 +963,5 @@ function room(s) {
   return r;
 }
 
-const api = { W, H, B, NEED_TEXT, WANT_TEXT, POWER, WATER, START, LEVELS, levelOf, upgradeBlock, PRICES, SELL, RES_TEXT, trade, priceOf, mkOf, hasMarket, HIST_RES, CLEAR, startCorner, landOf, landPrice, newGame, start, nextTurn, compute, tick, act, actArea, wants, happiness, residents, commute, ownerOf, room, SPEEDS, LOAD, TRUCK_LOAD, PACE, roadNets, networks, PRODUCTS, SMELT, GROUPS, SEATS, pollution, polOf, DIRTY, dirtyShare, setSpec, popOf, demographics, TECH, TECH_COST, BRANCHES, techOf, hasTech, setResearch, allTech, FARM, HORSES_PER_FARM, horsesPerFarm, UTIL_ERA, isRoad, EVENT_P, SICK_T, SICK_DEATH, SICK_IDLE, DROUGHT_T, DROUGHT_K, DROUGHT_IRR, FIRE_T, FIRE_PUT, FIRE_COVER, setEvents, startFire, disaster, cureOf, covered, slowAt, wornAt, ROAD_UPKEEP, PROD_K, UPGRADE, blOf, prodK, upCost, canImprove, improveCost, horseUse, setRoute, routable, depotFor, findRoute, HORSE_FOOD, BASE_CAP, DEPOT_CAP, depotCap, capOf, TRUCK_OIL, HOME_TIERS, tierOf, homeCap, maxTier, buildCost };
+const api = { W, H, B, NEED_TEXT, WANT_TEXT, POWER, WATER, START, LEVELS, levelOf, upgradeBlock, PRICES, SELL, RES_TEXT, trade, priceOf, mkOf, hasMarket, HIST_RES, CLEAR, startCorner, landOf, landPrice, newGame, start, nextTurn, compute, tick, act, actArea, wants, happiness, residents, commute, ownerOf, room, SPEEDS, LOAD, TRUCK_LOAD, PACE, roadNets, networks, PRODUCTS, SMELT, GROUPS, SEATS, pollution, polOf, DIRTY, dirtyShare, setSpec, popOf, demographics, TECH, TECH_COST, BRANCHES, techOf, hasTech, setResearch, allTech, FARM, HORSES_PER_FARM, horsesPerFarm, UTIL_ERA, isRoad, EVENT_P, sickLeft, SICK_T, SICK_DEATH, SICK_IDLE, DROUGHT_T, DROUGHT_K, DROUGHT_IRR, FIRE_T, FIRE_PUT, FIRE_COVER, setEvents, startFire, disaster, cureOf, covered, slowAt, wornAt, ROAD_UPKEEP, PROD_K, UPGRADE, blOf, prodK, upCost, canImprove, improveCost, horseUse, setRoute, routable, depotFor, findRoute, HORSE_FOOD, BASE_CAP, DEPOT_CAP, depotCap, capOf, TRUCK_OIL, HOME_TIERS, tierOf, homeCap, maxTier, buildCost };
 if (typeof module !== 'undefined') module.exports = api; else window.Game = api;
