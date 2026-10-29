@@ -405,28 +405,13 @@ const FACTORY_RATE = 1, SHOP_SALES = 2; // units per tick with a full staff
 const FARM = { crops: { label: 'Культуры', food: 5 }, livestock: { label: 'Животноводство', food: 2 } };
 const HORSES_PER_FARM = 2;
 const horsesPerFarm = p => HORSES_PER_FARM + (hasTech(p, 'breeding') ? 1 : 0);
-// buildings whose loads go by cart: producers and shops; a livestock farm has its own carts
-const takesHorses = (s, i) => !!UPGRADE[s.grid[i]] && s.grid[i] !== 'depot' && !(s.grid[i] === 'farm' && (s.spec || {})[i] === 'livestock');
-// a player's horses: trams take theirs first (see compute); the rest the player assigns to buildings by hand (s.hrs),
-// and a building's carts only use its own horses. busy = trams + assigned; carts = assigned horses on the road now
+// a player's horses: trams take theirs first (see compute), carts in transit keep theirs; a livestock farm's own carts don't count
 function horseUse(s, who) {
   const p = s.players[who], mine = (t, i) => s.grid[i] === t && ownerOf(s, i) === who;
   const total = Math.floor(p.res.horses || 0), trams = Math.min(total, hasTech(p, 'transit') ? 0 : s.grid.filter(mine.bind(null, 'stop')).length);
   const carts = (s.ships || []).filter(sh => sh.who === who && sh.horse && !sh.own).length;
-  const assigned = Object.entries(s.hrs || {}).reduce((n, [i, k]) => n + (ownerOf(s, +i) === who ? k : 0), 0);
   const cap = s.grid.filter((t, i) => mine('farm', i) && (s.spec || {})[i] === 'livestock').length * horsesPerFarm(p);
-  return { total, trams, assigned, busy: trams + assigned, carts, free: Math.max(0, total - trams - assigned), cap };
-}
-// Assigns n of the player's horses to their building i: its carts take loads only while one of its horses is home.
-function setHorses(s, who, i, n) {
-  if (!Number.isInteger(i) || i < 0 || i >= W * H) return 'неверная клетка';
-  if (!Number.isInteger(n) || n < 0) return 'неверное число лошадей';
-  if (ownerOf(s, i) !== who) return 'это не ваш участок';
-  if (!takesHorses(s, i)) return s.grid[i] === 'farm' ? 'животноводческая ферма возит еду своими телегами' : 'этому зданию лошади не нужны';
-  const h = s.hrs = s.hrs || {}, u = horseUse(s, who), room = u.total - u.trams - (u.assigned - (h[i] || 0));
-  if (n > room) return `свободных лошадей только ${Math.max(0, room - (h[i] || 0))}`;
-  if (n) h[i] = n; else delete h[i];
-  return null;
+  return { total, trams, carts, busy: Math.min(total, trams + carts), free: Math.max(0, total - trams - carts), cap };
 }
 // every horse eats HORSE_FOOD a tick; while the town has no food they only carry food (so the farms can still refill it)
 const HORSE_FOOD = 0.1;
@@ -651,12 +636,11 @@ function tick(s) {
     const wrOf = t => (t === 'off' ? wrOff : wrOther);
     const R = p.res;
     for (const k of [...CARGO_RES, ...Object.keys(PRODUCTS), 'asphalt', 'horses']) R[k] = R[k] || 0;
-    // horses: a building's cart goes only while one of the horses assigned to it is home; with engines everything goes by truck
+    // horses: trams take theirs first (see compute), carts use what is left; with engines and oil everything goes by truck
     const engine = hasTech(p, 'engine'), auto = hasTech(p, 'automation') ? 1.3 : 1;
-    const away = {};
-    for (const sh of s.ships) if (sh.who === who && sh.horse && !sh.own) away[sh.src] = (away[sh.src] || 0) + 1;
+    let freeHorses = horseUse(s, who).free;
     const fuel = () => engine && R.oil > 0;
-    const vehicle = (i, res) => (fuel() ? 'truck' : p.fed === false && res !== 'food' ? false : (away[i] || 0) < ((s.hrs || {})[i] || 0) ? (away[i] = (away[i] || 0) + 1, 'horse') : false);
+    const vehicle = (i, res) => (fuel() ? 'truck' : p.fed === false && res !== 'food' ? false : freeHorses >= 1 ? (freeHorses--, 'horse') : false);
     const room = capOf(s, who), inbound = {};
     for (const sh of s.ships) if (sh.who === who && sh.kind === 'depot') inbound[sh.res] = (inbound[sh.res] || 0) + sh.n;
     // research: points from adults, schools and universities; writing speeds it up
@@ -777,7 +761,7 @@ function tick(s) {
   for (const i in s.fire) if (!flammable(s.grid[i])) delete s.fire[i];
   for (const i in s.shopStock) if (s.grid[i] !== 'shop') delete s.shopStock[i];
   for (const i in s.route || {}) { const d = s.route[i]; if (!routable(s, +i) || s.grid[d] !== 'depot' || ownerOf(s, d) !== ownerOf(s, +i)) delete s.route[i]; } // a building or its depot gone
-  for (const i in s.hrs || {}) if (!takesHorses(s, +i) || !s.players[ownerOf(s, +i)]) delete s.hrs[i]; // building gone: its horses are free again
+  delete s.hrs; // saves from when horses were assigned to buildings by hand
   s.ships = s.ships.filter(sh => isRoad(s.grid[sh.from]) && isRoad(s.grid[sh.to])); // a removed road loses the load
   s.undelivered = undelivered; s.starved = starved; s.noHorse = noHorse; s.full = full;
   s.status = compute(s); s.tick++;
@@ -925,7 +909,6 @@ function room(s) {
       if (!err) r.say(`${who}: ${FARM[m.v] ? 'ферма — ' + FARM[m.v].label.toLowerCase() : SMELT[m.v] ? 'металлургический завод выпускает ' + SMELT[m.v].label.toLowerCase() : 'завод выпускает ' + PRODUCTS[m.v].label.toLowerCase()}`);
       return err;
     }
-    if (m.type === 'horses') return setHorses(s, who, m.i, m.v);
     if (m.type === 'route') return setRoute(s, who, m.i, m.d);
     if (m.type === 'research') {
       const err = setResearch(s, who, String(m.v));
@@ -954,5 +937,5 @@ function room(s) {
   return r;
 }
 
-const api = { W, H, B, NEED_TEXT, WANT_TEXT, POWER, WATER, START, LEVELS, levelOf, upgradeBlock, PRICES, SELL, RES_TEXT, trade, priceOf, mkOf, hasMarket, HIST_RES, CLEAR, startCorner, landOf, landPrice, newGame, start, nextTurn, compute, tick, act, actArea, wants, happiness, residents, commute, ownerOf, room, SPEEDS, LOAD, TRUCK_LOAD, PACE, roadNets, networks, PRODUCTS, SMELT, GROUPS, SEATS, pollution, setSpec, popOf, demographics, TECH, TECH_COST, BRANCHES, techOf, hasTech, setResearch, allTech, FARM, HORSES_PER_FARM, horsesPerFarm, UTIL_ERA, isRoad, EVENT_P, FIRE_T, FIRE_PUT, FIRE_COVER, setEvents, startFire, disaster, cureOf, covered, slowAt, wornAt, ROAD_UPKEEP, PROD_K, UPGRADE, blOf, prodK, upCost, canImprove, improveCost, horseUse, setHorses, setRoute, routable, depotFor, findRoute, HORSE_FOOD, BASE_CAP, DEPOT_CAP, depotCap, capOf, TRUCK_OIL, takesHorses, HOME_TIERS, tierOf, homeCap, maxTier };
+const api = { W, H, B, NEED_TEXT, WANT_TEXT, POWER, WATER, START, LEVELS, levelOf, upgradeBlock, PRICES, SELL, RES_TEXT, trade, priceOf, mkOf, hasMarket, HIST_RES, CLEAR, startCorner, landOf, landPrice, newGame, start, nextTurn, compute, tick, act, actArea, wants, happiness, residents, commute, ownerOf, room, SPEEDS, LOAD, TRUCK_LOAD, PACE, roadNets, networks, PRODUCTS, SMELT, GROUPS, SEATS, pollution, setSpec, popOf, demographics, TECH, TECH_COST, BRANCHES, techOf, hasTech, setResearch, allTech, FARM, HORSES_PER_FARM, horsesPerFarm, UTIL_ERA, isRoad, EVENT_P, FIRE_T, FIRE_PUT, FIRE_COVER, setEvents, startFire, disaster, cureOf, covered, slowAt, wornAt, ROAD_UPKEEP, PROD_K, UPGRADE, blOf, prodK, upCost, canImprove, improveCost, horseUse, setRoute, routable, depotFor, findRoute, HORSE_FOOD, BASE_CAP, DEPOT_CAP, depotCap, capOf, TRUCK_OIL, HOME_TIERS, tierOf, homeCap, maxTier };
 if (typeof module !== 'undefined') module.exports = api; else window.Game = api;

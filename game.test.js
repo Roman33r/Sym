@@ -291,7 +291,6 @@ assert.strictEqual(G.depotCap(f, 10), G.DEPOT_CAP * G.PROD_K[G.blOf(f, 10)]);
 FP.level = 3; FP.res.ironbar = 99; const cap0 = G.capOf(f, 'F');
 assert.strictEqual(G.act(f, 'F', 'improve', 10), null);
 assert.strictEqual(G.capOf(f, 'F') - cap0, Math.round(G.DEPOT_CAP * G.PROD_K[G.blOf(f, 10)]) - Math.round(G.DEPOT_CAP * G.PROD_K[G.blOf(f, 10) - 1]), 'the better depot holds more');
-assert.strictEqual(G.setHorses(f, 'F', 10, 1), 'этому зданию лошади не нужны');
 // no oil: the loads wait for horses
 FP.res.oil = 0; f.ships = []; f.stock[3] = G.LOAD; FP.res.furniture = 0; G.tick(f);
 assert.ok(!f.ships.some(x => !x.horse) && f.noHorse.includes(3), 'no fuel, no trucks');
@@ -333,14 +332,8 @@ G.tick(h);
 assert.ok(h.noHorse.includes(2) && !h.ships.length, 'no horse: the load waits');
 HP.res.horses = 1; h.stock[2] = G.LOAD;
 G.tick(h);
-assert.ok(h.noHorse.includes(2) && !h.ships.length, 'a horse nobody assigned stays in the stable');
-assert.strictEqual(G.setHorses(h, 'H', 2, 2), 'свободных лошадей только 1');
-assert.strictEqual(G.setHorses(h, 'H', 10, 1), 'этому зданию лошади не нужны'); // the depot
-assert.strictEqual(G.setHorses(h, 'H', 2, 1), null);
+assert.strictEqual(h.ships.length, 1, 'any free horse takes the load');
 assert.deepStrictEqual([G.horseUse(h, 'H').busy, G.horseUse(h, 'H').free], [1, 0]);
-h.stock[2] = G.LOAD;
-G.tick(h);
-assert.strictEqual(h.ships.length, 1);
 assert.strictEqual(h.ships[0].src, 2, 'the cart belongs to the farm');
 assert.strictEqual(h.ships[0].n, G.LOAD, 'a cart takes a cart load');
 h.stock[2] = G.LOAD; G.tick(h);
@@ -350,9 +343,6 @@ assert.ok(h.ships[0].horse && h.ships[0].at - h.ships[0].t0 === 8, 'a cart over 
 assert.strictEqual(G.setSpec(h, 'H', 2, 'livestock'), 'нужно исследование «Земледелие»');
 HP.tech.agriculture = true;
 assert.strictEqual(G.setSpec(h, 'H', 2, 'livestock'), null);
-h.ships = []; G.tick(h);
-assert.ok(!(h.hrs || {})[2], 'a livestock farm needs no assigned horses');
-assert.strictEqual(G.setHorses(h, 'H', 2, 1), 'животноводческая ферма возит еду своими телегами');
 HP.demo = { kids: 0, none: 40, school: 0, higher: 0, old: 0 }; // enough farm hands
 for (let k = 0; k < 200; k++) G.tick(h);
 assert.strictEqual(HP.res.horses, G.HORSES_PER_FARM, 'the herd stops at two');
@@ -361,12 +351,12 @@ HP.res.horses = 0; h.ships = []; h.stock[2] = G.LOAD;
 G.tick(h);
 assert.ok(h.ships.length === 1 && h.ships[0].horse && h.ships[0].own && !h.noHorse.includes(2), 'own cart, no waiting');
 HP.res.horses = 2;
-assert.deepStrictEqual(G.horseUse(h, 'H'), { total: 2, trams: 0, assigned: 0, busy: 0, carts: 0, free: 2, cap: 2 }, 'own carts keep the pool free');
+assert.deepStrictEqual(G.horseUse(h, 'H'), { total: 2, trams: 0, carts: 0, busy: 0, free: 2, cap: 2 }, 'own carts keep the pool free');
 // horses eat; hungry horses carry only food
 HP.res.food = 50; G.tick(h);
 assert.ok(HP.flow.food.some(([what, v]) => what.startsWith('Лошади едят') && Math.abs(v + 2 * G.HORSE_FOOD) < 1e-9), 'two horses eat');
 h.grid[7] = 'tree'; G.act(h, 'H', 'sawmill', 5); h.status = G.compute(h);
-HP.fed = false; HP.res.wood = 0; h.ships = []; G.setHorses(h, 'H', 5, 1); h.stock[5] = G.LOAD; G.tick(h);
+HP.fed = false; HP.res.wood = 0; h.ships = []; h.stock[5] = G.LOAD; G.tick(h);
 assert.ok(h.noHorse.includes(5) && !h.ships.some(x => x.res === 'wood'), 'a hungry horse leaves the wood');
 HP.res.wood = 1e3; h.grid[5] = h.grid[7] = 'grass';
 // a horse-tram stop needs one of those horses
