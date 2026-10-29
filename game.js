@@ -102,7 +102,6 @@ const BRANCHES = { world: 'Мир', science: 'Наука', edu: 'Образов�
 // one study per branch in each era; it needs the same branch's study of the era before
 const TECH = [
   { id: 'explore', era: 0, branch: 'world', name: 'Разведка', desc: 'покупка новой земли' },
-  { id: 'agriculture', era: 0, branch: 'science', name: 'Земледелие', desc: 'животноводство на фермах: лошади' },
   { id: 'writing', era: 0, branch: 'edu', name: 'Письменность', desc: 'исследования идут в 1,5 раза быстрее' },
   { id: 'crafts', era: 0, branch: 'art', name: 'Ремёсла', desc: 'жилые зоны застраиваются в 1,5 раза быстрее' },
   { id: 'community', era: 0, branch: 'social', name: 'Община', desc: 'колодец: тушит пожары рядом' },
@@ -132,8 +131,8 @@ const TECH = [
   { id: 'quarantine', era: 3, branch: 'edu', lane: 1, side: true, req: ['medicine', 'printing'], name: 'Карантин', desc: 'эпидемии вдвое короче' },
   { id: 'seismic', era: 3, branch: 'art', lane: 1, side: true, req: ['industry', 'masonry'], name: 'Прочные постройки', desc: 'стихийные бедствия рушат вдвое меньше' },
   { id: 'forestry', era: 1, branch: 'world', lane: 1, side: true, req: ['explore'], name: 'Лесное хозяйство', desc: 'лесопилки дают на 30% больше дерева' },
-  { id: 'irrigation', era: 1, branch: 'science', lane: 1, side: true, req: ['agriculture'], name: 'Орошение', desc: 'фермы +25% еды, засуха вдвое слабее' },
-  { id: 'breeding', era: 1, branch: 'science', lane: 2, side: true, req: ['agriculture'], name: 'Коневодство', desc: 'до 3 лошадей на ферму, растут вдвое быстрее' },
+  { id: 'irrigation', era: 1, branch: 'science', lane: 1, side: true, req: [], name: 'Орошение', desc: 'фермы +25% еды; в засуху дают 70% еды вместо 40%' },
+  { id: 'breeding', era: 1, branch: 'science', lane: 2, side: true, req: [], name: 'Коневодство', desc: 'до 3 лошадей на ферму, растут вдвое быстрее' },
   { id: 'masonry', era: 1, branch: 'art', lane: 1, side: true, req: ['crafts'], name: 'Каменотёсы', desc: 'каменоломни дают на 30% больше камня' },
   { id: 'banking', era: 2, branch: 'world', lane: 1, side: true, req: ['trade'], name: 'Банки', desc: 'налоги на 20% выше' },
   { id: 'printing', era: 2, branch: 'edu', lane: 1, side: true, req: ['schools', 'writing'], name: 'Книгопечатание', desc: 'исследования на 25% быстрее' },
@@ -365,7 +364,11 @@ function commute(s, st = s.status || compute(s)) {
 
 // Soft needs of residents of home tile i; jobs/food use the owner's totals from the previous tick.
 const WANT_TEXT = { food: 'Еда в городе', jobs: 'Работа для всех', work: 'Дорога до работы: пешком до 4 кл. или автобусом', shop: 'Магазин в 5 клетках', park: 'Парк в 4 клетках или лес рядом', quiet: 'Нет завода, станции или карьера в 3 клетках', air: 'Чистый воздух: загрязнение у дома ниже 0,6' };
-const DIRTY = 0.6; // pollution at a home from which the air counts as dirty (see pollution())
+const DIRTY = 0.6;
+// an epidemic lasts SICK_T ticks (half with quarantine): SICK_DEATH of the residents die a tick and SICK_IDLE of the adults
+// stay off work, both cut by the share healers and hospitals cure; a drought lasts DROUGHT_T ticks and farms give
+// DROUGHT_K of their food (DROUGHT_IRR with irrigation)
+const SICK_T = 25, SICK_DEATH = 0.018, SICK_IDLE = 0.25, DROUGHT_T = 40, DROUGHT_K = 0.4, DROUGHT_IRR = 0.7; // pollution at a home from which the air counts as dirty (see pollution())
 const wants = (s, i, reach = commute(s)) => {
   const g = s.grid, p = s.players[ownerOf(s, i)] || { res: { food: 0 }, jobs: 0, pop: 1 };
   return {
@@ -483,7 +486,7 @@ function ship(s, comp, who, i, res, vehicle, space = Infinity) {
 // A fire burns FIRE_T ticks and then destroys the building, sometimes catching a neighbour; a well or a fire station
 // nearby puts it out in FIRE_PUT ticks (its people run there with buckets, see the client). An epidemic kills a share of the residents each tick unless healers and hospitals
 // treat them; a drought halves the farms' food; a disaster destroys one or two buildings.
-const EVENT_P = { fire: 0.0015, sick: 0.0009, drought: 0.0009, disaster: 0.00045 }, EVENT_CALM = 120, FIRE_T = 8, FIRE_PUT = 6;
+const EVENT_P = { fire: 0.002, sick: 0.0012, drought: 0.0012, disaster: 0.0006 }, EVENT_CALM = 120, FIRE_T = 8, FIRE_PUT = 6;
 const FIRE_COVER = { firewell: 5, firestation: 12 };
 let eventsOn = true; // tests switch the random part off
 const setEvents = on => { eventsOn = on; };
@@ -511,8 +514,8 @@ function events(s) {
     const bs = () => buildingsOf(s, who);
     if (Math.random() < EVENT_P.fire) { const b = bs(); if (b.length) startFire(s, b[Math.random() * b.length | 0]); }
     // epidemics come up to 3 times as often in a dirty town
-    if (!p.sick && p.pop > 20 && Math.random() < EVENT_P.sick * (1 + 2 * dirtyShare(s, who))) { p.sick = hasTech(p, 'quarantine') ? 12 : 25; s.events.push(`${who}: эпидемия! Нужны знахари и больницы`); }
-    if (!p.drought && Math.random() < EVENT_P.drought) { p.drought = 30; s.events.push(`${who}: засуха — фермы дают меньше еды`); }
+    if (!p.sick && p.pop > 20 && Math.random() < EVENT_P.sick * (1 + 2 * dirtyShare(s, who))) { p.sick = hasTech(p, 'quarantine') ? Math.round(SICK_T / 2) : SICK_T; s.events.push(`${who}: эпидемия! Нужны знахари и больницы`); }
+    if (!p.drought && Math.random() < EVENT_P.drought) { p.drought = DROUGHT_T; s.events.push(`${who}: засуха — фермы дают меньше еды`); }
     if (Math.random() < EVENT_P.disaster) disaster(s, who, p);
   }
 }
@@ -591,7 +594,6 @@ function setSpec(s, who, i, v) {
   if (ownerOf(s, i) !== who) return 'это не ваш участок';
   if (s.grid[i] === 'farm') {
     if (!FARM[v]) return 'неизвестная специализация';
-    if (v === 'livestock') { const lock = techLock(s.players[who], 'agriculture'); if (lock) return lock; }
   } else if (s.grid[i] === 'smelter') { if (!SMELT[v]) return 'неизвестный металл'; }
   else if (s.grid[i] !== 'ind') return 'выпуск настраивается только у завода или фермы';
   else if (!PRODUCTS[v]) return 'неизвестный товар';
@@ -635,14 +637,15 @@ function tick(s) {
       if (!cnt.school) { d.none += d.school; d.school = 0; }
     }
     const before0 = popOf(d), cov = demographics(d, cap, cnt, hap, hasTech(p, 'elearning') ? 2 : 1);
-    if (p.sick > 0) { // an epidemic: up to 1.5% of the residents a tick, fewer with healers and hospitals
-      const k = 0.015 * (1 - cureOf(cnt, popOf(d)));
+    const ill = p.sick > 0 ? 1 - cureOf(cnt, popOf(d)) : 0; // share of the sick nobody treats
+    if (p.sick > 0) { // an epidemic: up to SICK_DEATH of the residents a tick, fewer with healers and hospitals
+      const k = SICK_DEATH * ill;
       p.died = Math.round(popOf(d) * k * 10) / 10;
       for (const g in d) d[g] -= d[g] * k * (g === 'old' ? 2 : 1); // the old suffer most
     } else p.died = 0;
     const pop = Math.round(popOf(d));
     // who can work where: offices need a degree, every other job takes anyone; only people who can get to work count
-    const r = cap ? reachCap / cap : 0, jobs = Object.entries(cnt).reduce((n, [t, c]) => n + c * (B[t].jobs || 0), 0);
+    const r = (cap ? reachCap / cap : 0) * (1 - SICK_IDLE * ill), jobs = Object.entries(cnt).reduce((n, [t, c]) => n + c * (B[t].jobs || 0), 0);
     const offJobs = (cnt.off || 0) * B.off.jobs, otherJobs = jobs - offJobs;
     const fo = Math.min(offJobs, d.higher * r), fOther = Math.min(otherJobs, (d.none + d.school + d.higher) * r - fo);
     const wrOff = offJobs ? fo / offJobs : 0, wrOther = otherJobs ? Math.max(0, fOther) / otherJobs : 0;
@@ -693,7 +696,7 @@ function tick(s) {
         R.oil -= made; used.oil = (used.oil || 0) + made;
       } else if (t === 'farm') {
         const f = FARM[s.spec[i] || 'crops'];
-        res = 'food'; made = f.food * wrOther * prodK(s, i) * (hasTech(p, 'irrigation') ? 1.25 : 1) * (p.drought > 0 ? (hasTech(p, 'irrigation') ? 0.75 : 0.5) : 1);
+        res = 'food'; made = f.food * wrOther * prodK(s, i) * (hasTech(p, 'irrigation') ? 1.25 : 1) * (p.drought > 0 ? (hasTech(p, 'irrigation') ? DROUGHT_IRR : DROUGHT_K) : 1);
         if (s.spec[i] === 'livestock') { // horses grow slowly; each livestock farm keeps at most horsesPerFarm
           const herd = s.grid.reduce((n, x, k) => n + (x === 'farm' && own[k] === who && s.spec[k] === 'livestock'), 0) * horsesPerFarm(p);
           s.breed[i] = Math.min(1, (s.breed[i] || 0) + 0.04 * wrOther * (hasTech(p, 'breeding') ? 2 : 1));
@@ -950,5 +953,5 @@ function room(s) {
   return r;
 }
 
-const api = { W, H, B, NEED_TEXT, WANT_TEXT, POWER, WATER, START, LEVELS, levelOf, upgradeBlock, PRICES, SELL, RES_TEXT, trade, priceOf, mkOf, hasMarket, HIST_RES, CLEAR, startCorner, landOf, landPrice, newGame, start, nextTurn, compute, tick, act, actArea, wants, happiness, residents, commute, ownerOf, room, SPEEDS, LOAD, TRUCK_LOAD, PACE, roadNets, networks, PRODUCTS, SMELT, GROUPS, SEATS, pollution, polOf, DIRTY, dirtyShare, setSpec, popOf, demographics, TECH, TECH_COST, BRANCHES, techOf, hasTech, setResearch, allTech, FARM, HORSES_PER_FARM, horsesPerFarm, UTIL_ERA, isRoad, EVENT_P, FIRE_T, FIRE_PUT, FIRE_COVER, setEvents, startFire, disaster, cureOf, covered, slowAt, wornAt, ROAD_UPKEEP, PROD_K, UPGRADE, blOf, prodK, upCost, canImprove, improveCost, horseUse, setRoute, routable, depotFor, findRoute, HORSE_FOOD, BASE_CAP, DEPOT_CAP, depotCap, capOf, TRUCK_OIL, HOME_TIERS, tierOf, homeCap, maxTier };
+const api = { W, H, B, NEED_TEXT, WANT_TEXT, POWER, WATER, START, LEVELS, levelOf, upgradeBlock, PRICES, SELL, RES_TEXT, trade, priceOf, mkOf, hasMarket, HIST_RES, CLEAR, startCorner, landOf, landPrice, newGame, start, nextTurn, compute, tick, act, actArea, wants, happiness, residents, commute, ownerOf, room, SPEEDS, LOAD, TRUCK_LOAD, PACE, roadNets, networks, PRODUCTS, SMELT, GROUPS, SEATS, pollution, polOf, DIRTY, dirtyShare, setSpec, popOf, demographics, TECH, TECH_COST, BRANCHES, techOf, hasTech, setResearch, allTech, FARM, HORSES_PER_FARM, horsesPerFarm, UTIL_ERA, isRoad, EVENT_P, SICK_T, SICK_DEATH, SICK_IDLE, DROUGHT_T, DROUGHT_K, DROUGHT_IRR, FIRE_T, FIRE_PUT, FIRE_COVER, setEvents, startFire, disaster, cureOf, covered, slowAt, wornAt, ROAD_UPKEEP, PROD_K, UPGRADE, blOf, prodK, upCost, canImprove, improveCost, horseUse, setRoute, routable, depotFor, findRoute, HORSE_FOOD, BASE_CAP, DEPOT_CAP, depotCap, capOf, TRUCK_OIL, HOME_TIERS, tierOf, homeCap, maxTier };
 if (typeof module !== 'undefined') module.exports = api; else window.Game = api;

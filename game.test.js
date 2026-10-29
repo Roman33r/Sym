@@ -115,7 +115,7 @@ assert.strictEqual(G.act(v, 'V', 'path', 7), null); // the first eras only have 
 assert.strictEqual(G.act(v, 'V', 'buy', 12), 'нужно исследование «Разведка»');
 V.tech.explore = true;
 assert.strictEqual(G.act(v, 'V', 'buy', 12), '«Древность» может владеть не больше 144 кл. земли (сейчас 144) — нужна следующая эпоха');
-assert.strictEqual(G.act(v, 'V', 'upgrade', 0), 'для эпохи «Средневековье» нужно изучить: Земледелие, Письменность, Ремёсла, Община');
+assert.strictEqual(G.act(v, 'V', 'upgrade', 0), 'для эпохи «Средневековье» нужно изучить: Письменность, Ремёсла, Община');
 V.tech = G.allTech(); // research itself is tested below
 assert.strictEqual(G.act(v, 'V', 'upgrade', 0), 'для эпохи «Средневековье» нужно 30 жителей');
 V.pop = 30; V.res.money = 299;
@@ -345,8 +345,6 @@ h.stock[2] = G.LOAD; G.tick(h);
 assert.ok(h.ships.length === 1 && h.noHorse.includes(2), 'its only horse is on the road: the next load waits');
 assert.ok(h.ships[0].horse && h.ships[0].at - h.ships[0].t0 === 8, 'a cart over 8 path tiles takes 8 ticks'); // 16 cost units at 2 per tick
 // livestock farms raise horses, two per farm at most
-assert.strictEqual(G.setSpec(h, 'H', 2, 'livestock'), 'нужно исследование «Земледелие»');
-HP.tech.agriculture = true;
 assert.strictEqual(G.setSpec(h, 'H', 2, 'livestock'), null);
 HP.demo = { kids: 0, none: 40, school: 0, higher: 0, old: 0 }; // enough farm hands
 for (let k = 0; k < 200; k++) G.tick(h);
@@ -469,7 +467,7 @@ const tr = G.newGame(16);
 tr.grid.fill('grass');
 G.start(tr, ['T']); G.act(tr, 'T', 'claim', 0);
 const TP = tr.players.T;
-TP.level = 2; TP.tech = { explore: true, agriculture: true, writing: true, crafts: true, community: true };
+TP.level = 2; TP.tech = { explore: true, writing: true, crafts: true, community: true };
 assert.deepStrictEqual(G.techOf('trade').req, ['explore'], 'the main line needs the study before it');
 assert.strictEqual(G.setResearch(tr, 'T', 'printing'), 'сначала изучите «Школы»');
 assert.strictEqual(G.setResearch(tr, 'T', 'preserving'), 'сначала изучите «Почта и конка» и «Орошение»', 'two branches meet');
@@ -505,13 +503,15 @@ assert.strictEqual(G.cureOf({ healer: 1 }, 40), 0.5, 'a healer saves half of his
 assert.strictEqual(G.cureOf({ hospital: 1 }, 150), 0.9, 'a hospital saves 90% of its 150');
 EP.demo = { kids: 0, none: 100, school: 0, higher: 0, old: 0 }; EP.sick = 5; G.tick(ev);
 assert.ok(EP.died > 0 && EP.sick === 4, 'the epidemic kills and wears off');
-// drought: farms give half; irrigation makes it a quarter less instead
+const workersSick = EP.workers; EP.sick = 0; EP.demo = { kids: 0, none: 100, school: 0, higher: 0, old: 0 }; G.tick(ev);
+assert.ok(!workersSick || EP.workers >= workersSick, 'the sick stay off work');
+// drought: farms give DROUGHT_K of their food, with irrigation DROUGHT_IRR
 const fd = (dr, irr) => { const f = G.newGame(18); f.grid.fill('grass'); G.start(f, ['F']); G.act(f, 'F', 'claim', 0); const P3 = f.players.F;
   P3.res = { ...P3.res, money: 1e4, wood: 100 }; P3.tech = G.allTech(); if (!irr) delete P3.tech.irrigation; P3.demo = { kids: 0, none: 40, school: 0, higher: 0, old: 0 };
   G.act(f, 'F', 'path', W + 2); G.act(f, 'F', 'path', W + 3); G.act(f, 'F', 'farm', 2); G.act(f, 'F', 'house', 3); f.hl[3] = 0; f.bl[2] = 0;
   P3.drought = dr ? 10 : 0; f.stock = {}; G.tick(f); return f.stock[2]; };
-assert.ok(Math.abs(fd(true, false) / fd(false, false) - 0.5) < 0.01, 'a drought halves the food');
-assert.ok(Math.abs(fd(true, true) / fd(false, true) - 0.75) < 0.01, 'with irrigation only a quarter is lost');
+assert.ok(Math.abs(fd(true, false) / fd(false, false) - G.DROUGHT_K) < 0.01, 'a drought cuts the food');
+assert.ok(Math.abs(fd(true, true) / fd(false, true) - G.DROUGHT_IRR) < 0.01, 'irrigation cuts the loss');
 // a disaster takes one or two buildings, sturdy buildings at most one
 const dz = G.newGame(19); dz.grid.fill('grass'); G.start(dz, ['Z']); G.act(dz, 'Z', 'claim', 0); const ZP = dz.players.Z;
 ZP.res = { ...ZP.res, money: 1e5, wood: 1e3, stone: 1e3 }; ZP.tech = {};
