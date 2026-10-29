@@ -210,12 +210,12 @@ assert.strictEqual(G.act(d, 'D', 'depot', 10), null);
 G.tick(d);
 assert.strictEqual(d.ships.length, 1);
 const sh = d.ships[0];
-assert.deepStrictEqual([sh.res, sh.n, sh.from, sh.to, sh.at - sh.t0], ['food', 8, W + 3, W + 10, 4]); // 7 tiles at 2 per tick
-for (let k = 0; k < 4; k++) G.tick(d);
-assert.ok(DP.flow.food.some(([what, v]) => what.startsWith('Привезли') && v === 8), 'the load arrived on the 4th tick');
+assert.deepStrictEqual([sh.res, sh.n, sh.from, sh.to, sh.at - sh.t0], ['food', G.TRUCK_LOAD, W + 3, W + 10, 2]); // a full truck: 7 tiles at 4 per tick
+for (let k = 0; k < 2; k++) G.tick(d);
+assert.ok(DP.flow.food.some(([what, v]) => what.startsWith('Привезли') && v === G.TRUCK_LOAD), 'the load arrived on the 2nd tick');
 assert.ok(!d.ships.some(x => x.id === sh.id));
-DP.tech.logistics = true; d.stock[3] = G.LOAD; G.tick(d); // logistics: 3 cost units a tick
-assert.strictEqual(d.ships[d.ships.length - 1].at - d.ships[d.ships.length - 1].t0, 3, '7 tiles at 3 per tick');
+d.ships = []; d.stock[3] = G.LOAD - 1; G.tick(d); // a truck takes what there is, from a cart load up
+assert.ok(d.ships.length === 1 && d.ships[0].n >= G.LOAD && d.ships[0].n < G.TRUCK_LOAD, 'a part load goes too');
 // logistics: a building's loads go to the depot the player chose, not the nearest one
 assert.strictEqual(G.act(d, 'D', 'depot', 11), null);
 assert.strictEqual(G.setRoute(d, 'D', 3, 4), 'возить можно только на свой склад');
@@ -342,6 +342,7 @@ h.stock[2] = G.LOAD;
 G.tick(h);
 assert.strictEqual(h.ships.length, 1);
 assert.strictEqual(h.ships[0].src, 2, 'the cart belongs to the farm');
+assert.strictEqual(h.ships[0].n, G.LOAD, 'a cart takes a cart load');
 h.stock[2] = G.LOAD; G.tick(h);
 assert.ok(h.ships.length === 1 && h.noHorse.includes(2), 'its only horse is on the road: the next load waits');
 assert.ok(h.ships[0].horse && h.ships[0].at - h.ships[0].t0 === 8, 'a cart over 8 path tiles takes 8 ticks'); // 16 cost units at 2 per tick

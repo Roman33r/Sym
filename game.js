@@ -117,7 +117,7 @@ const TECH = [
   { id: 'industry', era: 2, branch: 'art', name: 'Промышленность', desc: 'промзона, заводы и металлургический завод' },
   { id: 'plumbing', era: 2, branch: 'social', name: 'Водопровод', desc: 'водокачка и трубы' },
   { id: 'refining', era: 3, branch: 'world', name: 'Нефтепереработка', desc: 'НПЗ и асфальтовые дороги' },
-  { id: 'engine', era: 3, branch: 'science', name: 'Двигатель', desc: 'грузовики вместо телег; они жгут нефть, без неё грузы снова везут лошади' },
+  { id: 'engine', era: 3, branch: 'science', name: 'Двигатель', desc: 'грузовики вместо телег: везут вдвое больше и вдвое быстрее, но жгут нефть; без неё грузы снова везут лошади' },
   { id: 'universities', era: 3, branch: 'edu', name: 'Университеты', desc: 'университет: высшее образование' },
   { id: 'business', era: 3, branch: 'art', name: 'Деловой центр', desc: 'офисная зона' },
   { id: 'transit', era: 3, branch: 'social', name: 'Общественный транспорт', desc: 'автобусы: остановкам не нужны лошади' },
@@ -387,7 +387,8 @@ const short = t => B[t].label.replace(/ \(.*\)/, '');
 // owner's nearest depot on the same road network and counts when it arrives (2 tiles per tick).
 // Factories make products the same way; depots then send products on to shops, which sell them for money.
 const CARGO_RES = ['food', 'wood', 'stone', 'iron', 'gold', 'oil', 'ironbar', 'goldbar'];
-const LOAD = 8, STORE = 3 * LOAD; // a truck load; a producer with nowhere to send goods stops at STORE
+const LOAD = 8, STORE = 3 * LOAD; // a cart load; a producer with nowhere to send goods stops at STORE
+const TRUCK_LOAD = 16, PACE = { cart: 2, truck: 4 }; // a truck takes twice a cart's load, twice as fast (route cost units a tick)
 // what a factory (ind) can be set to make; input is taken from the owner's stock per unit made
 const PRODUCTS = {
   clothes:   { label: 'Одежда', input: {}, price: 3 },
@@ -472,20 +473,22 @@ function findRoute(s, comp, i, isDest) {
   });
   return best;
 }
-// horse: the load goes by cart and keeps one of the owner's horses busy until it arrives
-function sendTruck(s, who, res, route, kind, horse, own, src) {
-  const pace = hasTech(s.players[who], 'logistics') ? 3 : 2; // route cost units per tick
-  s.ships.push({ id: ++s.shipSeq, who, res, n: LOAD, from: route.from, to: route.to, dest: route.dest, kind, horse, own, src, t0: s.tick, at: s.tick + Math.max(1, Math.ceil(route.dist / pace)) });
+// horse: the load goes by cart and keeps one of the owner's horses busy until it arrives; n: how much it carries
+function sendTruck(s, who, res, route, kind, horse, own, src, n = LOAD) {
+  const pace = PACE[horse ? 'cart' : 'truck'] * (hasTech(s.players[who], 'logistics') ? 1.5 : 1);
+  s.ships.push({ id: ++s.shipSeq, who, res, n, from: route.from, to: route.to, dest: route.dest, kind, horse, own, src, t0: s.tick, at: s.tick + Math.max(1, Math.ceil(route.dist / pace)) });
 }
-// load from producer i to the nearest depot; vehicle() gives 'truck' or 'horse', or false when no horse is free; fits: the depots have room
-function ship(s, comp, who, i, res, vehicle, fits = true) {
+// a load from producer i to its depot; vehicle() gives 'truck', 'horse' or 'own', or false when no horse is free;
+// space: room left in the depots. A cart takes LOAD, a truck up to TRUCK_LOAD of what is there; returns how much went
+function ship(s, comp, who, i, res, vehicle, space = Infinity) {
   const r = findRoute(s, comp, i, depotFor(s, who, i));
   if (!r) return 'depot';
-  if (!fits) return 'full';
+  if (space < LOAD) return 'full';
   const v = vehicle(i, res);
   if (!v) return 'horse';
-  sendTruck(s, who, res, r, 'depot', v !== 'truck', v === 'own', i);
-  return true;
+  const n = v === 'truck' ? Math.min(TRUCK_LOAD, Math.floor(s.stock[i]), Math.floor(space)) : LOAD;
+  sendTruck(s, who, res, r, 'depot', v !== 'truck', v === 'own', i, n);
+  return n;
 }
 
 // Events: rare fires, epidemics, droughts and disasters, at most one new one per player at a time of each kind.
@@ -714,8 +717,8 @@ function tick(s) {
       // a livestock farm carries its own food with its own carts, so it never waits for a free horse
       const veh = t === 'farm' && s.spec[i] === 'livestock' ? () => (fuel() ? 'truck' : 'own') : vehicle;
       if (s.stock[i] < LOAD) return;
-      const r = ship(s, comp, who, i, res, veh, R[res] + (inbound[res] || 0) + LOAD <= room);
-      if (r === true) { s.stock[i] -= LOAD; inbound[res] = (inbound[res] || 0) + LOAD; } else ({ horse: noHorse, full }[r] || undelivered).push(i);
+      const r = ship(s, comp, who, i, res, veh, room - R[res] - (inbound[res] || 0));
+      if (typeof r === 'number') { s.stock[i] -= r; inbound[res] = (inbound[res] || 0) + r; } else ({ horse: noHorse, full }[r] || undelivered).push(i);
     });
     for (const [k, v] of Object.entries(used)) { R[k] += v; add(k, 'Заводы берут сырьё', -v); } // re-run through add() for the breakdown
     // shops: sell what they have, order a load of the most stocked product from the nearest depot when running low
@@ -732,18 +735,19 @@ function tick(s) {
       const route = findRoute(s, comp, i, depotFor(s, who, i));
       if (!route) { undelivered.push(i); return; }
       const v = vehicle(i); if (!v) { noHorse.push(i); return; }
-      sendTruck(s, who, best, { from: route.to, to: route.from, dest: i, dist: route.dist }, 'shop', v === 'horse', false, i); // depot → shop
-      add(best, 'Отправлено в магазины', -LOAD);
+      const n = v === 'truck' ? Math.min(TRUCK_LOAD, Math.floor(R[best])) : LOAD;
+      sendTruck(s, who, best, { from: route.to, to: route.from, dest: i, dist: route.dist }, 'shop', v === 'horse', false, i, n); // depot → shop
+      add(best, 'Отправлено в магазины', -n);
     });
     if (income) add('money', `Магазины продали товары (${Math.round(sold)} шт.)`, income);
     const came = {};
     s.ships = s.ships.filter(sh => {
       if (sh.who !== who || sh.at > s.tick) return true;
       if (sh.kind === 'shop') { if (s.grid[sh.dest] === 'shop') { const box = s.shopStock[sh.dest] = s.shopStock[sh.dest] || {}; box[sh.res] = (box[sh.res] || 0) + sh.n; } }
-      else came[sh.res] = (came[sh.res] || 0) + 1;
+      else { const c = came[sh.res] = came[sh.res] || [0, 0]; c[0]++; c[1] += sh.n; }
       return false;
     });
-    for (const [k, c] of Object.entries(came)) add(k, `Привезли грузовики ×${c}`, c * LOAD);
+    for (const [k, [c, n]] of Object.entries(came)) add(k, `Привезли грузовики ×${c}`, n);
     add('food', `Жители едят (${pop})`, -pop * 0.2 * (hasTech(p, 'preserving') ? 0.8 : 1));
     const trucks = s.ships.filter(sh => sh.who === who && !sh.horse).length;
     if (trucks) add('oil', `Грузовики жгут топливо (${trucks})`, -Math.min(R.oil, trucks * TRUCK_OIL));
@@ -950,5 +954,5 @@ function room(s) {
   return r;
 }
 
-const api = { W, H, B, NEED_TEXT, WANT_TEXT, POWER, WATER, START, LEVELS, levelOf, upgradeBlock, PRICES, SELL, RES_TEXT, trade, priceOf, mkOf, hasMarket, HIST_RES, CLEAR, startCorner, landOf, landPrice, newGame, start, nextTurn, compute, tick, act, actArea, wants, happiness, residents, commute, ownerOf, room, SPEEDS, LOAD, roadNets, networks, PRODUCTS, SMELT, GROUPS, SEATS, pollution, setSpec, popOf, demographics, TECH, TECH_COST, BRANCHES, techOf, hasTech, setResearch, allTech, FARM, HORSES_PER_FARM, horsesPerFarm, UTIL_ERA, isRoad, EVENT_P, FIRE_T, FIRE_PUT, FIRE_COVER, setEvents, startFire, disaster, cureOf, covered, slowAt, wornAt, ROAD_UPKEEP, PROD_K, UPGRADE, blOf, prodK, upCost, canImprove, improveCost, horseUse, setHorses, setRoute, routable, depotFor, findRoute, HORSE_FOOD, BASE_CAP, DEPOT_CAP, depotCap, capOf, TRUCK_OIL, takesHorses, HOME_TIERS, tierOf, homeCap, maxTier };
+const api = { W, H, B, NEED_TEXT, WANT_TEXT, POWER, WATER, START, LEVELS, levelOf, upgradeBlock, PRICES, SELL, RES_TEXT, trade, priceOf, mkOf, hasMarket, HIST_RES, CLEAR, startCorner, landOf, landPrice, newGame, start, nextTurn, compute, tick, act, actArea, wants, happiness, residents, commute, ownerOf, room, SPEEDS, LOAD, TRUCK_LOAD, PACE, roadNets, networks, PRODUCTS, SMELT, GROUPS, SEATS, pollution, setSpec, popOf, demographics, TECH, TECH_COST, BRANCHES, techOf, hasTech, setResearch, allTech, FARM, HORSES_PER_FARM, horsesPerFarm, UTIL_ERA, isRoad, EVENT_P, FIRE_T, FIRE_PUT, FIRE_COVER, setEvents, startFire, disaster, cureOf, covered, slowAt, wornAt, ROAD_UPKEEP, PROD_K, UPGRADE, blOf, prodK, upCost, canImprove, improveCost, horseUse, setHorses, setRoute, routable, depotFor, findRoute, HORSE_FOOD, BASE_CAP, DEPOT_CAP, depotCap, capOf, TRUCK_OIL, takesHorses, HOME_TIERS, tierOf, homeCap, maxTier };
 if (typeof module !== 'undefined') module.exports = api; else window.Game = api;
