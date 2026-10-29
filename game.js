@@ -912,6 +912,7 @@ function room(s) {
     for (; r.carry >= 1; r.carry--) {
       // a player who left during the draft loses the turn, so the others aren't stuck waiting
       while (r.s.phase === 'draft' && !r.names().includes(r.s.order[r.s.turn])) { r.say(`${r.s.order[r.s.turn]} не в игре — ход переходит дальше`); nextTurn(r.s); }
+      if (r.s.phase !== 'play') continue; // the calendar starts once everyone has their land
       tick(r.s);
       for (const e of r.s.events) r.say(e);
     }

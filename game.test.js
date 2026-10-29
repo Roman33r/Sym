@@ -195,11 +195,14 @@ assert.strictEqual(r.handle('Аня', { type: 'speed', v: 3 }), 'неверна�
 assert.strictEqual(r.handle('Аня', { type: 'speed', v: 0 }), null);
 assert.strictEqual(r.step() || r.step() || r.step() || r.step(), false, 'paused game does not tick');
 assert.strictEqual(r.handle('Аня', { type: 'speed', v: 4 }), null);
+for (let k = 0; k < 8; k++) r.step();
+assert.strictEqual(r.s.tick, 0, 'no time passes in the lobby');
 assert.strictEqual(r.handle('Аня', { type: 'start' }), null);
 assert.deepStrictEqual([...r.s.order].sort(), ['Аня', 'Боря']);
 r.leave(r.s.order[0] === 'Аня' ? 'a' : 'b');
 assert.strictEqual(r.step(), true);
 assert.strictEqual(r.s.turn, 1, 'the player who left was skipped');
+assert.strictEqual(r.s.tick, 0, 'nor while the land is being picked');
 assert.strictEqual(r.handle('x', { type: 'nope' }), 'неизвестная команда');
 assert.strictEqual(r.handle('Аня', { type: 'restart' }), null);
 assert.strictEqual(r.s.phase, 'lobby'); assert.strictEqual(r.log[0], 'Аня: новый город');
