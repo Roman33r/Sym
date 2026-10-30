@@ -35,7 +35,7 @@ def plate(img):
     a = np.asarray(img)[:, :, 3] > 128
     ys, xs = np.nonzero(a)
     by = ys.max(); bx = int(np.median(xs[ys >= by - 2]))
-    band = ys > by - (by - ys.min()) * 0.3
+    band = ys > by - (by - ys.min()) * 0.6  # low enough to hold the plate's side corners, even under a flat farm
     x0, x1 = xs[band].min(), xs[band].max()
     corner = lambda x: np.nonzero(a[:, x])[0].max()
     slope = ((by - corner(x0)) / (bx - x0) + (by - corner(x1)) / (x1 - bx)) / 2
