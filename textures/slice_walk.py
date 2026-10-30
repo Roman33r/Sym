@@ -3,6 +3,7 @@
 # with the body's middle and the feet in the same place, so the walker doesn't jitter. <way>: se (towards the viewer,
 # down-right) and ne (away, up-right); the game mirrors them into sw and nw.
 # Usage: python slice_walk.py <sheet image> [prefix] [frames a row, 6 by default] [flipne: the back row walks up-left, mirror it]
+#        [--way se|ne: the sheet is one row, that direction]
 import json, sys
 import numpy as np
 from PIL import Image
@@ -10,8 +11,9 @@ from scipy import ndimage
 
 OUT = 'E:/Grad/textures/'
 ROWS = {0: 'se', 1: 'ne'}  # row on the sheet → direction; rows 3-4 turn the head both ways, so nw is ne mirrored
-COLS = FRAMES = int(sys.argv[3]) if len(sys.argv) > 3 else 6
+COLS = FRAMES = int(sys.argv[3]) if len(sys.argv) > 3 and sys.argv[3].isdigit() else 6
 NROWS = 4
+if '--way' in sys.argv: ROWS, NROWS = {0: sys.argv[sys.argv.index('--way') + 1]}, 1  # a sheet of one row: one direction
 im = np.asarray(Image.open(sys.argv[1]).convert('RGB')).astype(int)
 prefix = sys.argv[2] if len(sys.argv) > 2 else 'ped'
 flip_ne = 'flipne' in sys.argv[4:]
@@ -27,9 +29,9 @@ def frame(r, c):
     fl, n = ndimage.label(fg)
     sizes = ndimage.sum(fg, fl, range(1, n + 1))
     fg = fl == sizes.argmax() + 1  # the figure only, without bits of the cell border
-    wl, wn = ndimage.label((lo > 236) & (hi - lo < 20) & fg)  # background shut in between the legs or arms
+    wl, wn = ndimage.label((lo > 215) & (hi - lo < 30) & fg)  # background shut in between the legs, arms or harness
     for k, n in enumerate(ndimage.sum(np.ones_like(lo), wl, range(1, wn + 1))):
-        if n > 30: fg[wl == k + 1] = False
+        if n > 6: fg[wl == k + 1] = False
     fg = ndimage.binary_erosion(fg)
     ys, xs = np.nonzero(fg)
     top, bottom = ys.min(), ys.max()
