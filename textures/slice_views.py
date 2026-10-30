@@ -2,8 +2,9 @@
 # into textures/<name>_<way>.png and adds them to sprites.json. With only the two front views given, a road behind
 # gets the front view next to it (ne → se, nw → sw); a sheet whose back views hide the gate can give those too.
 # The yard plate is fitted onto FOOT of the tile, squashed to 1 in 2 edges, standing on the bottom corner of its top.
-# Usage: python slice_views.py <sheet image> <name> <sw cell> <se cell> [<ne cell> <nw cell>] [--grid N] [--wall px]
-#   (cells row by row from 0 on an N x N sheet, 2 x 2 by default)
+# Usage: python slice_views.py <sheet image> <name> <sw cell> <se cell> [<ne cell> <nw cell>] [--grid N or CxR] [--wall px]
+#   (cells row by row from 0, 2 x 2 by default; ~n is cell n mirrored, for a view drawn only from one side; white
+#   margins around the grid's frame are cut off first)
 import json, sys
 import numpy as np
 from PIL import Image
@@ -12,17 +13,21 @@ from scipy import ndimage
 OUT = 'E:/Grad/textures/'
 FOOT = 0.96
 args = sys.argv[1:]
-N = int(args.pop(args.index('--grid') + 1)) if '--grid' in args else 2
+g = args.pop(args.index('--grid') + 1) if '--grid' in args else '2'
 if '--grid' in args: args.remove('--grid')
+NC, NR = (int(v) for v in g.split('x')) if 'x' in g else (int(g), int(g))
 WALL = int(args.pop(args.index('--wall') + 1)) if '--wall' in args else None  # one wall for several runs (growth stages)
 if '--wall' in args: args.remove('--wall')
 im = np.asarray(Image.open(args[0]).convert('RGB')).astype(int)
-name, cells = args[1], dict(zip(['sw', 'se', 'ne', 'nw'], map(int, args[2:6])))
+dark = im.max(2) < 90; rows = np.nonzero(dark.mean(1) > 0.5)[0]  # the grid's outer frame: its top and bottom lines,
+if len(rows): cols = np.nonzero(dark[rows.min()])[0]; im = im[rows.min():rows.max() + 1, cols.min():cols.max() + 1]  # and how far the top one runs
+name, cells = args[1], dict(zip(['sw', 'se', 'ne', 'nw'], args[2:6]))
 H, W = im.shape[:2]
 
 def cut(c):
-    r, k = divmod(c, N)
-    cell = im[int(r * H / N) + 10:int((r + 1) * H / N) - 10, int(k * W / N) + 10:int((k + 1) * W / N) - 10]  # inside the borders
+    if c.startswith('~'): return cut(c[1:]).transpose(Image.FLIP_LEFT_RIGHT)
+    r, k = divmod(int(c), NC)
+    cell = im[int(r * H / NR) + 10:int((r + 1) * H / NR) - 10, int(k * W / NC) + 10:int((k + 1) * W / NC) - 10]  # inside the borders
     lo, hi = cell.min(2), cell.max(2)
     lab, _ = ndimage.label((lo > 215) & (hi - lo < 25))
     edge = set(lab[0]) | set(lab[-1]) | set(lab[:, 0]) | set(lab[:, -1])
