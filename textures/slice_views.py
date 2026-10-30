@@ -20,7 +20,8 @@ WALL = int(args.pop(args.index('--wall') + 1)) if '--wall' in args else None  # 
 if '--wall' in args: args.remove('--wall')
 im = np.asarray(Image.open(args[0]).convert('RGB')).astype(int)
 dark = im.max(2) < 90; rows = np.nonzero(dark.mean(1) > 0.5)[0]  # the grid's outer frame: its top and bottom lines,
-if len(rows): cols = np.nonzero(dark[rows.min()])[0]; im = im[rows.min():rows.max() + 1, cols.min():cols.max() + 1]  # and how far the top one runs
+if len(rows) and rows.max() - rows.min() > im.shape[0] * 0.3:  # (a sheet whose cells reach its edges has no such frame)
+    cols = np.nonzero(dark[rows.min()])[0]; im = im[rows.min():rows.max() + 1, cols.min():cols.max() + 1]  # and how far the top one runs
 name, cells = args[1], dict(zip(['sw', 'se', 'ne', 'nw'], args[2:6]))
 H, W = im.shape[:2]
 
