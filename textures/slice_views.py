@@ -2,7 +2,8 @@
 # into textures/<name>_<way>.png and adds them to sprites.json. With only the two front views given, a road behind
 # gets the front view next to it (ne → se, nw → sw); a sheet whose back views hide the gate can give those too.
 # The yard plate is fitted onto FOOT of the tile, squashed to 1 in 2 edges, standing on the bottom corner of its top.
-# Usage: python slice_views.py <sheet image> <name> <sw cell> <se cell> [<ne cell> <nw cell>]   (cells 0-3, row by row)
+# Usage: python slice_views.py <sheet image> <name> <sw cell> <se cell> [<ne cell> <nw cell>] [--grid N] [--wall px]
+#   (cells row by row from 0 on an N x N sheet, 2 x 2 by default)
 import json, sys
 import numpy as np
 from PIL import Image
@@ -10,13 +11,18 @@ from scipy import ndimage
 
 OUT = 'E:/Grad/textures/'
 FOOT = 0.96
-im = np.asarray(Image.open(sys.argv[1]).convert('RGB')).astype(int)
-name, cells = sys.argv[2], dict(zip(['sw', 'se', 'ne', 'nw'], map(int, sys.argv[3:7])))
+args = sys.argv[1:]
+N = int(args.pop(args.index('--grid') + 1)) if '--grid' in args else 2
+if '--grid' in args: args.remove('--grid')
+WALL = int(args.pop(args.index('--wall') + 1)) if '--wall' in args else None  # one wall for several runs (growth stages)
+if '--wall' in args: args.remove('--wall')
+im = np.asarray(Image.open(args[0]).convert('RGB')).astype(int)
+name, cells = args[1], dict(zip(['sw', 'se', 'ne', 'nw'], map(int, args[2:6])))
 H, W = im.shape[:2]
 
 def cut(c):
-    r, k = divmod(c, 2)
-    cell = im[int(r * H / 2) + 10:int((r + 1) * H / 2) - 10, int(k * W / 2) + 10:int((k + 1) * W / 2) - 10]  # inside the borders
+    r, k = divmod(c, N)
+    cell = im[int(r * H / N) + 10:int((r + 1) * H / N) - 10, int(k * W / N) + 10:int((k + 1) * W / N) - 10]  # inside the borders
     lo, hi = cell.min(2), cell.max(2)
     lab, _ = ndimage.label((lo > 215) & (hi - lo < 25))
     edge = set(lab[0]) | set(lab[-1]) | set(lab[:, 0]) | set(lab[:, -1])
@@ -48,7 +54,7 @@ meta = json.load(open(OUT + 'sprites.json'))
 views = {way: cut(c) for way, c in cells.items()}
 geo = {way: plate(img) for way, img in views.items()}
 # all views of a building are drawn at one scale: the narrowest plate is the one no jar or crate sticks out of
-ref = min(geo.values(), key=lambda g: g[2]); width, slope, wall = ref[2], ref[3], min(ref[4], round(ref[2] * 0.065))  # a dock or steps can pass for a thicker wall
+ref = min(geo.values(), key=lambda g: g[2]); width, slope, wall = ref[2], ref[3], WALL if WALL is not None else min(ref[4], round(ref[2] * 0.065))  # a dock or steps can pass for a thicker wall
 kx = 256 * FOOT / width   # the plate's width onto FOOT of the tile's
 ky = kx * 0.5 / slope     # and its edges onto 1 in 2
 for way, img in views.items():
